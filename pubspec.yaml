@@ -1,0 +1,59 @@
+name: kiolog
+description: Bitácora personal de salud — plan alimenticio, ejercicio, agua y sueño.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+
+  # Database
+  drift: ^2.18.0
+  sqlite3_flutter_libs: ^0.5.24
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # DI & Navigation
+  get_it: ^7.7.0
+  go_router: ^13.0.0
+
+  # Security
+  flutter_secure_storage: ^9.0.0
+
+  # Notifications
+  flutter_local_notifications: ^17.0.0
+
+  # Geolocation & Maps
+  geolocator: ^12.0.0
+  flutter_map: ^6.0.0
+  latlong2: ^0.9.1
+
+  # Files & Media
+  file_picker: ^8.0.0
+  image_picker: ^1.0.7
+
+  # PDF & Share
+  pdf: ^3.10.7
+  share_plus: ^12.0.2
+
+  # HTTP (AI providers)
+  http: ^1.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  drift_dev: ^2.18.0
+  build_runner: ^2.4.9
+  flutter_lints: ^4.0.0
+  bloc_test: ^9.1.7
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
