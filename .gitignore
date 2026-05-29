@@ -44,3 +44,21 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter/Dart generated
+*.g.dart
+*.freezed.dart
+.packages
+
+# Android
+android/.gradle
+android/captures/
+*.keystore
+*.jks
+
+# IDE
+.vscode/
+
+# Env / secretos
+.env
+*.env.local
