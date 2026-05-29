@@ -8,4 +8,48 @@ part 'water_sleep_dao.g.dart';
 class WaterSleepDao extends DatabaseAccessor<AppDatabase>
     with _$WaterSleepDaoMixin {
   WaterSleepDao(super.db);
+
+  Future<void> insertWaterLog(DailyWaterLogsCompanion log) =>
+      into(dailyWaterLogs).insert(log);
+
+  Future<List<DailyWaterLog>> getDailyWaterLogs(DateTime date) {
+    final start = DateTime.utc(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return (select(dailyWaterLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end)))
+        .get();
+  }
+
+  Future<int> getDailyWaterTotalMl(DateTime date) async {
+    final logs = await getDailyWaterLogs(date);
+    return logs.fold<int>(0, (sum, log) => sum + log.amountMl);
+  }
+
+  Future<void> insertSleepLog(SleepLogsCompanion log) =>
+      into(sleepLogs).insert(log);
+
+  Future<SleepLog?> getSleepLog(DateTime date) {
+    final start = DateTime.utc(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return (select(sleepLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end)))
+        .getSingleOrNull();
+  }
+
+  Future<List<SleepLog>> getWeeklySleepLogs(
+      DateTime startDate, DateTime endDate) {
+    final start = DateTime.utc(startDate.year, startDate.month, startDate.day);
+    final end = DateTime.utc(endDate.year, endDate.month, endDate.day)
+        .add(const Duration(days: 1));
+    return (select(sleepLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end))
+          ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+        .get();
+  }
 }
