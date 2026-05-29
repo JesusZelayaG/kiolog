@@ -15,4 +15,7 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton(() => getIt<AppDatabase>().measurementsDao);
   getIt.registerLazySingleton(() => getIt<AppDatabase>().configDao);
   getIt.registerLazySingleton(() => getIt<AppDatabase>().achievementsDao);
+
+  // Seed default achievements (idempotent — safe to call on every startup)
+  await getIt<AppDatabase>().achievementsDao.seedDefaultAchievements();
 }

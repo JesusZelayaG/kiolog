@@ -47,5 +47,5 @@ class ExerciseSetLogs extends Table {
   TextColumn get exerciseName => text()();
   IntColumn get setNumber => integer()();
   IntColumn get reps => integer()();
-  RealColumn get weightKg => real()();
+  RealColumn get weightKg => real().nullable()();
 }

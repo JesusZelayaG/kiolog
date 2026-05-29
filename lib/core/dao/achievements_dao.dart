@@ -28,7 +28,7 @@ class AchievementsDao extends DatabaseAccessor<AppDatabase>
       (update(achievements)..where((t) => t.key.equals(key))).write(
         AchievementsCompanion(
           isUnlocked: const Value(true),
-          unlockedAt: Value(DateTime.now()),
+          unlockedAt: Value(DateTime.now().toUtc()),
         ),
       );
 

@@ -21,7 +21,7 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
       into(exercisePlans).insert(plan.copyWith(
         createdAt: plan.createdAt.present
             ? plan.createdAt
-            : Value(DateTime.now()),
+            : Value(DateTime.now().toUtc()),
         isActive: const Value(true),
       ));
 
@@ -88,4 +88,14 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> insertDailyExerciseLog(DailyExerciseLogsCompanion log) =>
       into(dailyExerciseLogs).insert(log);
+
+  Future<DailyExerciseLog?> getDailyExerciseLog(DateTime date) {
+    final start = DateTime.utc(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return (select(dailyExerciseLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end)))
+        .getSingleOrNull();
+  }
 }

@@ -14,7 +14,7 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
       into(mealPlans).insert(plan.copyWith(
         createdAt: plan.createdAt.present
             ? plan.createdAt
-            : Value(DateTime.now()),
+            : Value(DateTime.now().toUtc()),
         isActive: const Value(true),
       ));
 
