@@ -48,6 +48,13 @@ void main() {
       expect(planA.isActive, false);
       expect(planB.isActive, true);
     });
+
+    test('setActivePlan lanza ArgumentError si el plan no existe', () async {
+      expect(
+        () => db.nutritionDao.setActivePlan(999),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
   });
 
   group('NutritionDao - MealPlanOptions', () {

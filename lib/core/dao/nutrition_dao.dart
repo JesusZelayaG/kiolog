@@ -27,11 +27,20 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
           .getSingleOrNull();
 
   Future<void> setActivePlan(int planId) async {
-    await (update(mealPlans)).write(const MealPlansCompanion(
-      isActive: Value(false),
-    ));
-    await (update(mealPlans)..where((t) => t.id.equals(planId)))
-        .write(const MealPlansCompanion(isActive: Value(true)));
+    await db.transaction(() async {
+      // Verify plan exists first
+      final plan = await (select(mealPlans)..where((t) => t.id.equals(planId)))
+          .getSingleOrNull();
+      if (plan == null) throw ArgumentError('Plan $planId not found');
+
+      // Deactivate all plans
+      await (update(mealPlans))
+          .write(const MealPlansCompanion(isActive: Value(false)));
+
+      // Activate the target plan
+      await (update(mealPlans)..where((t) => t.id.equals(planId)))
+          .write(const MealPlansCompanion(isActive: Value(true)));
+    });
   }
 
   Future<int> insertMealPlanOption(MealPlanOptionsCompanion option) =>
@@ -49,7 +58,9 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
       into(dailyMealLogs).insert(log);
 
   Future<List<DailyMealLog>> getDailyMealLogs(DateTime date) {
-    final start = DateTime(date.year, date.month, date.day);
+    // Normalize to UTC midnight to ensure consistent day boundaries.
+    // Drift stores DateTimes as milliseconds since epoch (UTC).
+    final start = DateTime.utc(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     return (select(dailyMealLogs)
           ..where((t) =>
