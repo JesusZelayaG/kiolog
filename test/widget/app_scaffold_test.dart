@@ -1,10 +1,26 @@
-// test/widget/app_scaffold_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
+import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/router/app_router.dart';
 import 'package:kiolog/core/theme/app_theme.dart';
+import 'package:kiolog/features/nutrition/domain/repositories/nutrition_repository.dart';
+import 'package:kiolog/features/nutrition/presentation/pages/nutrition_page.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockNutritionRepository extends Mock implements NutritionRepository {}
 
 void main() {
+  setUp(() {
+    getIt.registerLazySingleton<NutritionRepository>(
+      () => MockNutritionRepository(),
+    );
+  });
+
+  tearDown(() async {
+    await getIt.reset();
+  });
+
   testWidgets('AppScaffold muestra NavigationBar con 5 destinos',
       (tester) async {
     await tester.pumpWidget(
@@ -38,6 +54,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Nutrición — Próximamente'), findsOneWidget);
+    expect(find.byType(NutritionPage), findsOneWidget);
   });
 }

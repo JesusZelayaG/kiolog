@@ -1,10 +1,13 @@
 // lib/core/di/injection.dart
 import 'package:get_it/get_it.dart';
+import '../../features/nutrition/data/repositories/nutrition_repository_impl.dart';
+import '../../features/nutrition/domain/repositories/nutrition_repository.dart';
 import '../../features/sleep/data/repositories/sleep_repository_impl.dart';
 import '../../features/sleep/domain/repositories/sleep_repository.dart';
 import '../../features/water/data/repositories/water_repository_impl.dart';
 import '../../features/water/domain/repositories/water_repository.dart';
 import '../dao/config_dao.dart';
+import '../dao/nutrition_dao.dart';
 import '../dao/water_sleep_dao.dart';
 import '../database/app_database.dart';
 
@@ -28,6 +31,9 @@ Future<void> setupDependencies() async {
       getIt<WaterSleepDao>(),
       getIt<ConfigDao>(),
     ),
+  );
+  getIt.registerLazySingleton<NutritionRepository>(
+    () => NutritionRepositoryImpl(getIt<NutritionDao>()),
   );
   getIt.registerLazySingleton<SleepRepository>(
     () => SleepRepositoryImpl(getIt<WaterSleepDao>()),
