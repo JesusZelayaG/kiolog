@@ -5,6 +5,8 @@ import '../../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../../features/exercise/presentation/pages/exercise_page.dart';
 import '../../features/progress/presentation/pages/progress_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/sleep/presentation/pages/sleep_page.dart';
+import '../../features/water/presentation/pages/water_page.dart';
 import '../../shared/widgets/app_scaffold.dart';
 
 final appRouter = GoRouter(
@@ -34,6 +36,14 @@ final appRouter = GoRouter(
           builder: (context, state) => const SettingsPage(),
         ),
       ],
+    ),
+    GoRoute(
+      path: '/water',
+      builder: (context, state) => const WaterPage(),
+    ),
+    GoRoute(
+      path: '/sleep',
+      builder: (context, state) => const SleepPage(),
     ),
   ],
 );

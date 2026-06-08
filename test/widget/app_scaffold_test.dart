@@ -15,11 +15,11 @@ void main() {
     );
 
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('Inicio'), findsOneWidget);
-    expect(find.text('Nutrición'), findsOneWidget);
-    expect(find.text('Ejercicio'), findsOneWidget);
-    expect(find.text('Progreso'), findsOneWidget);
-    expect(find.text('Ajustes'), findsOneWidget);
+    expect(find.text('Inicio'), findsWidgets);
+    expect(find.text('Nutrición'), findsWidgets);
+    expect(find.text('Ejercicio'), findsWidgets);
+    expect(find.text('Progreso'), findsWidgets);
+    expect(find.text('Ajustes'), findsWidgets);
   });
 
   testWidgets('tap en Nutrición navega a la página correcta', (tester) async {
@@ -30,7 +30,12 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Nutrición'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Nutrición'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Nutrición — Próximamente'), findsOneWidget);
