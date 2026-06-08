@@ -86,6 +86,17 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(t) => OrderingTerm.asc(t.setNumber)]))
           .get();
 
+  Future<List<ExerciseSessionLog>> getSessionsForDate(DateTime date) {
+    final start = DateTime.utc(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return (select(exerciseSessionLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end))
+          ..orderBy([(t) => OrderingTerm.desc(t.gymArrivedAt)]))
+        .get();
+  }
+
   Future<int> insertDailyExerciseLog(DailyExerciseLogsCompanion log) =>
       into(dailyExerciseLogs).insert(log);
 
