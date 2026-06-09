@@ -661,15 +661,217 @@ class _ExerciseViewState extends State<_ExerciseView> {
     );
   }
 
-  // Stubs — will be replaced in Tasks 7 and 8
-  Widget _buildCardioSection(BuildContext context, ExerciseState state) =>
-      const SizedBox.shrink();
+  // ── Cardio ───────────────────────────────────────────────────────────────────
+
+  Widget _buildCardioSection(BuildContext context, ExerciseState state) {
+    final theme = Theme.of(context);
+    final done = state.weeklyCardioLogs.length;
+    final goal = state.cardioDaysGoal;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('🏃 Cardio semanal',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+            const Spacer(),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              decoration: BoxDecoration(
+                color: done >= goal
+                    ? theme.colorScheme.tertiaryContainer
+                    : theme.colorScheme.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$done / $goal días',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: done >= goal
+                      ? theme.colorScheme.onTertiaryContainer
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        LinearProgressIndicator(
+          value: goal > 0 ? (done / goal).clamp(0.0, 1.0) : 0,
+          backgroundColor: theme.colorScheme.surfaceVariant,
+          color: theme.colorScheme.primary,
+          borderRadius: BorderRadius.circular(2),
+        ),
+        const SizedBox(height: 10),
+        ...state.weeklyCardioLogs.map((log) => _buildCardioItem(context, log)),
+        _buildDashedAddButton(
+          context: context,
+          label: '＋ Registrar cardio',
+          color: theme.colorScheme.primary,
+          onTap: () => _showCardioDialog(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCardioItem(BuildContext context, CardioLog log) {
+    final theme = Theme.of(context);
+    final weekday = _weekdayName(log.date.weekday);
+    final icon = _cardioIcon(log.cardioType);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: ListTile(
+        leading: Text(icon, style: const TextStyle(fontSize: 20)),
+        title: Text(log.cardioType),
+        subtitle: Text('${log.durationMinutes} min · $weekday'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              onPressed: () => _showCardioDialog(context, log: log),
+              visualDensity: VisualDensity.compact,
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, size: 18),
+              color: theme.colorScheme.error,
+              onPressed: () => context
+                  .read<ExerciseBloc>()
+                  .add(CardioDeleted(cardioId: log.id)),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _cardioIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'correr':
+        return '🏃';
+      case 'bici':
+        return '🚴';
+      case 'elíptica':
+      case 'eliptica':
+        return '⬡';
+      case 'nadar':
+        return '🏊';
+      default:
+        return '💧';
+    }
+  }
+
+  void _showCardioDialog(BuildContext context, {CardioLog? log}) {
+    const types = ['Correr', 'Bici', 'Elíptica', 'Nadar', 'Otro'];
+    String selectedType = log?.cardioType ?? types.first;
+    final durationCtrl = TextEditingController(
+        text: log != null ? '${log.durationMinutes}' : '');
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setInner) => AlertDialog(
+          title: Text(log == null ? 'Registrar cardio' : 'Editar cardio'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedType,
+                decoration: const InputDecoration(labelText: 'Tipo'),
+                items: types
+                    .map((t) =>
+                        DropdownMenuItem(value: t, child: Text(t)))
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) setInner(() => selectedType = v);
+                },
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: durationCtrl,
+                decoration:
+                    const InputDecoration(labelText: 'Duración (minutos) *'),
+                keyboardType: TextInputType.number,
+                autofocus: log == null,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final duration = int.tryParse(durationCtrl.text);
+                if (duration == null || duration <= 0) return;
+                if (log == null) {
+                  context.read<ExerciseBloc>().add(CardioLogged(
+                        date: DateTime.now(),
+                        cardioType: selectedType,
+                        durationMinutes: duration,
+                      ));
+                } else {
+                  context.read<ExerciseBloc>().add(CardioUpdated(
+                        cardioId: log.id,
+                        cardioType: selectedType,
+                        durationMinutes: duration,
+                      ));
+                }
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Stubs — will be replaced in Task 8 ────────────────────────────────────
 
   Widget _buildIndependentSection(BuildContext context, ExerciseState state) =>
       const SizedBox.shrink();
 
   Widget _buildStartRoutineBar(BuildContext context, ExerciseState state) =>
       const SizedBox.shrink();
+
+  // ── Shared helpers ────────────────────────────────────────────────────────
+
+  Widget _buildDashedAddButton({
+    required BuildContext context,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: color.withOpacity(0.5), width: 1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(label,
+              style: TextStyle(color: color, fontWeight: FontWeight.w500)),
+        ),
+      ),
+    );
+  }
+
+  String _weekdayName(int weekday) {
+    const names = [
+      '', 'lunes', 'martes', 'miércoles',
+      'jueves', 'viernes', 'sábado', 'domingo'
+    ];
+    return names[weekday.clamp(1, 7)];
+  }
 
   void _showAddRoutineDialog(BuildContext context, ExerciseState state) {
     final nameController = TextEditingController();
