@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import '../../../../core/di/injection.dart';
+import '../../domain/models/independent_exercise_log.dart';
 import '../../domain/repositories/exercise_repository.dart';
 import '../bloc/exercise_bloc.dart';
 import '../bloc/exercise_event.dart';
@@ -832,13 +833,181 @@ class _ExerciseViewState extends State<_ExerciseView> {
     );
   }
 
-  // ── Stubs — will be replaced in Task 8 ────────────────────────────────────
+  // ── Ejercicio libre ──────────────────────────────────────────────────────
 
-  Widget _buildIndependentSection(BuildContext context, ExerciseState state) =>
-      const SizedBox.shrink();
+  Widget _buildIndependentSection(BuildContext context, ExerciseState state) {
+    final theme = Theme.of(context);
 
-  Widget _buildStartRoutineBar(BuildContext context, ExerciseState state) =>
-      const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('💪 Ejercicio libre',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+            const Spacer(),
+            Text('esta semana',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ...state.weeklyIndependentLogs
+            .map((log) => _buildIndependentItem(context, log)),
+        _buildDashedAddButton(
+          context: context,
+          label: '＋ Registrar ejercicio libre',
+          color: theme.colorScheme.secondary,
+          onTap: () => _showIndependentExerciseDialog(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIndependentItem(BuildContext context, IndependentExerciseLog log) {
+    final theme = Theme.of(context);
+    final weightStr =
+        log.weightKg != null ? ' @ ${log.weightKg}kg' : '';
+    final weekday = _weekdayName(log.date.weekday);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: ListTile(
+        title: Text(log.exerciseName),
+        subtitle: Text('${log.sets}×${log.reps}$weightStr · $weekday'),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline, size: 18),
+          color: theme.colorScheme.error,
+          onPressed: () => context
+              .read<ExerciseBloc>()
+              .add(IndependentExerciseDeleted(sessionId: log.sessionId)),
+          visualDensity: VisualDensity.compact,
+        ),
+      ),
+    );
+  }
+
+  void _showIndependentExerciseDialog(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    final setsCtrl = TextEditingController();
+    final repsCtrl = TextEditingController();
+    final weightCtrl = TextEditingController();
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Registrar ejercicio libre'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Nombre *'),
+              autofocus: true,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: setsCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Series *'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: repsCtrl,
+                    decoration: const InputDecoration(labelText: 'Reps *'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: weightCtrl,
+                    decoration: const InputDecoration(labelText: 'kg'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = nameCtrl.text.trim();
+              final sets = int.tryParse(setsCtrl.text);
+              final reps = int.tryParse(repsCtrl.text);
+              if (name.isEmpty || sets == null || reps == null) return;
+              final weight = double.tryParse(
+                  weightCtrl.text.replaceAll(',', '.'));
+              context.read<ExerciseBloc>().add(IndependentExerciseLogged(
+                    date: DateTime.now(),
+                    exerciseName: name,
+                    sets: sets,
+                    reps: reps,
+                    weightKg: weight,
+                  ));
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Sticky start-routine button ───────────────────────────────────────────
+
+  Widget _buildStartRoutineBar(BuildContext context, ExerciseState state) {
+    final completedIds = state.completedRoutineSessionsThisWeek
+        .map((s) => s.routineId)
+        .whereType<int>()
+        .toSet();
+
+    final nextRoutine = state.routines.isEmpty
+        ? null
+        : state.routines.firstWhere(
+            (r) => !completedIds.contains(r.id),
+            orElse: () => state.routines.first,
+          );
+
+    final enabled = nextRoutine != null && !state.hasActiveSession;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: FilledButton.icon(
+          onPressed: enabled
+              ? () => context.read<ExerciseBloc>().add(
+                    ExerciseSessionStarted(
+                      date: DateTime.now(),
+                      routineId: nextRoutine.id,
+                    ),
+                  )
+              : null,
+          icon: const Icon(Icons.play_arrow),
+          label: Text(state.hasActiveSession
+              ? 'Sesión en curso'
+              : state.routines.isEmpty
+                  ? 'Sin rutinas configuradas'
+                  : 'Iniciar rutina del día'),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+          ),
+        ),
+      ),
+    );
+  }
 
   // ── Shared helpers ────────────────────────────────────────────────────────
 
