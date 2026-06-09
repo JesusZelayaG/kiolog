@@ -35,23 +35,25 @@ void main() {
       expect(active?.id, id2);
     });
 
-    test('addRoutine and getRoutineForDay', () async {
+    test('addRoutine and getRoutinesForPlan', () async {
       final planId = await repository.createPlan('Plan');
-      final routineId = await repository.addRoutine(
+      await repository.addRoutine(
         planId: planId,
-        dayOfWeek: 1,
+        dayNumber: 1,
         routineName: 'Pecho',
       );
 
-      final routine = await repository.getRoutineForDay(planId, 1);
-      expect(routine?.routineName, 'Pecho');
+      final routines = await repository.getRoutinesForPlan(planId);
+      expect(routines.length, 1);
+      expect(routines.first.routineName, 'Pecho');
+      expect(routines.first.dayNumber, 1);
     });
 
     test('addRoutineItem and getRoutineItems', () async {
       final planId = await repository.createPlan('Plan');
       final routineId = await repository.addRoutine(
         planId: planId,
-        dayOfWeek: 1,
+        dayNumber: 1,
         routineName: 'Pecho',
       );
 

@@ -59,9 +59,9 @@ class _OnboardingViewState extends State<_OnboardingView> {
     ],
   };
 
-  // Step 4: Exercise
+  // Step 4: Exercise — días de rutina numerados (Día 1, Día 2, ...)
   final _exercisePlanNameController = TextEditingController(text: 'Mi Rutina');
-  final Map<int, List<_ExerciseEntry>> _weeklyRoutines = {};
+  final List<_RoutineDay> _routineDays = [];
 
   // Step 5: Initial data
   final _weightController = TextEditingController();
@@ -77,18 +77,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
     };
   }
 
-  String _dayName(int day) {
-    return switch (day) {
-      1 => 'Lunes',
-      2 => 'Martes',
-      3 => 'Miércoles',
-      4 => 'Jueves',
-      5 => 'Viernes',
-      6 => 'Sábado',
-      7 => 'Domingo',
-      _ => '',
-    };
-  }
+
 
   @override
   void dispose() {
@@ -101,9 +90,13 @@ class _OnboardingViewState extends State<_OnboardingView> {
         c.dispose();
       }
     }
-    for (final list in _weeklyRoutines.values) {
-      for (final e in list) {
+    for (final day in _routineDays) {
+      day.nameController.dispose();
+      for (final e in day.exercises) {
         e.name.dispose();
+        e.sets.dispose();
+        e.reps.dispose();
+        e.weight.dispose();
       }
     }
     super.dispose();
@@ -158,26 +151,28 @@ class _OnboardingViewState extends State<_OnboardingView> {
     final exerciseRepo = getIt<ExerciseRepository>();
     final exercisePlanId =
         await exerciseRepo.createPlan(_exercisePlanNameController.text);
-    for (final entry in _weeklyRoutines.entries) {
-      if (entry.value.isNotEmpty) {
-        final routineId = await exerciseRepo.addRoutine(
-          planId: exercisePlanId,
-          dayOfWeek: entry.key,
-          routineName: _dayName(entry.key),
-        );
-        for (final ex in entry.value) {
-          final sets = int.tryParse(ex.sets.text) ?? 3;
-          final reps = int.tryParse(ex.reps.text) ?? 10;
-          final weight = double.tryParse(ex.weight.text);
-          if (ex.name.text.isNotEmpty) {
-            await exerciseRepo.addRoutineItem(
-              routineId: routineId,
-              exerciseName: ex.name.text,
-              sets: sets,
-              reps: reps,
-              weightKg: weight,
-            );
-          }
+    for (int i = 0; i < _routineDays.length; i++) {
+      final day = _routineDays[i];
+      final routineName = day.nameController.text.trim().isEmpty
+          ? 'Día ${i + 1}'
+          : day.nameController.text.trim();
+      final routineId = await exerciseRepo.addRoutine(
+        planId: exercisePlanId,
+        dayNumber: i + 1,
+        routineName: routineName,
+      );
+      for (final ex in day.exercises) {
+        final sets = int.tryParse(ex.sets.text) ?? 3;
+        final reps = int.tryParse(ex.reps.text) ?? 10;
+        final weight = double.tryParse(ex.weight.text);
+        if (ex.name.text.isNotEmpty) {
+          await exerciseRepo.addRoutineItem(
+            routineId: routineId,
+            exerciseName: ex.name.text,
+            sets: sets,
+            reps: reps,
+            weightKg: weight,
+          );
         }
       }
     }
@@ -406,7 +401,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
           Text('Plan de Ejercicio', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text(
-            'Selecciona los días de la semana en los que entrenas y agrega los ejercicios de cada rutina.',
+            'Crea los días de tu rutina (Día 1, Día 2, ...). No dependen del día de la semana: al ir al gimnasio eliges qué día entrenaste.',
             style: theme.textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -415,22 +410,40 @@ class _OnboardingViewState extends State<_OnboardingView> {
             decoration: const InputDecoration(labelText: 'Nombre del plan'),
           ),
           const SizedBox(height: 24),
-          ...List.generate(7, (index) {
-            final day = index + 1;
-            final exercises = _weeklyRoutines.putIfAbsent(day, () => []);
+          ..._routineDays.asMap().entries.map((dayEntry) {
+            final index = dayEntry.key;
+            final day = dayEntry.value;
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               child: ExpansionTile(
-                title: Text(_dayName(day)),
-                subtitle: exercises.isEmpty
-                    ? const Text('Descanso')
-                    : Text('${exercises.length} ejercicio(s)'),
+                initiallyExpanded: true,
+                title: Text('Día ${index + 1}'),
+                subtitle: day.exercises.isEmpty
+                    ? const Text('Sin ejercicios')
+                    : Text('${day.exercises.length} ejercicio(s)'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () {
+                    setState(() => _routineDays.removeAt(index));
+                  },
+                ),
                 children: [
-                  ...exercises.asMap().entries.map((e) {
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    child: TextField(
+                      controller: day.nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre de la rutina',
+                        hintText: 'Ej: Pecho y tríceps',
+                      ),
+                    ),
+                  ),
+                  ...day.exercises.asMap().entries.map((e) {
                     return _ExerciseRow(
                       entry: e.value,
                       onDelete: () {
-                        setState(() => exercises.removeAt(e.key));
+                        setState(() => day.exercises.removeAt(e.key));
                       },
                     );
                   }),
@@ -438,13 +451,20 @@ class _OnboardingViewState extends State<_OnboardingView> {
                     leading: const Icon(Icons.add),
                     title: const Text('Agregar ejercicio'),
                     onTap: () {
-                      setState(() => exercises.add(_ExerciseEntry()));
+                      setState(() => day.exercises.add(_ExerciseEntry()));
                     },
                   ),
                 ],
               ),
             );
           }),
+          OutlinedButton.icon(
+            onPressed: () {
+              setState(() => _routineDays.add(_RoutineDay()));
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Agregar día de rutina'),
+          ),
         ],
       ),
     );
@@ -502,6 +522,11 @@ class _OnboardingViewState extends State<_OnboardingView> {
       ),
     );
   }
+}
+
+class _RoutineDay {
+  final nameController = TextEditingController();
+  final List<_ExerciseEntry> exercises = [];
 }
 
 class _ExerciseEntry {

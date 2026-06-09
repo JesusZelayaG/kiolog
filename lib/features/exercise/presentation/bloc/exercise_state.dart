@@ -7,8 +7,8 @@ class ExerciseState extends Equatable {
   final ExerciseStatus status;
   final ExercisePlan? activePlan;
   final List<ExercisePlan> allPlans;
-  final ExerciseRoutine? todayRoutine;
-  final List<ExerciseRoutineItem> routineItems;
+  final List<ExerciseRoutine> routines;
+  final Map<int, List<ExerciseRoutineItem>> routineItemsByRoutine;
   final DailyExerciseLog? dailyLog;
   final ExerciseSessionLog? activeSession;
   final List<ExerciseSetLog> sessionSets;
@@ -19,8 +19,8 @@ class ExerciseState extends Equatable {
     this.status = ExerciseStatus.initial,
     this.activePlan,
     this.allPlans = const [],
-    this.todayRoutine,
-    this.routineItems = const [],
+    this.routines = const [],
+    this.routineItemsByRoutine = const {},
     this.dailyLog,
     this.activeSession,
     this.sessionSets = const [],
@@ -31,12 +31,27 @@ class ExerciseState extends Equatable {
   bool get hasActiveSession =>
       activeSession != null && activeSession!.gymLeftAt == null;
 
+  /// Ejercicios de la rutina que se está entrenando en la sesión activa.
+  List<ExerciseRoutineItem> get activeRoutineItems {
+    final routineId = activeSession?.routineId;
+    if (routineId == null) return const [];
+    return routineItemsByRoutine[routineId] ?? const [];
+  }
+
+  ExerciseRoutine? routineById(int? id) {
+    if (id == null) return null;
+    for (final r in routines) {
+      if (r.id == id) return r;
+    }
+    return null;
+  }
+
   ExerciseState copyWith({
     ExerciseStatus? status,
     ExercisePlan? activePlan,
     List<ExercisePlan>? allPlans,
-    ExerciseRoutine? todayRoutine,
-    List<ExerciseRoutineItem>? routineItems,
+    List<ExerciseRoutine>? routines,
+    Map<int, List<ExerciseRoutineItem>>? routineItemsByRoutine,
     DailyExerciseLog? dailyLog,
     ExerciseSessionLog? activeSession,
     List<ExerciseSetLog>? sessionSets,
@@ -47,8 +62,9 @@ class ExerciseState extends Equatable {
         status: status ?? this.status,
         activePlan: activePlan ?? this.activePlan,
         allPlans: allPlans ?? this.allPlans,
-        todayRoutine: todayRoutine ?? this.todayRoutine,
-        routineItems: routineItems ?? this.routineItems,
+        routines: routines ?? this.routines,
+        routineItemsByRoutine:
+            routineItemsByRoutine ?? this.routineItemsByRoutine,
         dailyLog: dailyLog ?? this.dailyLog,
         activeSession: activeSession ?? this.activeSession,
         sessionSets: sessionSets ?? this.sessionSets,
@@ -61,8 +77,8 @@ class ExerciseState extends Equatable {
         status,
         activePlan,
         allPlans,
-        todayRoutine,
-        routineItems,
+        routines,
+        routineItemsByRoutine,
         dailyLog,
         activeSession,
         sessionSets,

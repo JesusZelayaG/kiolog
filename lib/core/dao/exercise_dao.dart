@@ -51,10 +51,14 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
   Future<int> insertExerciseRoutine(ExerciseRoutinesCompanion routine) =>
       into(exerciseRoutines).insert(routine);
 
-  Future<ExerciseRoutine?> getRoutineForDay(int planId, int dayOfWeek) =>
+  Future<List<ExerciseRoutine>> getRoutinesForPlan(int planId) =>
       (select(exerciseRoutines)
-            ..where((t) =>
-                t.planId.equals(planId) & t.dayOfWeek.equals(dayOfWeek)))
+            ..where((t) => t.planId.equals(planId))
+            ..orderBy([(t) => OrderingTerm.asc(t.dayNumber)]))
+          .get();
+
+  Future<ExerciseRoutine?> getRoutine(int routineId) =>
+      (select(exerciseRoutines)..where((t) => t.id.equals(routineId)))
           .getSingleOrNull();
 
   Future<int> insertExerciseRoutineItem(

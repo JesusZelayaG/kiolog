@@ -53,11 +53,27 @@ class ExerciseRoutineMarkedDone extends ExerciseEvent {
 
 class ExerciseSessionStarted extends ExerciseEvent {
   final DateTime date;
+  final int? routineId;
 
-  const ExerciseSessionStarted({required this.date});
+  const ExerciseSessionStarted({required this.date, this.routineId});
 
   @override
-  List<Object?> get props => [date];
+  List<Object?> get props => [date, routineId];
+}
+
+class ExerciseRoutineAdded extends ExerciseEvent {
+  final int planId;
+  final int dayNumber;
+  final String routineName;
+
+  const ExerciseRoutineAdded({
+    required this.planId,
+    required this.dayNumber,
+    required this.routineName,
+  });
+
+  @override
+  List<Object?> get props => [planId, dayNumber, routineName];
 }
 
 class ExerciseSessionEnded extends ExerciseEvent {

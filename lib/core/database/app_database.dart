@@ -66,7 +66,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -77,6 +77,20 @@ class AppDatabase extends _$AppDatabase {
       onUpgrade: (m, from, to) async {
         if (from < 2) {
           await m.createTable(userProfiles);
+        }
+        if (from < 3) {
+          // Rutinas pasan de día de la semana a día de rutina numerado.
+          // Se recrean las tablas de ejercicio para el nuevo modelo.
+          await m.deleteTable('exercise_set_logs');
+          await m.deleteTable('exercise_session_logs');
+          await m.deleteTable('daily_exercise_logs');
+          await m.deleteTable('exercise_routine_items');
+          await m.deleteTable('exercise_routines');
+          await m.createTable(exerciseRoutines);
+          await m.createTable(exerciseRoutineItems);
+          await m.createTable(dailyExerciseLogs);
+          await m.createTable(exerciseSessionLogs);
+          await m.createTable(exerciseSetLogs);
         }
       },
     );

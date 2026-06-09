@@ -27,8 +27,12 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
       );
 
   @override
-  Future<ExerciseRoutine?> getRoutineForDay(int planId, int dayOfWeek) =>
-      _exerciseDao.getRoutineForDay(planId, dayOfWeek);
+  Future<List<ExerciseRoutine>> getRoutinesForPlan(int planId) =>
+      _exerciseDao.getRoutinesForPlan(planId);
+
+  @override
+  Future<ExerciseRoutine?> getRoutine(int routineId) =>
+      _exerciseDao.getRoutine(routineId);
 
   @override
   Future<List<ExerciseRoutineItem>> getRoutineItems(int routineId) =>
@@ -37,14 +41,14 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
   @override
   Future<int> addRoutine({
     required int planId,
-    required int dayOfWeek,
+    required int dayNumber,
     required String routineName,
     String? notes,
   }) =>
       _exerciseDao.insertExerciseRoutine(
         ExerciseRoutinesCompanion(
           planId: Value(planId),
-          dayOfWeek: Value(dayOfWeek),
+          dayNumber: Value(dayNumber),
           routineName: Value(routineName),
           notes: Value(notes),
         ),
@@ -83,10 +87,11 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
       );
 
   @override
-  Future<int> startSession(DateTime date) =>
+  Future<int> startSession(DateTime date, {int? routineId}) =>
       _exerciseDao.insertExerciseSession(
         ExerciseSessionLogsCompanion(
           date: Value(_dateOnly(date)),
+          routineId: Value(routineId),
           gymArrivedAt: Value(DateTime.now()),
         ),
       );

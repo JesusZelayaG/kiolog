@@ -10,8 +10,8 @@ class ExercisePlans extends Table {
 class ExerciseRoutines extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get planId => integer().references(ExercisePlans, #id)();
-  // 1=Lunes, 7=Domingo
-  IntColumn get dayOfWeek => integer()();
+  // Número de día de la rutina (Día 1, Día 2, ...), NO el día de la semana
+  IntColumn get dayNumber => integer()();
   TextColumn get routineName => text()();
   TextColumn get notes => text().nullable()();
 }
@@ -35,6 +35,8 @@ class DailyExerciseLogs extends Table {
 class ExerciseSessionLogs extends Table {
   IntColumn get id => integer().autoIncrement()();
   DateTimeColumn get date => dateTime()();
+  // Qué día de rutina se entrenó en esta sesión
+  IntColumn get routineId => integer().nullable().references(ExerciseRoutines, #id)();
   DateTimeColumn get gymArrivedAt => dateTime()();
   DateTimeColumn get gymLeftAt => dateTime().nullable()();
   RealColumn get lat => real().nullable()();

@@ -13,6 +13,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
     on<ExercisePlanActivated>(_onPlanActivated);
     on<ExercisePlanCreated>(_onPlanCreated);
     on<ExerciseRoutineMarkedDone>(_onRoutineMarkedDone);
+    on<ExerciseRoutineAdded>(_onRoutineAdded);
     on<ExerciseSessionStarted>(_onSessionStarted);
     on<ExerciseSessionEnded>(_onSessionEnded);
     on<ExerciseSetLogged>(_onSetLogged);
@@ -23,14 +24,13 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
     try {
       final plan = await _repository.getActivePlan();
       final dailyLog = await _repository.getDailyLog(event.date);
-      final dayOfWeek = event.date.weekday;
 
-      ExerciseRoutine? routine;
-      List<ExerciseRoutineItem> items = [];
+      List<ExerciseRoutine> routines = [];
+      final Map<int, List<ExerciseRoutineItem>> itemsByRoutine = {};
       if (plan != null) {
-        routine = await _repository.getRoutineForDay(plan.id, dayOfWeek);
-        if (routine != null) {
-          items = await _repository.getRoutineItems(routine.id);
+        routines = await _repository.getRoutinesForPlan(plan.id);
+        for (final r in routines) {
+          itemsByRoutine[r.id] = await _repository.getRoutineItems(r.id);
         }
       }
 
@@ -49,8 +49,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         activePlan: plan,
         allPlans: state.allPlans,
         dailyLog: dailyLog,
-        todayRoutine: routine,
-        routineItems: items,
+        routines: routines,
+        routineItemsByRoutine: itemsByRoutine,
         activeSession: activeSession,
         sessionSets: sets,
         recentSessions: sessions,
@@ -114,13 +114,30 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
     }
   }
 
+  Future<void> _onRoutineAdded(
+    ExerciseRoutineAdded event,
+    Emitter<ExerciseState> emit,
+  ) async {
+    try {
+      await _repository.addRoutine(
+        planId: event.planId,
+        dayNumber: event.dayNumber,
+        routineName: event.routineName,
+      );
+      add(ExerciseLoaded(date: DateTime.now()));
+    } catch (e) {
+      emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
+    }
+  }
+
   Future<void> _onSessionStarted(
     ExerciseSessionStarted event,
     Emitter<ExerciseState> emit,
   ) async {
     if (state.status != ExerciseStatus.success) return;
     try {
-      final sessionId = await _repository.startSession(event.date);
+      final sessionId =
+          await _repository.startSession(event.date, routineId: event.routineId);
       final session = await _repository.getSession(sessionId);
       final sessions = await _repository.getSessionsForDate(event.date);
       emit(state.copyWith(

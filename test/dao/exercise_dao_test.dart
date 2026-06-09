@@ -45,7 +45,7 @@ void main() {
       final routineId = await db.exerciseDao.insertExerciseRoutine(
         ExerciseRoutinesCompanion(
           planId: Value(planId),
-          dayOfWeek: const Value(1), // Lunes
+          dayNumber: const Value(1), // Día 1 de rutina
           routineName: const Value('Pecho y Tríceps'),
         ),
       );
@@ -59,9 +59,11 @@ void main() {
         ),
       );
 
-      final routine =
-          await db.exerciseDao.getRoutineForDay(planId, 1);
-      expect(routine?.routineName, 'Pecho y Tríceps');
+      final routines =
+          await db.exerciseDao.getRoutinesForPlan(planId);
+      expect(routines.length, 1);
+      expect(routines.first.routineName, 'Pecho y Tríceps');
+      expect(routines.first.dayNumber, 1);
 
       final items = await db.exerciseDao.getRoutineItems(routineId);
       expect(items.length, 1);

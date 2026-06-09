@@ -18,7 +18,7 @@ void main() {
 
   group('ExerciseBloc', () {
     final plan = ExercisePlan(id: 1, name: 'Gym', createdAt: DateTime.now(), isActive: true);
-    final routine = ExerciseRoutine(id: 1, planId: 1, dayOfWeek: 1, routineName: 'Pecho', notes: null);
+    final routine = ExerciseRoutine(id: 1, planId: 1, dayNumber: 1, routineName: 'Pecho', notes: null);
     final items = [
       ExerciseRoutineItem(id: 1, routineId: 1, exerciseName: 'Press', sets: 4, reps: 10, weightKg: 60),
     ];
@@ -28,7 +28,7 @@ void main() {
       build: () {
         when(() => repository.getActivePlan()).thenAnswer((_) async => plan);
         when(() => repository.getDailyLog(any())).thenAnswer((_) async => null);
-        when(() => repository.getRoutineForDay(any(), any())).thenAnswer((_) async => routine);
+        when(() => repository.getRoutinesForPlan(any())).thenAnswer((_) async => [routine]);
         when(() => repository.getRoutineItems(any())).thenAnswer((_) async => items);
         when(() => repository.getSessionsForDate(any())).thenAnswer((_) async => []);
         return ExerciseBloc(repository);
@@ -39,8 +39,8 @@ void main() {
         ExerciseState(
           status: ExerciseStatus.success,
           activePlan: plan,
-          todayRoutine: routine,
-          routineItems: items,
+          routines: [routine],
+          routineItemsByRoutine: {1: items},
         ),
       ],
     );
@@ -53,7 +53,7 @@ void main() {
           date: DateTime(2026, 6, 8),
           gymArrivedAt: DateTime(2026, 6, 8, 10, 0),
         );
-        when(() => repository.startSession(any())).thenAnswer((_) async => 1);
+        when(() => repository.startSession(any(), routineId: any(named: 'routineId'))).thenAnswer((_) async => 1);
         when(() => repository.getSession(any())).thenAnswer((_) async => session);
         when(() => repository.getSessionsForDate(any())).thenAnswer((_) async => [session]);
         return ExerciseBloc(repository)

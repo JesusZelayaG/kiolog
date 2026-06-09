@@ -6,11 +6,12 @@ abstract class ExerciseRepository {
   Future<void> activatePlan(int planId);
   Future<int> createPlan(String name);
 
-  Future<ExerciseRoutine?> getRoutineForDay(int planId, int dayOfWeek);
+  Future<List<ExerciseRoutine>> getRoutinesForPlan(int planId);
+  Future<ExerciseRoutine?> getRoutine(int routineId);
   Future<List<ExerciseRoutineItem>> getRoutineItems(int routineId);
   Future<int> addRoutine({
     required int planId,
-    required int dayOfWeek,
+    required int dayNumber,
     required String routineName,
     String? notes,
   });
@@ -25,7 +26,7 @@ abstract class ExerciseRepository {
   Future<DailyExerciseLog?> getDailyLog(DateTime date);
   Future<void> logDailyExercise(DateTime date, int routineId);
 
-  Future<int> startSession(DateTime date);
+  Future<int> startSession(DateTime date, {int? routineId});
   Future<void> endSession(int sessionId);
   Future<ExerciseSessionLog?> getSession(int sessionId);
   Future<List<ExerciseSessionLog>> getSessionsForDate(DateTime date);

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:kiolog/core/database/app_database.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/repositories/exercise_repository.dart';
 import '../bloc/exercise_bloc.dart';
@@ -22,19 +21,6 @@ class ExercisePage extends StatelessWidget {
 
 class _ExerciseView extends StatelessWidget {
   const _ExerciseView();
-
-  String _dayName(int weekday) {
-    return switch (weekday) {
-      1 => 'Lunes',
-      2 => 'Martes',
-      3 => 'Miércoles',
-      4 => 'Jueves',
-      5 => 'Viernes',
-      6 => 'Sábado',
-      7 => 'Domingo',
-      _ => '',
-    };
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,12 +54,10 @@ class _ExerciseView extends StatelessWidget {
               children: [
                 _buildPlanHeader(context, state),
                 const SizedBox(height: 16),
-                if (state.todayRoutine != null) ...[
-                  _buildRoutineCard(context, state),
-                  const SizedBox(height: 16),
-                ] else
-                  _buildRestDayCard(context),
-                _buildSessionCard(context, state),
+                if (state.hasActiveSession)
+                  _buildActiveSessionCard(context, state)
+                else
+                  _buildRoutinePicker(context, state),
                 const SizedBox(height: 16),
                 if (state.recentSessions.isNotEmpty)
                   _buildRecentSessions(context, state),
@@ -124,7 +108,7 @@ class _ExerciseView extends StatelessWidget {
           style: Theme.of(context).textTheme.titleLarge,
         ),
         Text(
-          '${_dayName(DateTime.now().weekday)} — ${state.todayRoutine?.routineName ?? 'Día de descanso'}',
+          '${state.routines.length} día(s) de rutina',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -133,109 +117,105 @@ class _ExerciseView extends StatelessWidget {
     );
   }
 
-  Widget _buildRoutineCard(BuildContext context, ExerciseState state) {
+  Widget _buildRoutinePicker(BuildContext context, ExerciseState state) {
     final theme = Theme.of(context);
-    final isDone = state.dailyLog?.completed ?? false;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Text('Rutina de hoy', style: theme.textTheme.titleMedium),
-                const Spacer(),
-                if (isDone)
-                  Chip(
-                    label: const Text('Completada'),
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    side: BorderSide.none,
-                  ),
-              ],
+            Text('¿Qué entrenaste hoy?', style: theme.textTheme.titleMedium),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => _showAddRoutineDialog(context, state),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Día'),
             ),
-            const SizedBox(height: 12),
-            ...state.routineItems.map((item) => ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    child: Text('${item.sets}x'),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (state.routines.isEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  const Text(
+                    'Aún no tienes días de rutina configurados.',
+                    textAlign: TextAlign.center,
                   ),
-                  title: Text(item.exerciseName),
-                  subtitle: Text(
-                    '${item.reps} reps${item.weightKg != null ? ' @ ${item.weightKg} kg' : ''}',
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () => _showAddRoutineDialog(context, state),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Agregar día de rutina'),
                   ),
-                )),
-            if (!isDone) ...[
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: () {
-                  context.read<ExerciseBloc>().add(
-                        ExerciseRoutineMarkedDone(
-                          date: DateTime.now(),
-                          routineId: state.todayRoutine!.id,
-                        ),
-                      );
-                },
-                icon: const Icon(Icons.check),
-                label: const Text('Marcar como completada'),
+                ],
               ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRestDayCard(BuildContext context) {
-    return Card(
-      color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.4),
-      child: const Padding(
-        padding: EdgeInsets.all(24),
-        child: Row(
-          children: [
-            Icon(Icons.beach_access),
-            SizedBox(width: 16),
-            Text('Hoy es día de descanso'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSessionCard(BuildContext context, ExerciseState state) {
-    if (state.hasActiveSession) {
-      return _buildActiveSessionCard(context, state);
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Sesión de gym', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () {
-                context.read<ExerciseBloc>().add(
-                      ExerciseSessionStarted(date: DateTime.now()),
-                    );
-              },
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Iniciar sesión'),
             ),
-          ],
-        ),
-      ),
+          )
+        else
+          ...state.routines.map((routine) {
+            final items = state.routineItemsByRoutine[routine.id] ?? const [];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          child: Text('${routine.dayNumber}'),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            routine.routineName,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (items.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      ...items.map((item) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Text(
+                              '• ${item.exerciseName} — ${item.sets}x${item.reps}'
+                              '${item.weightKg != null ? ' @ ${item.weightKg}kg' : ''}',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          )),
+                    ],
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: () {
+                        context.read<ExerciseBloc>().add(
+                              ExerciseSessionStarted(
+                                date: DateTime.now(),
+                                routineId: routine.id,
+                              ),
+                            );
+                      },
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Entrené este día'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+      ],
     );
   }
 
   Widget _buildActiveSessionCard(BuildContext context, ExerciseState state) {
     final theme = Theme.of(context);
     final session = state.activeSession!;
+    final routine = state.routineById(session.routineId);
     final startTime = TimeOfDay.fromDateTime(session.gymArrivedAt);
 
     return Card(
@@ -247,15 +227,41 @@ class _ExerciseView extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text('Sesión activa', style: theme.textTheme.titleMedium),
-                const Spacer(),
-                Text('${startTime.hour}:${startTime.minute.toString().padLeft(2, '0')}'),
+                Expanded(
+                  child: Text(
+                    routine != null
+                        ? 'Sesión activa — ${routine.routineName}'
+                        : 'Sesión activa',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                Text(
+                    '${startTime.hour}:${startTime.minute.toString().padLeft(2, '0')}'),
               ],
             ),
-            const SizedBox(height: 12),
-            if (state.sessionSets.isNotEmpty)
-              Text('${state.sessionSets.length} serie(s) registradas'),
-            const SizedBox(height: 12),
+            if (state.activeRoutineItems.isNotEmpty) ...[
+              const Divider(height: 20),
+              Text('Ejercicios de la rutina',
+                  style: theme.textTheme.labelLarge),
+              const SizedBox(height: 4),
+              ...state.activeRoutineItems.map((item) => Text(
+                    '• ${item.exerciseName} — ${item.sets}x${item.reps}'
+                    '${item.weightKg != null ? ' @ ${item.weightKg}kg' : ''}',
+                    style: theme.textTheme.bodyMedium,
+                  )),
+            ],
+            const Divider(height: 20),
+            if (state.sessionSets.isNotEmpty) ...[
+              Text('${state.sessionSets.length} serie(s) registradas',
+                  style: theme.textTheme.bodyMedium),
+              const SizedBox(height: 8),
+              ...state.sessionSets.map((s) => Text(
+                    '  ${s.exerciseName}: ${s.reps} reps'
+                    '${s.weightKg != null ? ' @ ${s.weightKg}kg' : ''}',
+                    style: theme.textTheme.bodySmall,
+                  )),
+              const SizedBox(height: 12),
+            ],
             FilledButton.icon(
               onPressed: () => _showLogSetDialog(context, state),
               icon: const Icon(Icons.add),
@@ -284,7 +290,8 @@ class _ExerciseView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sesiones recientes', style: Theme.of(context).textTheme.titleMedium),
+            Text('Sesiones recientes',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             ...state.recentSessions.take(3).map((session) {
               final start = TimeOfDay.fromDateTime(session.gymArrivedAt);
@@ -294,12 +301,14 @@ class _ExerciseView extends StatelessWidget {
               final duration = end != null
                   ? session.gymLeftAt!.difference(session.gymArrivedAt).inMinutes
                   : null;
+              final routine = state.routineById(session.routineId);
 
               return ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.fitness_center),
-                title: Text('${start.hour}:${start.minute.toString().padLeft(2, '0')}'),
+                title: Text(routine?.routineName ??
+                    '${start.hour}:${start.minute.toString().padLeft(2, '0')}'),
                 subtitle: end != null
                     ? Text('Duración: ${duration! ~/ 60}h ${duration % 60}m')
                     : const Text('En progreso'),
@@ -307,6 +316,52 @@ class _ExerciseView extends StatelessWidget {
             }),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAddRoutineDialog(BuildContext context, ExerciseState state) {
+    final nameController = TextEditingController();
+    final nextDay = state.routines.isEmpty
+        ? 1
+        : (state.routines
+                .map((r) => r.dayNumber)
+                .reduce((a, b) => a > b ? a : b) +
+            1);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Día $nextDay de rutina'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            labelText: 'Nombre de la rutina',
+            hintText: 'Ej: Pecho y tríceps',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (nameController.text.isNotEmpty) {
+                context.read<ExerciseBloc>().add(
+                      ExerciseRoutineAdded(
+                        planId: state.activePlan!.id,
+                        dayNumber: nextDay,
+                        routineName: nameController.text,
+                      ),
+                    );
+              }
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Agregar'),
+          ),
+        ],
       ),
     );
   }
@@ -320,8 +375,8 @@ class _ExerciseView extends StatelessWidget {
     // Pre-fill with last exercise if available
     if (state.sessionSets.isNotEmpty) {
       exerciseNameController.text = state.sessionSets.last.exerciseName;
-    } else if (state.routineItems.isNotEmpty) {
-      exerciseNameController.text = state.routineItems.first.exerciseName;
+    } else if (state.activeRoutineItems.isNotEmpty) {
+      exerciseNameController.text = state.activeRoutineItems.first.exerciseName;
     }
 
     showDialog(
