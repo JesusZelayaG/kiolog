@@ -15,6 +15,8 @@ class ExerciseState extends Equatable {
   final List<ExerciseSetLog> sessionSets;
   final List<ExerciseSessionLog> recentSessions;
   final Set<int> completedRoutineItemIds;
+  final Map<int, List<ExerciseRoutineSetDef>> sessionSetDefs;
+  final Map<String, List<ExerciseSetLog>> sessionHistorical;
   final List<CardioLog> weeklyCardioLogs;
   final int routineDaysGoal;
   final int cardioDaysGoal;
@@ -33,6 +35,8 @@ class ExerciseState extends Equatable {
     this.sessionSets = const [],
     this.recentSessions = const [],
     this.completedRoutineItemIds = const {},
+    this.sessionSetDefs = const {},
+    this.sessionHistorical = const {},
     this.weeklyCardioLogs = const [],
     this.routineDaysGoal = 4,
     this.cardioDaysGoal = 3,
@@ -73,6 +77,8 @@ class ExerciseState extends Equatable {
     List<ExerciseSetLog>? sessionSets,
     List<ExerciseSessionLog>? recentSessions,
     Set<int>? completedRoutineItemIds,
+    Map<int, List<ExerciseRoutineSetDef>>? sessionSetDefs,
+    Map<String, List<ExerciseSetLog>>? sessionHistorical,
     List<CardioLog>? weeklyCardioLogs,
     int? routineDaysGoal,
     int? cardioDaysGoal,
@@ -93,6 +99,8 @@ class ExerciseState extends Equatable {
         recentSessions: recentSessions ?? this.recentSessions,
         completedRoutineItemIds:
             completedRoutineItemIds ?? this.completedRoutineItemIds,
+        sessionSetDefs: sessionSetDefs ?? this.sessionSetDefs,
+        sessionHistorical: sessionHistorical ?? this.sessionHistorical,
         weeklyCardioLogs: weeklyCardioLogs ?? this.weeklyCardioLogs,
         routineDaysGoal: routineDaysGoal ?? this.routineDaysGoal,
         cardioDaysGoal: cardioDaysGoal ?? this.cardioDaysGoal,
@@ -113,6 +121,8 @@ class ExerciseState extends Equatable {
         sessionSets,
         recentSessions,
         completedRoutineItemIds,
+        sessionSetDefs,
+        sessionHistorical,
         weeklyCardioLogs,
         routineDaysGoal,
         cardioDaysGoal,

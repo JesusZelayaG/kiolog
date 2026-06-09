@@ -139,6 +139,13 @@ class ExerciseItemCompleted extends ExerciseEvent {
   List<Object?> get props => [routineItemId];
 }
 
+class ExerciseSessionResumed extends ExerciseEvent {
+  final int sessionId;
+  const ExerciseSessionResumed({required this.sessionId});
+  @override
+  List<Object?> get props => [sessionId];
+}
+
 // ── Sets ─────────────────────────────────────────────────────────────────────
 
 class ExerciseSetLogged extends ExerciseEvent {

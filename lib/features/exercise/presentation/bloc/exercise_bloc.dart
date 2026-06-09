@@ -20,6 +20,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
     on<ExerciseSessionStarted>(_onSessionStarted);
     on<ExerciseSessionEnded>(_onSessionEnded);
     on<ExerciseItemCompleted>(_onItemCompleted);
+    on<ExerciseSessionResumed>(_onSessionResumed);
     on<ExerciseSetLogged>(_onSetLogged);
     on<CardioLogged>(_onCardioLogged);
     on<CardioUpdated>(_onCardioUpdated);
@@ -376,6 +377,35 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         cardioDaysGoal: config?.weeklyCardioDaysGoal ?? state.cardioDaysGoal,
         cardioMinutesGoal:
             config?.cardioMinutesGoal ?? state.cardioMinutesGoal,
+      ));
+    } catch (e) {
+      emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
+    }
+  }
+
+  Future<void> _onSessionResumed(
+      ExerciseSessionResumed event, Emitter<ExerciseState> emit) async {
+    try {
+      final routineId = state.activeSession?.routineId;
+      final items = routineId != null
+          ? (state.routineItemsByRoutine[routineId] ?? <ExerciseRoutineItem>[])
+          : <ExerciseRoutineItem>[];
+
+      final setDefs = <int, List<ExerciseRoutineSetDef>>{};
+      final historical = <String, List<ExerciseSetLog>>{};
+
+      for (final item in items) {
+        setDefs[item.id] = await _repository.getRoutineSetDefs(item.id);
+        historical[item.exerciseName] =
+            await _repository.getLastSessionSetsForExercise(item.exerciseName);
+      }
+
+      final sets = await _repository.getSessionSets(event.sessionId);
+
+      emit(state.copyWith(
+        sessionSetDefs: setDefs,
+        sessionHistorical: historical,
+        sessionSets: sets,
       ));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));

@@ -136,6 +136,54 @@ void main() {
     );
 
     blocTest<ExerciseBloc, ExerciseState>(
+      'ExerciseSessionResumed carga sessionSetDefs, sessionHistorical y sessionSets',
+      build: () {
+        const setDef = ExerciseRoutineSetDef(
+          id: 1, routineItemId: 1, setNumber: 1,
+          dropOfSetNumber: null, reps: 12, weightKg: 75.0,
+        );
+        final histSet = ExerciseSetLog(
+          id: 10, sessionId: 99, exerciseName: 'Press banca',
+          setNumber: 1, reps: 12, weightKg: 75.0,
+          setType: 'normal', dropOfSetId: null,
+        );
+        when(() => repository.getRoutineSetDefs(1))
+            .thenAnswer((_) async => [setDef]);
+        when(() => repository.getLastSessionSetsForExercise('Press banca'))
+            .thenAnswer((_) async => [histSet]);
+        when(() => repository.getSessionSets(5)).thenAnswer((_) async => []);
+
+        const item = ExerciseRoutineItem(
+          id: 1, routineId: 1, exerciseName: 'Press banca',
+          sets: 3, reps: 12, weightKg: 60.0,
+          setType: 'normal', orderIndex: 0,
+        );
+        final session = ExerciseSessionLog(
+          id: 5, date: DateTime(2026, 6, 9),
+          gymArrivedAt: DateTime(2026, 6, 9, 7, 0),
+          routineId: 1,
+        );
+        return ExerciseBloc(repository)
+          ..emit(ExerciseState(
+            status: ExerciseStatus.success,
+            activeSession: session,
+            routineItemsByRoutine: const {1: [item]},
+          ));
+      },
+      act: (bloc) => bloc.add(const ExerciseSessionResumed(sessionId: 5)),
+      expect: () => [
+        isA<ExerciseState>()
+            .having((s) => s.sessionSetDefs[1]?.length, 'setDefs item 1', 1)
+            .having(
+              (s) => s.sessionHistorical['Press banca']?.length,
+              'historical Press banca',
+              1,
+            )
+            .having((s) => s.sessionSets.length, 'sessionSets', 0),
+      ],
+    );
+
+    blocTest<ExerciseBloc, ExerciseState>(
       'CardioLogged llama repository.logCardio y recarga logs',
       build: () {
         when(() => repository.logCardio(
