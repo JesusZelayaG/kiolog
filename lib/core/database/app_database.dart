@@ -68,7 +68,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -94,7 +94,6 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 4) {
           if (from >= 3) {
-            // Only add columns if tables already exist from v3 (without new columns)
             await m.addColumn(
                 exerciseRoutineItems, exerciseRoutineItems.setType);
             await m.addColumn(
@@ -103,10 +102,14 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(
                 exerciseSetLogs, exerciseSetLogs.dropOfSetId);
           }
-          // These are brand-new tables — always create them
           await m.createTable(exerciseRoutineSetDefs);
           await m.createTable(cardioLogs);
           await m.createTable(exerciseConfig);
+        }
+        if (from < 5) {
+          await m.addColumn(mealPlans, mealPlans.periodStart);
+          await m.addColumn(mealPlans, mealPlans.periodEnd);
+          await m.addColumn(mealPlans, mealPlans.dailyMealGoal);
         }
       },
     );

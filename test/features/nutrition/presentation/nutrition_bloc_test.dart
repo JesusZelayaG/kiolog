@@ -17,7 +17,15 @@ void main() {
   });
 
   group('NutritionBloc', () {
-    final plan = MealPlan(id: 1, name: 'Plan', createdAt: DateTime.now(), isActive: true);
+    final plan = MealPlan(
+      id: 1,
+      name: 'Plan',
+      createdAt: DateTime.now(),
+      isActive: true,
+      dailyMealGoal: 4,
+      periodStart: null,
+      periodEnd: null,
+    );
     final options = [
       MealPlanOption(id: 1, planId: 1, mealType: 'breakfast', optionNumber: 1, description: 'Avena'),
     ];
