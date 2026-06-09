@@ -226,6 +226,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         activeSession: session,
         recentSessions: sessions,
         sessionSets: [],
+        sessionSetDefs: const {},
+        sessionHistorical: const {},
         completedRoutineItemIds: {},
       ));
     } catch (e) {
@@ -243,6 +245,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
       emit(state.copyWith(
         activeSession: session,
         completedRoutineItemIds: {},
+        sessionSetDefs: const {},
+        sessionHistorical: const {},
         weeklyStats: weeklyStats,
       ));
     } catch (e) {
@@ -385,6 +389,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
 
   Future<void> _onSessionResumed(
       ExerciseSessionResumed event, Emitter<ExerciseState> emit) async {
+    if (state.status != ExerciseStatus.success) return;
+    if (state.activeSession?.id != event.sessionId) return;
     try {
       final routineId = state.activeSession?.routineId;
       final items = routineId != null
@@ -394,10 +400,16 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
       final setDefs = <int, List<ExerciseRoutineSetDef>>{};
       final historical = <String, List<ExerciseSetLog>>{};
 
-      for (final item in items) {
-        setDefs[item.id] = await _repository.getRoutineSetDefs(item.id);
-        historical[item.exerciseName] =
-            await _repository.getLastSessionSetsForExercise(item.exerciseName);
+      final futures = await Future.wait(
+        items.map((item) => Future.wait([
+          _repository.getRoutineSetDefs(item.id),
+          _repository.getLastSessionSetsForExercise(item.exerciseName),
+        ])),
+      );
+      for (var i = 0; i < items.length; i++) {
+        setDefs[items[i].id] = futures[i][0] as List<ExerciseRoutineSetDef>;
+        historical[items[i].exerciseName] =
+            futures[i][1] as List<ExerciseSetLog>;
       }
 
       final sets = await _repository.getSessionSets(event.sessionId);
