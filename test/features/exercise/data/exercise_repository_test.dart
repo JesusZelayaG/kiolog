@@ -56,13 +56,14 @@ void main() {
         routineName: 'Pecho',
       );
 
-      await repository.addRoutineItem(
+      final itemId = await repository.addRoutineItem(
         routineId: routineId,
         exerciseName: 'Press Banca',
         sets: 4,
         reps: 10,
         weightKg: 60,
       );
+      expect(itemId, isPositive);
 
       final items = await repository.getRoutineItems(routineId);
       expect(items.length, 1);
@@ -97,6 +98,151 @@ void main() {
 
       final sessions = await repository.getSessionsForDate(date);
       expect(sessions.length, 1);
+    });
+
+    group('routine items', () {
+      test('addRoutineItem and getRoutineItemsOrdered', () async {
+        final planId = await repository.createPlan('Plan');
+        final routineId = await repository.addRoutine(
+          planId: planId,
+          dayNumber: 1,
+          routineName: 'Pecho',
+        );
+        final itemId = await repository.addRoutineItem(
+          routineId: routineId,
+          exerciseName: 'Press Banca',
+          sets: 4,
+          reps: 10,
+          weightKg: 80.0,
+          setType: 'pyramid',
+          orderIndex: 0,
+        );
+        expect(itemId, isPositive);
+        final items = await repository.getRoutineItemsOrdered(routineId);
+        expect(items.length, 1);
+        expect(items.first.setType, 'pyramid');
+      });
+
+      test('updateRoutineItem updates partial fields', () async {
+        final planId = await repository.createPlan('Plan');
+        final routineId = await repository.addRoutine(
+          planId: planId,
+          dayNumber: 1,
+          routineName: 'Pecho',
+        );
+        final itemId = await repository.addRoutineItem(
+          routineId: routineId,
+          exerciseName: 'Press',
+          sets: 3,
+          reps: 10,
+        );
+        await repository.updateRoutineItem(
+          itemId: itemId,
+          exerciseName: 'Press Banca',
+          setType: 'drop',
+        );
+        final items = await repository.getRoutineItemsOrdered(routineId);
+        expect(items.first.exerciseName, 'Press Banca');
+        expect(items.first.setType, 'drop');
+        expect(items.first.sets, 3); // unchanged
+      });
+
+      test('deleteRoutineItem removes item', () async {
+        final planId = await repository.createPlan('Plan');
+        final routineId = await repository.addRoutine(
+          planId: planId,
+          dayNumber: 1,
+          routineName: 'Pecho',
+        );
+        final itemId = await repository.addRoutineItem(
+          routineId: routineId,
+          exerciseName: 'Curl',
+          sets: 3,
+          reps: 12,
+        );
+        await repository.deleteRoutineItem(itemId);
+        final items = await repository.getRoutineItemsOrdered(routineId);
+        expect(items, isEmpty);
+      });
+    });
+
+    group('set defs', () {
+      test('replaceRoutineSetDefs and getRoutineSetDefs', () async {
+        final planId = await repository.createPlan('Plan');
+        final routineId = await repository.addRoutine(
+          planId: planId,
+          dayNumber: 1,
+          routineName: 'Pecho',
+        );
+        final itemId = await repository.addRoutineItem(
+          routineId: routineId,
+          exerciseName: 'Press',
+          sets: 3,
+          reps: 10,
+          setType: 'pyramid',
+        );
+        await repository.replaceRoutineSetDefs(
+          routineItemId: itemId,
+          defs: [
+            (setNumber: 1, dropOfSetNumber: null, reps: 12, weightKg: 70.0),
+            (setNumber: 2, dropOfSetNumber: null, reps: 10, weightKg: 80.0),
+          ],
+        );
+        final defs = await repository.getRoutineSetDefs(itemId);
+        expect(defs.length, 2);
+        expect(defs[0].weightKg, 70.0);
+        expect(defs[1].weightKg, 80.0);
+      });
+    });
+
+    group('cardio', () {
+      test('logCardio, getCardioLogsForWeek, updateCardio, deleteCardio', () async {
+        final monday = DateTime.utc(2026, 6, 2);
+        final id = await repository.logCardio(
+          date: monday,
+          cardioType: 'treadmill',
+          durationMinutes: 30,
+        );
+        expect(id, isPositive);
+
+        var logs = await repository.getCardioLogsForWeek(monday);
+        expect(logs.length, 1);
+        expect(logs.first.cardioType, 'treadmill');
+
+        await repository.updateCardio(
+          cardioId: id,
+          durationMinutes: 45,
+        );
+        logs = await repository.getCardioLogsForWeek(monday);
+        expect(logs.first.durationMinutes, 45);
+
+        await repository.deleteCardio(id);
+        logs = await repository.getCardioLogsForWeek(monday);
+        expect(logs, isEmpty);
+      });
+    });
+
+    group('exercise config', () {
+      test('updateExerciseConfig and getExerciseConfig', () async {
+        await repository.updateExerciseConfig(
+          weeklyRoutineDaysGoal: 5,
+          weeklyCardioDaysGoal: 4,
+          cardioMinutesGoal: 45,
+        );
+        final config = await repository.getExerciseConfig();
+        expect(config?.weeklyRoutineDaysGoal, 5);
+        expect(config?.weeklyCardioDaysGoal, 4);
+        expect(config?.cardioMinutesGoal, 45);
+      });
+    });
+
+    group('weekly stats', () {
+      test('getWeeklyStats returns list with correct length', () async {
+        final stats = await repository.getWeeklyStats(weeksBack: 4);
+        expect(stats.length, 4);
+        expect(stats.every((s) => s.routineDaysDone >= 0), true);
+        expect(stats.every((s) => s.cardioDaysDone >= 0), true);
+      });
     });
   });
 }
