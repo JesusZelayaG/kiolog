@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../../features/exercise/presentation/pages/exercise_page.dart';
+import '../../features/achievements/presentation/pages/achievements_page.dart';
+import '../../features/history/presentation/pages/history_page.dart';
 import '../../features/progress/presentation/pages/progress_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/sleep/presentation/pages/sleep_page.dart';
@@ -44,6 +46,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/sleep',
       builder: (context, state) => const SleepPage(),
+    ),
+    GoRoute(
+      path: '/history',
+      builder: (context, state) => const HistoryPage(),
+    ),
+    GoRoute(
+      path: '/achievements',
+      builder: (context, state) => const AchievementsPage(),
     ),
   ],
 );

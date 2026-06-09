@@ -2,6 +2,8 @@
 import 'package:get_it/get_it.dart';
 import '../../features/exercise/data/repositories/exercise_repository_impl.dart';
 import '../../features/exercise/domain/repositories/exercise_repository.dart';
+import '../../features/history/data/repositories/history_repository_impl.dart';
+import '../../features/history/domain/repositories/history_repository.dart';
 import '../../features/nutrition/data/repositories/nutrition_repository_impl.dart';
 import '../../features/nutrition/domain/repositories/nutrition_repository.dart';
 import '../../features/progress/data/repositories/progress_repository_impl.dart';
@@ -40,6 +42,13 @@ Future<void> setupDependencies() async {
   );
   getIt.registerLazySingleton<ProgressRepository>(
     () => ProgressRepositoryImpl(getIt<MeasurementsDao>()),
+  );
+  getIt.registerLazySingleton<HistoryRepository>(
+    () => HistoryRepositoryImpl(
+      getIt<WaterSleepDao>(),
+      getIt<NutritionDao>(),
+      getIt<ExerciseDao>(),
+    ),
   );
   getIt.registerLazySingleton<ExerciseRepository>(
     () => ExerciseRepositoryImpl(getIt<ExerciseDao>()),
