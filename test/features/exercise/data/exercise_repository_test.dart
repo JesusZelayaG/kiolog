@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/exercise/data/repositories/exercise_repository_impl.dart';
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 
 import '../../../helpers/database_helper.dart';
 
@@ -26,7 +25,7 @@ void main() {
     });
 
     test('activatePlan switches active plan', () async {
-      final id1 = await repository.createPlan('Plan A');
+      await repository.createPlan('Plan A');
       final id2 = await repository.createPlan('Plan B');
 
       await repository.activatePlan(id2);

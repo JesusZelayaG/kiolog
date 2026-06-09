@@ -39,7 +39,7 @@ void main() {
         ExerciseState(
           status: ExerciseStatus.success,
           activePlan: plan,
-          routines: [routine],
+          routines: const [routine],
           routineItemsByRoutine: {1: items},
         ),
       ],
