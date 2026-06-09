@@ -18,6 +18,7 @@ import '../dao/water_sleep_dao.dart';
 import '../dao/measurements_dao.dart';
 import '../dao/config_dao.dart';
 import '../dao/achievements_dao.dart';
+import '../dao/user_profile_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -46,6 +47,7 @@ part 'app_database.g.dart';
     GymConfig,
     NotificationSettings,
     AiConfig,
+    UserProfiles,
   ],
   daos: [
     NutritionDao,
@@ -54,6 +56,7 @@ part 'app_database.g.dart';
     MeasurementsDao,
     ConfigDao,
     AchievementsDao,
+    UserProfileDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -63,7 +66,21 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (m) async {
+        await m.createAll();
+      },
+      onUpgrade: (m, from, to) async {
+        if (from < 2) {
+          await m.createTable(userProfiles);
+        }
+      },
+    );
+  }
 }
 
 LazyDatabase _openConnection() {

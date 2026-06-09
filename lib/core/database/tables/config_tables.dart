@@ -38,3 +38,11 @@ class AiConfig extends Table {
   // Guardado cifrado vía flutter_secure_storage (el campo aquí es solo referencia)
   TextColumn get providerModel => text().nullable()();
 }
+
+class UserProfiles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  BoolColumn get onboardingCompleted =>
+      boolean().withDefault(const Constant(false))();
+  DateTimeColumn get registrationDate => dateTime().nullable()();
+  TextColumn get name => text().nullable()();
+}

@@ -43,7 +43,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(
       MaterialApp.router(
-        routerConfig: appRouter,
+        routerConfig: createRouter(),
         theme: AppTheme.light,
       ),
     );
@@ -59,7 +59,7 @@ void main() {
   testWidgets('tap en Nutrición navega a la página correcta', (tester) async {
     await tester.pumpWidget(
       MaterialApp.router(
-        routerConfig: appRouter,
+        routerConfig: createRouter(),
         theme: AppTheme.light,
       ),
     );

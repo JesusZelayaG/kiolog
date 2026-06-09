@@ -91,13 +91,14 @@ class AchievementsDao extends DatabaseAccessor<AppDatabase>
     ];
 
     for (final a in defaults) {
-      await into(achievements).insertOnConflictUpdate(
+      await into(achievements).insert(
         AchievementsCompanion.insert(
           key: a.key,
           title: a.title,
           description: a.description,
           module: a.module,
         ),
+        mode: InsertMode.insertOrIgnore,
       );
     }
   }

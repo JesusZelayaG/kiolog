@@ -18,6 +18,7 @@ import '../dao/config_dao.dart';
 import '../dao/exercise_dao.dart';
 import '../dao/measurements_dao.dart';
 import '../dao/nutrition_dao.dart';
+import '../dao/user_profile_dao.dart';
 import '../dao/water_sleep_dao.dart';
 import '../database/app_database.dart';
 
@@ -34,6 +35,7 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton(() => getIt<AppDatabase>().measurementsDao);
   getIt.registerLazySingleton(() => getIt<AppDatabase>().configDao);
   getIt.registerLazySingleton(() => getIt<AppDatabase>().achievementsDao);
+  getIt.registerLazySingleton(() => getIt<AppDatabase>().userProfileDao);
 
   // Repositories
   getIt.registerLazySingleton<WaterRepository>(
@@ -73,4 +75,11 @@ Future<void> setupDependencies() async {
 
   // Seed default achievements (idempotent — safe to call on every startup)
   await getIt<AppDatabase>().achievementsDao.seedDefaultAchievements();
+
+  // Ensure user profile row exists
+  final profileDao = getIt<UserProfileDao>();
+  final profile = await profileDao.getProfile();
+  if (profile == null) {
+    await profileDao.createProfile();
+  }
 }
