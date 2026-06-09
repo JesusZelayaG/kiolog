@@ -76,7 +76,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
               ),
             ],
           ),
-          bottomNavigationBar: _buildFinishBar(context, state),
+          bottomNavigationBar: _buildFinishBar(context),
         );
       },
     );
@@ -135,7 +135,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
             leading: Icon(
               icon,
               color: isCompleted
-                  ? Colors.green
+                  ? Theme.of(context).colorScheme.tertiary
                   : isExpanded
                       ? Theme.of(context).colorScheme.primary
                       : null,
@@ -150,13 +150,14 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
                 '${item.weightKg != null ? ' @ ${item.weightKg}kg' : ''}'),
             onTap: isCompleted
                 ? null
-                : () => setState(() {
-                      _expandedItemId =
-                          isExpanded ? null : item.id;
-                      if (!isExpanded) {
-                        _initRowsIfNeeded(item, state);
-                      }
-                    }),
+                : () {
+                    if (!isExpanded) {
+                      _initRowsIfNeeded(item, state);
+                    }
+                    setState(() {
+                      _expandedItemId = isExpanded ? null : item.id;
+                    });
+                  },
           ),
           if (isExpanded)
             _buildExpandedPanel(context, state, item),
@@ -165,7 +166,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
     );
   }
 
-  Widget _buildFinishBar(BuildContext context, ExerciseState state) {
+  Widget _buildFinishBar(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -268,9 +269,13 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
               orElse: () => null,
             );
         if (match != null) {
-          setState(() {
-            row.saved = true;
-            row.savedSetLogId = match.id;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                row.saved = true;
+                row.savedSetLogId = match.id;
+              });
+            }
           });
         }
       }
