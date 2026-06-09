@@ -1,5 +1,14 @@
 # Kiolog — Phase 1: Foundation & Project Setup
 
+> **⚠️ NOTA DE ACTUALIZACIÓN (2026-06-08):** Este documento describe la fase inicial del proyecto. Varios elementos han evolucionado desde entonces. Para el estado actual completo, ver `docs/superpowers/CONTEXT.md`.
+>
+> Cambios relevantes post-fase 1:
+> - Schema DB: v1 → v3 (tabla `user_profiles` agregada en v2; tablas de ejercicio recreadas en v3)
+> - `dayOfWeek` → `dayNumber` en rutinas de ejercicio
+> - Router: `appRouter` global → `createRouter({initialLocation})` función
+> - Onboarding obligatorio de 5 pasos antes de usar la app
+> - `main.dart` verifica `UserProfileDao.isOnboardingComplete()` para decidir ruta inicial
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Crear el proyecto Flutter, configurar dependencias, definir el esquema completo de base de datos Drift con DAOs testeados, inyección de dependencias, tema, router y scaffold de navegación principal.
