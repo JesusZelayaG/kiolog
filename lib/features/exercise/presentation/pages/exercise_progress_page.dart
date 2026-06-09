@@ -1,5 +1,6 @@
 import 'dart:math' show sqrt;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -149,11 +150,12 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
 
   Widget _buildWeekNavigator(BuildContext context, ExerciseState state) {
     final theme = Theme.of(context);
-    final thisMonday = _mondayOf(DateTime.now());
+    final thisMonday = _mondayOf(DateTime.now().toUtc());
     final weekMonday = thisMonday.add(Duration(days: 7 * _weekOffset));
     final weekSunday = weekMonday.add(const Duration(days: 6));
-    final label =
-        '${weekMonday.day} – ${weekSunday.day} ${_monthAbbr(weekMonday.month)} ${weekMonday.year}';
+    final label = weekMonday.month == weekSunday.month
+        ? '${weekMonday.day} – ${weekSunday.day} ${_monthAbbr(weekMonday.month)} ${weekMonday.year}'
+        : '${weekMonday.day} ${_monthAbbr(weekMonday.month)} – ${weekSunday.day} ${_monthAbbr(weekSunday.month)} ${weekSunday.year}';
     final sublabel =
         _weekOffset == 0 ? 'semana actual' : 'hace ${-_weekOffset} semana(s)';
     final canGoBack = state.weeklyStats.isNotEmpty &&
@@ -175,7 +177,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
 
   Widget _buildMonthNavigator(BuildContext context) {
     final theme = Theme.of(context);
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     final target = DateTime(now.year, now.month + _monthOffset);
     final label = '${_monthName(target.month)} ${target.year}';
     final sublabel =
@@ -273,7 +275,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
   }
 
   Widget _buildMesChips(BuildContext context, ExerciseState state) {
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     final target = DateTime(now.year, now.month + _monthOffset);
     final monthStats = state.weeklyStats
         .where((s) =>
@@ -343,7 +345,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
   Widget _buildMonthBarChartWidget(ExerciseState state) {
     final isRutina = _chart == _Chart.rutina;
     final goal = isRutina ? state.routineDaysGoal : state.cardioDaysGoal;
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     final target = DateTime(now.year, now.month + _monthOffset);
     final monthStats = state.weeklyStats
         .where((s) =>
@@ -515,7 +517,7 @@ class _BarChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BarChartPainter old) =>
-      old.bars != bars ||
+      !listEquals(old.bars, bars) ||
       old.barColor != barColor ||
       old.lastBarIsPartial != lastBarIsPartial;
 }
