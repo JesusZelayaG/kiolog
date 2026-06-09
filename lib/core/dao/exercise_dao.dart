@@ -144,10 +144,12 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
   Future<List<ExerciseSessionLog>> getCompletedRoutineSessionsForWeek(
     DateTime weekStart,
   ) {
-    final end = weekStart.add(const Duration(days: 7));
+    final start =
+        DateTime.utc(weekStart.year, weekStart.month, weekStart.day);
+    final end = start.add(const Duration(days: 7));
     return (select(exerciseSessionLogs)
           ..where((t) =>
-              t.date.isBiggerOrEqualValue(weekStart) &
+              t.date.isBiggerOrEqualValue(start) &
               t.date.isSmallerThanValue(end) &
               t.routineId.isNotNull() &
               t.gymLeftAt.isNotNull()))
