@@ -360,8 +360,10 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         );
       }
       await _repository.endSession(sessionId);
+      final monday = _mondayOf(DateTime.now().toUtc());
       final sessions = await _repository.getSessionsForDate(event.date);
-      emit(state.copyWith(recentSessions: sessions));
+      final logs = await _repository.getIndependentSessionsForWeek(monday);
+      emit(state.copyWith(recentSessions: sessions, weeklyIndependentLogs: logs));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
     }
@@ -371,8 +373,10 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
       IndependentExerciseDeleted event, Emitter<ExerciseState> emit) async {
     try {
       await _repository.deleteSession(event.sessionId);
+      final monday = _mondayOf(DateTime.now().toUtc());
       final sessions = await _repository.getSessionsForDate(DateTime.now());
-      emit(state.copyWith(recentSessions: sessions));
+      final logs = await _repository.getIndependentSessionsForWeek(monday);
+      emit(state.copyWith(recentSessions: sessions, weeklyIndependentLogs: logs));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
     }

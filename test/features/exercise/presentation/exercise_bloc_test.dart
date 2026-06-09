@@ -231,6 +231,49 @@ void main() {
     );
 
     blocTest<ExerciseBloc, ExerciseState>(
+      'IndependentExerciseLogged reloads weeklyIndependentLogs',
+      build: () {
+        when(() => repository.startSession(any(), routineId: any(named: 'routineId')))
+            .thenAnswer((_) async => 42);
+        when(() => repository.logSet(
+              sessionId: any(named: 'sessionId'),
+              exerciseName: any(named: 'exerciseName'),
+              setNumber: any(named: 'setNumber'),
+              reps: any(named: 'reps'),
+              weightKg: any(named: 'weightKg'),
+              setType: any(named: 'setType'),
+            )).thenAnswer((_) async {});
+        when(() => repository.endSession(any())).thenAnswer((_) async {});
+        when(() => repository.getSessionsForDate(any())).thenAnswer((_) async => []);
+        when(() => repository.getIndependentSessionsForWeek(any()))
+            .thenAnswer((_) async => [
+                  IndependentExerciseLog(
+                    sessionId: 42,
+                    date: DateTime(2026, 6, 9),
+                    exerciseName: 'Abdominales',
+                    sets: 3,
+                    reps: 20,
+                  ),
+                ]);
+        return ExerciseBloc(repository)
+          ..emit(const ExerciseState(status: ExerciseStatus.success));
+      },
+      act: (bloc) => bloc.add(IndependentExerciseLogged(
+        date: DateTime(2026, 6, 9),
+        exerciseName: 'Abdominales',
+        sets: 3,
+        reps: 20,
+      )),
+      expect: () => [
+        isA<ExerciseState>().having(
+          (s) => s.weeklyIndependentLogs.length,
+          'weeklyIndependentLogs length',
+          1,
+        ),
+      ],
+    );
+
+    blocTest<ExerciseBloc, ExerciseState>(
       'CardioLogged llama repository.logCardio y recarga logs',
       build: () {
         when(() => repository.logCardio(
