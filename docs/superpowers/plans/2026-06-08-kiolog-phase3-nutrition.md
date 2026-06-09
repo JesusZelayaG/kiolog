@@ -42,6 +42,7 @@ lib/features/nutrition/
   - Permite tocar una opción para marcarla como registrada
   - Indica visualmente cuál opción fue elegida
   - Permite registrar "fuera de plan" con descripción libre
+  - **Cambiar selección**: botón "Cambiar selección" que deshace el registro y permite reelegir
 - Diálogo de gestión de planes (historial, activar otro plan)
 
 **BLoC Events:**
@@ -49,6 +50,7 @@ lib/features/nutrition/
 - `NutritionPlanLoaded()` — carga todos los planes
 - `NutritionMealLogged(date, mealType, planOptionId)` — registra comida del plan
 - `NutritionOffPlanMealLogged(date, mealType, description)` — registra comida libre
+- `NutritionMealLogRemoved(date, mealType)` — elimina el registro de una comida (para reelegir)
 - `NutritionPlanActivated(planId)` — cambia plan activo
 - `NutritionPlanCreated(name)` — crea nuevo plan
 - `NutritionOptionAdded(...)` — agrega opción a un plan

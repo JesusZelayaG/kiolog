@@ -1,8 +1,9 @@
 # Kiolog — Diseño de Aplicación
 
-**Fecha:** 2026-05-28  
+**Fecha:** 2026-06-08 (última actualización)  
 **Plataforma:** Flutter — Android primero (preparado para iOS sin cambios estructurales)  
 **Tipo:** App personal de bitácora de salud — offline first
+**Base de datos:** Schema v3
 
 ---
 
@@ -85,13 +86,16 @@ exercise_plans
   id, name, created_at, is_active
 
 exercise_routines
-  id, plan_id, day_of_week, routine_name, notes
+  id, plan_id, day_number, routine_name, notes
+  -- day_number es el orden del día en la rutina (Día 1, Día 2...), NO el día de la semana
   
 exercise_routine_items
   id, routine_id, exercise_name, sets, reps, weight_kg (nullable)
 ```
 
 Los planes son versionados: al crear un plan nuevo el anterior se marca `is_active = false` pero no se elimina. Los logs históricos mantienen referencia al `plan_id` original.
+
+Los planes de nutrición y ejercicio se actualizan aproximadamente cada mes. Cada versión anterior queda guardada y se puede reactivar.
 
 ### Logs Diarios
 
@@ -104,7 +108,8 @@ daily_exercise_logs
   id, date, routine_id, completed
 
 exercise_session_logs
-  id, date, gym_arrived_at, gym_left_at, lat, lng (últimos dos nullable si sin GPS)
+  id, date, routine_id (nullable), gym_arrived_at, gym_left_at, lat, lng
+  -- routine_id indica qué día de rutina se entrenó en esa sesión (últimos dos nullable si sin GPS)
 
 exercise_set_logs
   id, session_id, exercise_name, set_number, reps, weight_kg
@@ -131,6 +136,11 @@ measurements
 water_config
   unit_type (bottle|glass), container_ml, daily_goal_ml
 
+user_profiles
+  id, onboarding_completed, registration_date
+  -- onboarding_completed indica si el wizard inicial fue completado
+  -- registration_date es la fecha en que el usuario configuró la app por primera vez
+
 gym_config
   name, lat, lng, proximity_radius_m, proximity_enabled
 
@@ -147,13 +157,26 @@ ai_config
 
 ## Módulos y Pantallas
 
+### Onboarding (Wizard Inicial)
+
+Flujo obligatorio de 5 pasos antes de usar la app por primera vez:
+
+1. **Bienvenida** — Explicación de la app y lo que se va a configurar
+2. **Agua** — Selección de unidad (botella/vaso), tamaño del contenedor, meta diaria
+3. **Nutrición** — Crear plan de alimentación con hasta 3 opciones por tiempo de comida (desayuno, almuerzo, cena, entrecomida)
+4. **Ejercicio** — Crear plan con días de rutina numerados (Día 1, Día 2...), cada uno con nombre libre (ej: "Pecho y tríceps") y lista de ejercicios (sets, reps, peso)
+5. **Datos de inicio** — Peso inicial y fecha de inicio de la bitácora
+
+Al finalizar se guardan todos los planes/configuraciones y se marca `onboarding_completed = true`. Todos los datos históricos se anclan a la `registration_date`.
+
 ### Home
 
 Pantalla principal con resumen del día actual:
 
 - Tarjeta **Nutrición**: progreso de comidas del día (ej. 2/4 completadas)
 - Tarjeta **Agua**: barra de progreso hacia meta diaria
-- Tarjeta **Ejercicio**: si hoy hay rutina, si fue completada; si hubo sesión de gym
+- Tarjeta **Ejercicio**: si hay plan activo, número de días de rutina; si hubo sesión de gym hoy
+- Tarjeta **Sueño**: horas registradas anoche + botón "Registrar sueño"
 - Tarjeta **Sueño**: horas registradas anoche
 - Acceso rápido a registro manual de cada módulo
 
@@ -162,19 +185,20 @@ Pantalla principal con resumen del día actual:
 - Ver las 3 opciones del plan para cada tiempo de comida del día
 - Marcar cuál opción se eligió (1, 2 o 3)
 - Registrar "fuera de plan": descripción libre + foto opcional
+- **Cambiar selección**: si te equivocaste, puedes deshacer el registro y elegir otra opción
 - Configurar/editar plan manualmente o importar desde PDF vía IA
 - Historial de comidas por día
 - Gestión de planes: ver versiones anteriores, activar una versión distinta
 
 ### Ejercicio
 
-- Ver rutina del día según plan activo (con sets, reps y peso de referencia)
-- Marcar sesión de gym:
-  - **Manual**: botón de check-in manual + registro de ejercicios realizados (sets, reps, peso levantado)
-  - **Por proximidad** (opcional): botón de check-in aparece automáticamente al estar dentro del radio configurado del gimnasio
-- Marcar ejercicios individuales como completados durante la sesión
-- Registrar peso levantado por serie
-- Ver historial de progreso por ejercicio (evolución de peso/reps a lo largo del tiempo)
+- Ver lista de días de rutina del plan activo (Día 1, Día 2...) con sus ejercicios
+- **Al ir al gimnasio**: elegir qué día de rutina entrenaste (ej: el lunes puedes hacer el Día 4)
+- Iniciar sesión de gym vinculada al día de rutina elegido
+- Durante la sesión: ver los ejercicios de la rutina como guía + registrar series con reps/peso real
+- Finalizar sesión (registra hora de salida automáticamente)
+- Ver historial de sesiones recientes con duración y qué día de rutina se entrenó
+- Agregar nuevos días de rutina al plan activo en cualquier momento
 - Configurar/editar plan de ejercicio o importar desde PDF vía IA
 - Gestión de planes con versionado
 
