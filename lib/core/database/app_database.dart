@@ -32,9 +32,12 @@ part 'app_database.g.dart';
     ExercisePlans,
     ExerciseRoutines,
     ExerciseRoutineItems,
+    ExerciseRoutineSetDefs,
     DailyExerciseLogs,
     ExerciseSessionLogs,
     ExerciseSetLogs,
+    CardioLogs,
+    ExerciseConfig,
     // Water & Sleep
     DailyWaterLogs,
     SleepLogs,
@@ -62,11 +65,10 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
-  // Constructor para tests — usa base de datos en memoria
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -79,8 +81,6 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(userProfiles);
         }
         if (from < 3) {
-          // Rutinas pasan de día de la semana a día de rutina numerado.
-          // Se recrean las tablas de ejercicio para el nuevo modelo.
           await m.deleteTable('exercise_set_logs');
           await m.deleteTable('exercise_session_logs');
           await m.deleteTable('daily_exercise_logs');
@@ -91,6 +91,18 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(dailyExerciseLogs);
           await m.createTable(exerciseSessionLogs);
           await m.createTable(exerciseSetLogs);
+        }
+        if (from < 4) {
+          await m.addColumn(
+              exerciseRoutineItems, exerciseRoutineItems.setType);
+          await m.addColumn(
+              exerciseRoutineItems, exerciseRoutineItems.orderIndex);
+          await m.addColumn(exerciseSetLogs, exerciseSetLogs.setType);
+          await m.addColumn(
+              exerciseSetLogs, exerciseSetLogs.dropOfSetId);
+          await m.createTable(exerciseRoutineSetDefs);
+          await m.createTable(cardioLogs);
+          await m.createTable(exerciseConfig);
         }
       },
     );
