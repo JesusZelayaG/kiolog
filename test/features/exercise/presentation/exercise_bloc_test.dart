@@ -6,6 +6,7 @@ import 'package:kiolog/features/exercise/presentation/bloc/exercise_bloc.dart';
 import 'package:kiolog/features/exercise/presentation/bloc/exercise_event.dart';
 import 'package:kiolog/features/exercise/presentation/bloc/exercise_state.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:kiolog/features/exercise/domain/models/independent_exercise_log.dart';
 
 class MockExerciseRepository extends Mock implements ExerciseRepository {}
 
@@ -34,6 +35,10 @@ void main() {
         when(() => repository.getExerciseConfig()).thenAnswer((_) async => null);
         when(() => repository.getCardioLogsForWeek(any())).thenAnswer((_) async => []);
         when(() => repository.getWeeklyStats(weeksBack: any(named: 'weeksBack'))).thenAnswer((_) async => []);
+        when(() => repository.getCompletedRoutineSessionsForWeek(any()))
+            .thenAnswer((_) async => []);
+        when(() => repository.getIndependentSessionsForWeek(any()))
+            .thenAnswer((_) async => []);
         return ExerciseBloc(repository);
       },
       act: (bloc) => bloc.add(ExerciseLoaded(date: DateTime(2026, 6, 8))),
@@ -44,6 +49,48 @@ void main() {
           activePlan: plan,
           routines: const [routine],
           routineItemsByRoutine: {1: items},
+        ),
+      ],
+    );
+
+    blocTest<ExerciseBloc, ExerciseState>(
+      'ExerciseLoaded populates completedRoutineSessionsThisWeek and weeklyIndependentLogs',
+      build: () {
+        final session = ExerciseSessionLog(
+          id: 1,
+          date: DateTime(2026, 6, 9),
+          gymArrivedAt: DateTime(2026, 6, 9, 7, 0),
+          gymLeftAt: DateTime(2026, 6, 9, 8, 0),
+          routineId: 1,
+        );
+        when(() => repository.getActivePlan()).thenAnswer((_) async => null);
+        when(() => repository.getDailyLog(any())).thenAnswer((_) async => null);
+        when(() => repository.getSessionsForDate(any())).thenAnswer((_) async => []);
+        when(() => repository.getExerciseConfig()).thenAnswer((_) async => null);
+        when(() => repository.getCardioLogsForWeek(any()))
+            .thenAnswer((_) async => []);
+        when(() => repository.getWeeklyStats(weeksBack: any(named: 'weeksBack')))
+            .thenAnswer((_) async => []);
+        when(() => repository.getCompletedRoutineSessionsForWeek(any()))
+            .thenAnswer((_) async => [session]);
+        when(() => repository.getIndependentSessionsForWeek(any()))
+            .thenAnswer((_) async => []);
+        return ExerciseBloc(repository);
+      },
+      act: (bloc) => bloc.add(ExerciseLoaded(date: DateTime(2026, 6, 9))),
+      expect: () => [
+        const ExerciseState(status: ExerciseStatus.loading),
+        ExerciseState(
+          status: ExerciseStatus.success,
+          completedRoutineSessionsThisWeek: [
+            ExerciseSessionLog(
+              id: 1,
+              date: DateTime(2026, 6, 9),
+              gymArrivedAt: DateTime(2026, 6, 9, 7, 0),
+              gymLeftAt: DateTime(2026, 6, 9, 8, 0),
+              routineId: 1,
+            ),
+          ],
         ),
       ],
     );

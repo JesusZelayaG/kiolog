@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import 'package:kiolog/features/exercise/domain/models/independent_exercise_log.dart';
 import 'package:kiolog/features/exercise/domain/models/weekly_stat.dart';
 
 enum ExerciseStatus { initial, loading, success, failure }
@@ -22,6 +23,8 @@ class ExerciseState extends Equatable {
   final int cardioDaysGoal;
   final int cardioMinutesGoal;
   final List<WeeklyStat> weeklyStats;
+  final List<ExerciseSessionLog> completedRoutineSessionsThisWeek;
+  final List<IndependentExerciseLog> weeklyIndependentLogs;
   final String? error;
 
   const ExerciseState({
@@ -42,6 +45,8 @@ class ExerciseState extends Equatable {
     this.cardioDaysGoal = 3,
     this.cardioMinutesGoal = 30,
     this.weeklyStats = const [],
+    this.completedRoutineSessionsThisWeek = const [],
+    this.weeklyIndependentLogs = const [],
     this.error,
   });
 
@@ -84,6 +89,8 @@ class ExerciseState extends Equatable {
     int? cardioDaysGoal,
     int? cardioMinutesGoal,
     List<WeeklyStat>? weeklyStats,
+    List<ExerciseSessionLog>? completedRoutineSessionsThisWeek,
+    List<IndependentExerciseLog>? weeklyIndependentLogs,
     String? error,
   }) =>
       ExerciseState(
@@ -106,6 +113,10 @@ class ExerciseState extends Equatable {
         cardioDaysGoal: cardioDaysGoal ?? this.cardioDaysGoal,
         cardioMinutesGoal: cardioMinutesGoal ?? this.cardioMinutesGoal,
         weeklyStats: weeklyStats ?? this.weeklyStats,
+        completedRoutineSessionsThisWeek:
+            completedRoutineSessionsThisWeek ?? this.completedRoutineSessionsThisWeek,
+        weeklyIndependentLogs:
+            weeklyIndependentLogs ?? this.weeklyIndependentLogs,
         error: error,
       );
 
@@ -128,6 +139,8 @@ class ExerciseState extends Equatable {
         cardioDaysGoal,
         cardioMinutesGoal,
         weeklyStats,
+        completedRoutineSessionsThisWeek,
+        weeklyIndependentLogs,
         error,
       ];
 }

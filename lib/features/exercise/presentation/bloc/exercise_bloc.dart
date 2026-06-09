@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import 'package:kiolog/features/exercise/domain/models/independent_exercise_log.dart';
+import 'package:kiolog/features/exercise/domain/models/weekly_stat.dart';
 import '../../domain/repositories/exercise_repository.dart';
 import 'exercise_event.dart';
 import 'exercise_state.dart';
@@ -59,8 +61,16 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
       }
 
       final monday = _mondayOf(DateTime.now().toUtc());
-      final weeklyCardio = await _repository.getCardioLogsForWeek(monday);
-      final weeklyStats = await _repository.getWeeklyStats(weeksBack: 8);
+      final results = await Future.wait([
+        _repository.getCardioLogsForWeek(monday),
+        _repository.getCompletedRoutineSessionsForWeek(monday),
+        _repository.getIndependentSessionsForWeek(monday),
+        _repository.getWeeklyStats(weeksBack: 8),
+      ]);
+      final weeklyCardio = results[0] as List<CardioLog>;
+      final completedSessions = results[1] as List<ExerciseSessionLog>;
+      final independentLogs = results[2] as List<IndependentExerciseLog>;
+      final weeklyStats = results[3] as List<WeeklyStat>;
 
       emit(ExerciseState(
         status: ExerciseStatus.success,
@@ -72,6 +82,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         sessionSets: sets,
         recentSessions: sessions,
         weeklyCardioLogs: weeklyCardio,
+        completedRoutineSessionsThisWeek: completedSessions,
+        weeklyIndependentLogs: independentLogs,
         routineDaysGoal: config?.weeklyRoutineDaysGoal ?? 4,
         cardioDaysGoal: config?.weeklyCardioDaysGoal ?? 3,
         cardioMinutesGoal: config?.cardioMinutesGoal ?? 30,
