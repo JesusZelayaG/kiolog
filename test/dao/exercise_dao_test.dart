@@ -1,6 +1,6 @@
 // test/dao/exercise_dao_test.dart
 import 'package:flutter_test/flutter_test.dart';
-import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:kiolog/core/database/app_database.dart';
 import '../helpers/database_helper.dart';
 
@@ -366,7 +366,7 @@ void main() {
 
   group('ExerciseDao - historical reference', () {
     test('getLastSessionSetsForExercise retorna sets de la última sesión', () async {
-      final planId = await db.exerciseDao.insertExercisePlan(
+      await db.exerciseDao.insertExercisePlan(
         const ExercisePlansCompanion(name: Value('Plan')),
       );
       final session1 = await db.exerciseDao.insertExerciseSession(
@@ -374,7 +374,7 @@ void main() {
           date: Value(DateTime.utc(2026, 6, 1)),
           gymArrivedAt: Value(DateTime.utc(2026, 6, 1, 7)),
           gymLeftAt: Value(DateTime.utc(2026, 6, 1, 8)),
-          routineId: Value(null),
+          routineId: const Value(null),
         ),
       );
       final session2 = await db.exerciseDao.insertExerciseSession(
@@ -382,7 +382,7 @@ void main() {
           date: Value(DateTime.utc(2026, 6, 5)),
           gymArrivedAt: Value(DateTime.utc(2026, 6, 5, 7)),
           gymLeftAt: Value(DateTime.utc(2026, 6, 5, 8)),
-          routineId: Value(null),
+          routineId: const Value(null),
         ),
       );
       await db.exerciseDao.insertExerciseSetLog(ExerciseSetLogsCompanion(
@@ -458,6 +458,30 @@ void main() {
       final sessions = await db.exerciseDao
           .getCompletedRoutineSessionsForWeek(monday);
       expect(sessions.length, 1);
+    });
+
+    test('deleteSession elimina la sesión', () async {
+      final planId = await db.exerciseDao.insertExercisePlan(
+        const ExercisePlansCompanion(name: Value('Plan')),
+      );
+      final routineId = await db.exerciseDao.insertExerciseRoutine(
+        ExerciseRoutinesCompanion(
+          planId: Value(planId),
+          dayNumber: const Value(1),
+          routineName: const Value('Pecho'),
+        ),
+      );
+      final monday = DateTime.utc(2026, 6, 2);
+      final sessionId = await db.exerciseDao.insertExerciseSession(
+        ExerciseSessionLogsCompanion(
+          date: Value(monday),
+          routineId: Value(routineId),
+          gymArrivedAt: Value(monday),
+        ),
+      );
+      await db.exerciseDao.deleteSession(sessionId);
+      final session = await db.exerciseDao.getSession(sessionId);
+      expect(session, isNull);
     });
   });
 }

@@ -18,9 +18,9 @@ void main() {
 
   group('ExerciseBloc', () {
     final plan = ExercisePlan(id: 1, name: 'Gym', createdAt: DateTime.now(), isActive: true);
-    final routine = ExerciseRoutine(id: 1, planId: 1, dayNumber: 1, routineName: 'Pecho', notes: null);
+    const routine = ExerciseRoutine(id: 1, planId: 1, dayNumber: 1, routineName: 'Pecho', notes: null);
     final items = [
-      ExerciseRoutineItem(id: 1, routineId: 1, exerciseName: 'Press', sets: 4, reps: 10, weightKg: 60, setType: 'normal', orderIndex: 0),
+      const ExerciseRoutineItem(id: 1, routineId: 1, exerciseName: 'Press', sets: 4, reps: 10, weightKg: 60, setType: 'normal', orderIndex: 0),
     ];
 
     blocTest<ExerciseBloc, ExerciseState>(
