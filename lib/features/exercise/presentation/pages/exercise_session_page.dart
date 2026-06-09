@@ -298,7 +298,9 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
   }
 
   void _addDropRow(ExerciseRoutineItem item, List<_SetRowData> rows) {
-    final lastSaved = rows.lastWhere((r) => r.saved, orElse: () => rows.last);
+    final savedRows = rows.where((r) => r.saved).toList();
+    if (savedRows.isEmpty) return; // guard — botón debería estar deshabilitado
+    final lastSaved = savedRows.last;
     final nextNumber = rows.last.displayNumber + 1;
     setState(() {
       rows.add(_SetRowData(
@@ -415,17 +417,20 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
             )
           : DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: row.setType,
+                value: row.setType == 'drop' ? 'drop' : row.setType,
                 isDense: true,
-                items: const [
-                  DropdownMenuItem(value: 'normal', child: Text('Normal')),
-                  DropdownMenuItem(
+                items: [
+                  const DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                  const DropdownMenuItem(
                       value: 'pyramid', child: Text('Pirámide')),
-                  DropdownMenuItem(value: 'drop', child: Text('Drop')),
+                  if (row.setType == 'drop')
+                    const DropdownMenuItem(value: 'drop', child: Text('Drop')),
                 ],
-                onChanged: (v) {
-                  if (v != null) setState(() => row.setType = v);
-                },
+                onChanged: row.setType == 'drop'
+                    ? null
+                    : (v) {
+                        if (v != null) setState(() => row.setType = v);
+                      },
               ),
             ),
 
