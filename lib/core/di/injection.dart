@@ -82,4 +82,14 @@ Future<void> setupDependencies() async {
   if (profile == null) {
     await profileDao.createProfile();
   }
+
+  // Seed exercise config con valores por defecto si no existe
+  final exerciseConfig = await getIt<ExerciseRepository>().getExerciseConfig();
+  if (exerciseConfig == null) {
+    await getIt<ExerciseRepository>().updateExerciseConfig(
+      weeklyRoutineDaysGoal: 4,
+      weeklyCardioDaysGoal: 3,
+      cardioMinutesGoal: 30,
+    );
+  }
 }
