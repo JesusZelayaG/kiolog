@@ -18,6 +18,7 @@ class ExerciseState extends Equatable {
   final List<CardioLog> weeklyCardioLogs;
   final int routineDaysGoal;
   final int cardioDaysGoal;
+  final int cardioMinutesGoal;
   final List<WeeklyStat> weeklyStats;
   final String? error;
 
@@ -35,6 +36,7 @@ class ExerciseState extends Equatable {
     this.weeklyCardioLogs = const [],
     this.routineDaysGoal = 4,
     this.cardioDaysGoal = 3,
+    this.cardioMinutesGoal = 30,
     this.weeklyStats = const [],
     this.error,
   });
@@ -56,7 +58,7 @@ class ExerciseState extends Equatable {
     return null;
   }
 
-  int get completedRoutineSessionsThisWeek => recentSessions
+  int get completedRoutineSessionsToday => recentSessions
       .where((s) => s.routineId != null && s.gymLeftAt != null)
       .length;
 
@@ -74,6 +76,7 @@ class ExerciseState extends Equatable {
     List<CardioLog>? weeklyCardioLogs,
     int? routineDaysGoal,
     int? cardioDaysGoal,
+    int? cardioMinutesGoal,
     List<WeeklyStat>? weeklyStats,
     String? error,
   }) =>
@@ -93,6 +96,7 @@ class ExerciseState extends Equatable {
         weeklyCardioLogs: weeklyCardioLogs ?? this.weeklyCardioLogs,
         routineDaysGoal: routineDaysGoal ?? this.routineDaysGoal,
         cardioDaysGoal: cardioDaysGoal ?? this.cardioDaysGoal,
+        cardioMinutesGoal: cardioMinutesGoal ?? this.cardioMinutesGoal,
         weeklyStats: weeklyStats ?? this.weeklyStats,
         error: error,
       );
@@ -112,6 +116,7 @@ class ExerciseState extends Equatable {
         weeklyCardioLogs,
         routineDaysGoal,
         cardioDaysGoal,
+        cardioMinutesGoal,
         weeklyStats,
         error,
       ];

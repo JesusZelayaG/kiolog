@@ -73,6 +73,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         weeklyCardioLogs: weeklyCardio,
         routineDaysGoal: config?.weeklyRoutineDaysGoal ?? 4,
         cardioDaysGoal: config?.weeklyCardioDaysGoal ?? 3,
+        cardioMinutesGoal: config?.cardioMinutesGoal ?? 30,
         weeklyStats: weeklyStats,
       ));
     } catch (e) {
@@ -305,7 +306,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
       );
       final monday = _mondayOf(DateTime.now().toUtc());
       final cardioLogs = await _repository.getCardioLogsForWeek(monday);
-      emit(state.copyWith(weeklyCardioLogs: cardioLogs));
+      final weeklyStats = await _repository.getWeeklyStats(weeksBack: 8);
+      emit(state.copyWith(weeklyCardioLogs: cardioLogs, weeklyStats: weeklyStats));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
     }
@@ -330,14 +332,16 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
     try {
       final sessionId =
           await _repository.startSession(event.date, routineId: null);
-      await _repository.logSet(
-        sessionId: sessionId,
-        exerciseName: event.exerciseName,
-        setNumber: 1,
-        reps: event.reps,
-        weightKg: event.weightKg,
-        setType: 'normal',
-      );
+      for (var i = 1; i <= event.sets; i++) {
+        await _repository.logSet(
+          sessionId: sessionId,
+          exerciseName: event.exerciseName,
+          setNumber: i,
+          reps: event.reps,
+          weightKg: event.weightKg,
+          setType: 'normal',
+        );
+      }
       await _repository.endSession(sessionId);
       final sessions = await _repository.getSessionsForDate(event.date);
       emit(state.copyWith(recentSessions: sessions));
@@ -370,6 +374,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         routineDaysGoal:
             config?.weeklyRoutineDaysGoal ?? state.routineDaysGoal,
         cardioDaysGoal: config?.weeklyCardioDaysGoal ?? state.cardioDaysGoal,
+        cardioMinutesGoal:
+            config?.cardioMinutesGoal ?? state.cardioMinutesGoal,
       ));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
