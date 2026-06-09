@@ -282,13 +282,303 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
     }
   }
 
-  // ── Panel expandido (stub — Task 4 lo implementa) ─────────────────────────
+  // ── Acciones ───────────────────────────────────────────────────────────────
+
+  void _addRow(ExerciseRoutineItem item, String setType) {
+    final rows = _itemRows[item.id] ??= [];
+    final nextNumber = rows.isEmpty ? 1 : rows.last.displayNumber + 1;
+    setState(() {
+      rows.add(_SetRowData(
+        displayNumber: nextNumber,
+        setType: setType,
+        repsCtrl: TextEditingController(),
+        weightCtrl: TextEditingController(),
+      ));
+    });
+  }
+
+  void _addDropRow(ExerciseRoutineItem item, List<_SetRowData> rows) {
+    final lastSaved = rows.lastWhere((r) => r.saved, orElse: () => rows.last);
+    final nextNumber = rows.last.displayNumber + 1;
+    setState(() {
+      rows.add(_SetRowData(
+        displayNumber: nextNumber,
+        setType: 'drop',
+        parentSetNumber: lastSaved.displayNumber,
+        repsCtrl: TextEditingController(),
+        weightCtrl: TextEditingController(),
+      ));
+    });
+  }
+
+  void _saveRow(
+    BuildContext context,
+    ExerciseState state,
+    ExerciseRoutineItem item,
+    _SetRowData row,
+    List<_SetRowData> allRows,
+  ) {
+    final reps = int.tryParse(row.repsCtrl.text);
+    if (reps == null) return;
+    final weightKg = double.tryParse(row.weightCtrl.text);
+
+    int? dropOfSetId;
+    if (row.setType == 'drop') {
+      dropOfSetId = _parentSavedId(state, item, row, allRows);
+      if (dropOfSetId == null) return;
+    }
+
+    context.read<ExerciseBloc>().add(ExerciseSetLogged(
+          sessionId: widget.sessionId,
+          exerciseName: item.exerciseName,
+          setNumber: row.displayNumber,
+          reps: reps,
+          weightKg: weightKg,
+          setType: row.setType,
+          dropOfSetId: dropOfSetId,
+        ));
+  }
+
+  int? _parentSavedId(
+    ExerciseState state,
+    ExerciseRoutineItem item,
+    _SetRowData row,
+    List<_SetRowData> allRows,
+  ) {
+    final parentNum = row.parentSetNumber;
+    if (parentNum == null) return null;
+
+    final parentRow = allRows.cast<_SetRowData?>().firstWhere(
+          (r) => r?.displayNumber == parentNum,
+          orElse: () => null,
+        );
+    if (parentRow?.savedSetLogId != null) return parentRow!.savedSetLogId;
+
+    final saved = state.sessionSets.cast<ExerciseSetLog?>().firstWhere(
+          (s) =>
+              s?.exerciseName == item.exerciseName &&
+              s?.setNumber == parentNum,
+          orElse: () => null,
+        );
+    return saved?.id;
+  }
+
+  void _markItemCompleted(BuildContext context, ExerciseRoutineItem item) {
+    context
+        .read<ExerciseBloc>()
+        .add(ExerciseItemCompleted(routineItemId: item.id));
+    setState(() => _expandedItemId = null);
+  }
+
+  // ── Fila de tabla ──────────────────────────────────────────────────────────
+
+  TableRow _buildSetRow(
+    BuildContext context,
+    ExerciseState state,
+    ExerciseRoutineItem item,
+    _SetRowData row,
+    List<_SetRowData> allRows,
+  ) {
+    final theme = Theme.of(context);
+    final isReadonly = row.saved;
+    final repsOk = int.tryParse(row.repsCtrl.text) != null;
+    final canSave = !row.saved &&
+        repsOk &&
+        (row.setType != 'drop' ||
+            _parentSavedId(state, item, row, allRows) != null);
+
+    final typeLabel = switch (row.setType) {
+      'pyramid' => 'Pirámide',
+      'drop' => 'Drop',
+      _ => 'Normal',
+    };
+
+    return TableRow(children: [
+      // # de serie
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          '${row.displayNumber}',
+          textAlign: TextAlign.center,
+          style: row.setType == 'drop'
+              ? theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.secondary)
+              : null,
+        ),
+      ),
+
+      // Tipo
+      isReadonly
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(typeLabel, style: theme.textTheme.bodySmall),
+            )
+          : DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: row.setType,
+                isDense: true,
+                items: const [
+                  DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                  DropdownMenuItem(
+                      value: 'pyramid', child: Text('Pirámide')),
+                  DropdownMenuItem(value: 'drop', child: Text('Drop')),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => row.setType = v);
+                },
+              ),
+            ),
+
+      // Reps
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: TextField(
+          controller: row.repsCtrl,
+          keyboardType: TextInputType.number,
+          readOnly: isReadonly,
+          decoration: const InputDecoration(
+            isDense: true,
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            border: OutlineInputBorder(),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+      ),
+
+      // Peso
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: TextField(
+          controller: row.weightCtrl,
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+          readOnly: isReadonly,
+          decoration: const InputDecoration(
+            isDense: true,
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            border: OutlineInputBorder(),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+      ),
+
+      // Guardar / check
+      isReadonly
+          ? const Center(
+              child:
+                  Icon(Icons.check_circle, color: Colors.green, size: 20),
+            )
+          : TextButton(
+              onPressed: canSave
+                  ? () => _saveRow(context, state, item, row, allRows)
+                  : null,
+              child: const Text('Guardar'),
+            ),
+    ]);
+  }
+
+  // ── Panel expandido ────────────────────────────────────────────────────────
+
   Widget _buildExpandedPanel(
     BuildContext context,
     ExerciseState state,
     ExerciseRoutineItem item,
   ) {
-    return const SizedBox.shrink();
+    final rows = _itemRows[item.id] ?? [];
+    final historical = state.sessionHistorical[item.exerciseName] ?? [];
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Referencia histórica ──────────────────────────────────────
+          if (historical.isNotEmpty) ...[
+            const Divider(),
+            Text('Última sesión', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 4),
+            ...historical.map(
+              (s) => Text(
+                '  Serie ${s.setNumber}: ${s.reps} reps'
+                '${s.weightKg != null ? ' @ ${s.weightKg}kg' : ''}',
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          ] else ...[
+            const Divider(),
+            Text(
+              'Primera vez con este ejercicio',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+
+          // ── Tabla de series ──────────────────────────────────────────
+          const SizedBox(height: 8),
+          if (rows.isEmpty)
+            Text('Sin series configuradas', style: theme.textTheme.bodySmall)
+          else
+            Table(
+              columnWidths: const {
+                0: FixedColumnWidth(28),
+                1: FixedColumnWidth(90),
+                2: FlexColumnWidth(),
+                3: FlexColumnWidth(),
+                4: FixedColumnWidth(72),
+              },
+              children: [
+                TableRow(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                          color: theme.colorScheme.outlineVariant),
+                    ),
+                  ),
+                  children: const [
+                    _TableHeader('#'),
+                    _TableHeader('Tipo'),
+                    _TableHeader('Reps'),
+                    _TableHeader('Peso kg'),
+                    _TableHeader(''),
+                  ],
+                ),
+                ...rows.map(
+                    (row) => _buildSetRow(context, state, item, row, rows)),
+              ],
+            ),
+
+          // ── Botones de acción ─────────────────────────────────────────
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _addRow(item, 'normal'),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('+ Serie'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: rows.any((r) => r.saved)
+                    ? () => _addDropRow(item, rows)
+                    : null,
+                icon: const Icon(Icons.arrow_downward, size: 16),
+                label: const Text('+ Drop'),
+              ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: () => _markItemCompleted(context, item),
+                icon: const Icon(Icons.flag, size: 16),
+                label: const Text('Listo'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -312,4 +602,21 @@ class _SetRowData {
     this.saved = false,
     this.savedSetLogId,
   });
+}
+
+// ── Widgets auxiliares ──────────────────────────────────────────────────────
+
+class _TableHeader extends StatelessWidget {
+  final String text;
+  const _TableHeader(this.text);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.labelSmall,
+          textAlign: TextAlign.center,
+        ),
+      );
 }
