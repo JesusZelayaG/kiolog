@@ -156,6 +156,22 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  Future<List<ExerciseSessionLog>> getIndependentSessionsForWeek(
+    DateTime weekStart,
+  ) {
+    final start =
+        DateTime.utc(weekStart.year, weekStart.month, weekStart.day);
+    final end = start.add(const Duration(days: 7));
+    return (select(exerciseSessionLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end) &
+              t.routineId.isNull() &
+              t.gymLeftAt.isNotNull())
+          ..orderBy([(t) => OrderingTerm.desc(t.gymArrivedAt)]))
+        .get();
+  }
+
   // ── Set Logs ──────────────────────────────────────────────────────────────
 
   Future<int> insertExerciseSetLog(ExerciseSetLogsCompanion setLog) =>
