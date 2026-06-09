@@ -6,6 +6,7 @@ import '../../features/exercise/presentation/pages/exercise_page.dart';
 import '../../features/achievements/presentation/pages/achievements_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
 import '../../features/progress/presentation/pages/progress_page.dart';
+import '../../features/reports/presentation/pages/report_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/sleep/presentation/pages/sleep_page.dart';
 import '../../features/water/presentation/pages/water_page.dart';
@@ -54,6 +55,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/achievements',
       builder: (context, state) => const AchievementsPage(),
+    ),
+    GoRoute(
+      path: '/report',
+      builder: (context, state) => const ReportPage(),
     ),
   ],
 );
