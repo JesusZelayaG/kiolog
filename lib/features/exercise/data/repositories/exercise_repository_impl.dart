@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:kiolog/core/dao/exercise_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import '../../domain/models/independent_exercise_log.dart';
 import '../../domain/models/weekly_stat.dart';
 import '../../domain/repositories/exercise_repository.dart';
 
@@ -171,6 +172,28 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
   Future<List<ExerciseSessionLog>> getCompletedRoutineSessionsForWeek(
           DateTime weekStart) =>
       _dao.getCompletedRoutineSessionsForWeek(_utcDate(weekStart));
+
+  @override
+  Future<List<IndependentExerciseLog>> getIndependentSessionsForWeek(
+    DateTime weekStart,
+  ) async {
+    final sessions =
+        await _dao.getIndependentSessionsForWeek(_utcDate(weekStart));
+    final result = <IndependentExerciseLog>[];
+    for (final s in sessions) {
+      final sets = await _dao.getSessionSets(s.id);
+      if (sets.isEmpty) continue;
+      result.add(IndependentExerciseLog(
+        sessionId: s.id,
+        date: s.date,
+        exerciseName: sets.first.exerciseName,
+        sets: sets.length,
+        reps: sets.first.reps,
+        weightKg: sets.first.weightKg,
+      ));
+    }
+    return result;
+  }
 
   @override
   Future<void> logSet({

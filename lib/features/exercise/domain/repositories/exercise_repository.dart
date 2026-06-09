@@ -1,4 +1,5 @@
 import 'package:kiolog/core/database/app_database.dart';
+import '../models/independent_exercise_log.dart';
 import '../models/weekly_stat.dart';
 
 abstract class ExerciseRepository {
@@ -59,6 +60,9 @@ abstract class ExerciseRepository {
   Future<ExerciseSessionLog?> getSession(int sessionId);
   Future<List<ExerciseSessionLog>> getSessionsForDate(DateTime date);
   Future<List<ExerciseSessionLog>> getCompletedRoutineSessionsForWeek(DateTime weekStart);
+  Future<List<IndependentExerciseLog>> getIndependentSessionsForWeek(
+    DateTime weekStart,
+  );
 
   // ── Set Logs ───────────────────────────────────────────────────────────
   Future<void> logSet({
