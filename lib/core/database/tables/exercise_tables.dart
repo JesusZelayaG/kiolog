@@ -39,9 +39,14 @@ class ExerciseRoutineSetDefs extends Table {
       integer().references(ExerciseRoutineItems, #id)();
   IntColumn get setNumber => integer()();
   // null = serie normal; valor = número de serie padre (para drops)
-  IntColumn get dropOfSet => integer().nullable()();
+  IntColumn get dropOfSetNumber => integer().nullable()();
   IntColumn get reps => integer()();
   RealColumn get weightKg => real().nullable()();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {routineItemId, setNumber}
+      ];
 }
 
 class DailyExerciseLogs extends Table {
@@ -75,7 +80,8 @@ class ExerciseSetLogs extends Table {
   TextColumn get setType =>
       text().withDefault(const Constant('normal'))();
   // id del ExerciseSetLog padre si es drop set
-  IntColumn get dropOfSetId => integer().nullable()();
+  IntColumn get dropOfSetId =>
+      integer().nullable().references(ExerciseSetLogs, #id)();
 }
 
 /// Registro de sesiones de cardio independientes (no parte de rutina).

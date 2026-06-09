@@ -93,13 +93,17 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(exerciseSetLogs);
         }
         if (from < 4) {
-          await m.addColumn(
-              exerciseRoutineItems, exerciseRoutineItems.setType);
-          await m.addColumn(
-              exerciseRoutineItems, exerciseRoutineItems.orderIndex);
-          await m.addColumn(exerciseSetLogs, exerciseSetLogs.setType);
-          await m.addColumn(
-              exerciseSetLogs, exerciseSetLogs.dropOfSetId);
+          if (from >= 3) {
+            // Only add columns if tables already exist from v3 (without new columns)
+            await m.addColumn(
+                exerciseRoutineItems, exerciseRoutineItems.setType);
+            await m.addColumn(
+                exerciseRoutineItems, exerciseRoutineItems.orderIndex);
+            await m.addColumn(exerciseSetLogs, exerciseSetLogs.setType);
+            await m.addColumn(
+                exerciseSetLogs, exerciseSetLogs.dropOfSetId);
+          }
+          // These are brand-new tables — always create them
           await m.createTable(exerciseRoutineSetDefs);
           await m.createTable(cardioLogs);
           await m.createTable(exerciseConfig);
