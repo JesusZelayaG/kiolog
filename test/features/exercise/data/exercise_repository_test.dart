@@ -243,6 +243,43 @@ void main() {
         expect(stats.every((s) => s.routineDaysDone >= 0), true);
         expect(stats.every((s) => s.cardioDaysDone >= 0), true);
       });
+
+      test('routineDaysDone counts distinct days, not sessions', () async {
+        final planId = await repository.createPlan('Plan');
+        final routineId = await repository.addRoutine(
+          planId: planId,
+          dayNumber: 1,
+          routineName: 'Pecho',
+        );
+        final now = DateTime.now().toUtc();
+        final today = DateTime.utc(now.year, now.month, now.day);
+        final yesterday = today.subtract(const Duration(days: 1));
+        // Dos sesiones el mismo día — debe contar como 1 día
+        final s1 = await repository.startSession(today, routineId: routineId);
+        await repository.endSession(s1);
+        final s2 = await repository.startSession(today, routineId: routineId);
+        await repository.endSession(s2);
+        // Una sesión un día distinto (dentro de la misma semana)
+        final s3 =
+            await repository.startSession(yesterday, routineId: routineId);
+        await repository.endSession(s3);
+
+        final stats = await repository.getWeeklyStats(weeksBack: 1);
+        expect(stats.last.routineDaysDone, 2); // hoy + ayer = 2 días distintos
+      });
+
+      test('cardioDaysDone counts distinct days, not sessions', () async {
+        final now = DateTime.now().toUtc();
+        final today = DateTime.utc(now.year, now.month, now.day);
+        // Dos sesiones de cardio el mismo día
+        await repository.logCardio(
+            date: today, cardioType: 'treadmill', durationMinutes: 20);
+        await repository.logCardio(
+            date: today, cardioType: 'elliptical', durationMinutes: 15);
+
+        final stats = await repository.getWeeklyStats(weeksBack: 1);
+        expect(stats.last.cardioDaysDone, 1); // mismo día = 1
+      });
     });
   });
 }

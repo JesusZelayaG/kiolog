@@ -273,8 +273,14 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
       final cardioLogs = await _dao.getCardioLogsForWeek(weekStart);
       stats.add(WeeklyStat(
         weekStart: weekStart,
-        routineDaysDone: routineSessions.length,
-        cardioDaysDone: cardioLogs.length,
+        routineDaysDone: routineSessions
+            .map((s) => DateTime.utc(s.date.year, s.date.month, s.date.day))
+            .toSet()
+            .length,
+        cardioDaysDone: cardioLogs
+            .map((l) => DateTime.utc(l.date.year, l.date.month, l.date.day))
+            .toSet()
+            .length,
       ));
     }
     return stats;
