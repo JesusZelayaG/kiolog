@@ -8,6 +8,7 @@ import '../bloc/exercise_bloc.dart';
 import '../bloc/exercise_event.dart';
 import '../bloc/exercise_state.dart';
 import 'exercise_session_page.dart';
+import 'exercise_progress_page.dart';
 
 class ExercisePage extends StatelessWidget {
   const ExercisePage({super.key});
@@ -38,6 +39,20 @@ class _ExerciseViewState extends State<_ExerciseView> {
       appBar: AppBar(
         title: const Text('Ejercicio'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () {
+              final bloc = context.read<ExerciseBloc>();
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => BlocProvider.value(
+                    value: bloc,
+                    child: const ExerciseProgressPage(),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             onPressed: () => _showPlansDialog(context),
