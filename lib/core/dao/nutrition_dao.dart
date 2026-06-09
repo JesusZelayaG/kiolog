@@ -57,6 +57,17 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
   Future<int> insertDailyMealLog(DailyMealLogsCompanion log) =>
       into(dailyMealLogs).insert(log);
 
+  Future<void> deleteDailyMealLog(DateTime date, String mealType) {
+    final start = DateTime.utc(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return (delete(dailyMealLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end) &
+              t.mealType.equals(mealType)))
+        .go();
+  }
+
   Future<List<DailyMealLog>> getDailyMealLogs(DateTime date) {
     // Normalize to UTC midnight to ensure consistent day boundaries.
     // Drift stores DateTimes as milliseconds since epoch (UTC).

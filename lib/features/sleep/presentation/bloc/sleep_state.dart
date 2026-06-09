@@ -33,7 +33,7 @@ class SleepState extends Equatable {
   }) =>
       SleepState(
         status: status ?? this.status,
-        todayLog: todayLog,
+        todayLog: todayLog ?? this.todayLog,
         weeklyLogs: weeklyLogs ?? this.weeklyLogs,
         error: error,
       );

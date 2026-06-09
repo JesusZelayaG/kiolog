@@ -255,6 +255,20 @@ class _MealSection extends StatelessWidget {
                 icon: const Icon(Icons.edit_note),
                 label: const Text('Registrar fuera de plan'),
               ),
+            ] else ...[
+              const Divider(height: 24),
+              TextButton.icon(
+                onPressed: () {
+                  context.read<NutritionBloc>().add(
+                        NutritionMealLogRemoved(
+                          date: DateTime.now(),
+                          mealType: mealType,
+                        ),
+                      );
+                },
+                icon: const Icon(Icons.undo),
+                label: const Text('Cambiar selección'),
+              ),
             ],
           ],
         ),

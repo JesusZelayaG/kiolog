@@ -36,7 +36,7 @@ class NutritionState extends Equatable {
   }) =>
       NutritionState(
         status: status ?? this.status,
-        activePlan: activePlan,
+        activePlan: activePlan ?? this.activePlan,
         allPlans: allPlans ?? this.allPlans,
         planOptions: planOptions ?? this.planOptions,
         dailyLogs: dailyLogs ?? this.dailyLogs,

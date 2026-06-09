@@ -44,9 +44,10 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         sets = await _repository.getSessionSets(activeSession.id);
       }
 
-      emit(state.copyWith(
+      emit(ExerciseState(
         status: ExerciseStatus.success,
         activePlan: plan,
+        allPlans: state.allPlans,
         dailyLog: dailyLog,
         todayRoutine: routine,
         routineItems: items,

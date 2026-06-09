@@ -26,4 +26,8 @@ abstract class NutritionRepository {
     required String description,
     String? photoPath,
   });
+  Future<void> removeMealLog({
+    required DateTime date,
+    required String mealType,
+  });
 }

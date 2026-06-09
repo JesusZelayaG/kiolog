@@ -12,6 +12,7 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
     on<NutritionPlanLoaded>(_onPlanLoaded);
     on<NutritionMealLogged>(_onMealLogged);
     on<NutritionOffPlanMealLogged>(_onOffPlanMealLogged);
+    on<NutritionMealLogRemoved>(_onMealLogRemoved);
     on<NutritionPlanActivated>(_onPlanActivated);
     on<NutritionPlanCreated>(_onPlanCreated);
     on<NutritionOptionAdded>(_onOptionAdded);
@@ -65,6 +66,23 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
         date: event.date,
         mealType: event.mealType,
         planOptionId: event.planOptionId,
+      );
+      final logs = await _repository.getDailyLogs(event.date);
+      emit(state.copyWith(dailyLogs: logs));
+    } catch (e) {
+      emit(state.copyWith(status: NutritionStatus.failure, error: e.toString()));
+    }
+  }
+
+  Future<void> _onMealLogRemoved(
+    NutritionMealLogRemoved event,
+    Emitter<NutritionState> emit,
+  ) async {
+    if (state.status != NutritionStatus.success) return;
+    try {
+      await _repository.removeMealLog(
+        date: event.date,
+        mealType: event.mealType,
       );
       final logs = await _repository.getDailyLogs(event.date);
       emit(state.copyWith(dailyLogs: logs));

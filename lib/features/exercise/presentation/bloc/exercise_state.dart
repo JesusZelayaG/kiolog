@@ -45,12 +45,12 @@ class ExerciseState extends Equatable {
   }) =>
       ExerciseState(
         status: status ?? this.status,
-        activePlan: activePlan,
+        activePlan: activePlan ?? this.activePlan,
         allPlans: allPlans ?? this.allPlans,
-        todayRoutine: todayRoutine,
+        todayRoutine: todayRoutine ?? this.todayRoutine,
         routineItems: routineItems ?? this.routineItems,
-        dailyLog: dailyLog,
-        activeSession: activeSession,
+        dailyLog: dailyLog ?? this.dailyLog,
+        activeSession: activeSession ?? this.activeSession,
         sessionSets: sessionSets ?? this.sessionSets,
         recentSessions: recentSessions ?? this.recentSessions,
         error: error,

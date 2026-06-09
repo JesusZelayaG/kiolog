@@ -50,6 +50,19 @@ class NutritionOffPlanMealLogged extends NutritionEvent {
   List<Object?> get props => [date, mealType, description];
 }
 
+class NutritionMealLogRemoved extends NutritionEvent {
+  final DateTime date;
+  final String mealType;
+
+  const NutritionMealLogRemoved({
+    required this.date,
+    required this.mealType,
+  });
+
+  @override
+  List<Object?> get props => [date, mealType];
+}
+
 class NutritionPlanActivated extends NutritionEvent {
   final int planId;
 

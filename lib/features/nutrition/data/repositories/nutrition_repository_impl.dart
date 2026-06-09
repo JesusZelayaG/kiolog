@@ -81,4 +81,11 @@ class NutritionRepositoryImpl implements NutritionRepository {
           photoPath: Value(photoPath),
         ),
       );
+
+  @override
+  Future<void> removeMealLog({
+    required DateTime date,
+    required String mealType,
+  }) =>
+      _nutritionDao.deleteDailyMealLog(_dateOnly(date), mealType);
 }
