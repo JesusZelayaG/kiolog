@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/exercise_bloc.dart';
 import '../bloc/exercise_event.dart';
-import '../bloc/exercise_state.dart';
 
 class ExerciseSessionPage extends StatefulWidget {
   final int sessionId;
@@ -21,11 +20,9 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ExerciseBloc, ExerciseState>(
-      builder: (context, state) => Scaffold(
-        appBar: AppBar(title: const Text('Sesión activa')),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Sesión activa')),
+      body: const Center(child: CircularProgressIndicator()),
     );
   }
 }

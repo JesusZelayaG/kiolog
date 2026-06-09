@@ -37,12 +37,15 @@ class _ExerciseView extends StatelessWidget {
       ),
       body: BlocConsumer<ExerciseBloc, ExerciseState>(
         listenWhen: (prev, curr) =>
-            !prev.hasActiveSession && curr.hasActiveSession,
+            prev.status == ExerciseStatus.success &&
+            !prev.hasActiveSession &&
+            curr.hasActiveSession,
         listener: (context, state) {
+          final bloc = context.read<ExerciseBloc>();
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => BlocProvider.value(
-                value: context.read<ExerciseBloc>(),
+                value: bloc,
                 child: ExerciseSessionPage(
                   sessionId: state.activeSession!.id,
                 ),
@@ -243,10 +246,11 @@ class _ExerciseView extends StatelessWidget {
         subtitle: const Text('Toca para reanudar'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
+          final bloc = context.read<ExerciseBloc>();
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => BlocProvider.value(
-                value: context.read<ExerciseBloc>(),
+                value: bloc,
                 child: ExerciseSessionPage(sessionId: session.id),
               ),
             ),
