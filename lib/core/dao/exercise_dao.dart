@@ -1,4 +1,3 @@
-// lib/core/dao/exercise_dao.dart
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../database/tables/exercise_tables.dart';
@@ -9,13 +8,18 @@ part 'exercise_dao.g.dart';
   ExercisePlans,
   ExerciseRoutines,
   ExerciseRoutineItems,
+  ExerciseRoutineSetDefs,
   DailyExerciseLogs,
   ExerciseSessionLogs,
   ExerciseSetLogs,
+  CardioLogs,
+  ExerciseConfig,
 ])
 class ExerciseDao extends DatabaseAccessor<AppDatabase>
     with _$ExerciseDaoMixin {
   ExerciseDao(super.db);
+
+  // ── Plans ────────────────────────────────────────────────────────────────
 
   Future<int> insertExercisePlan(ExercisePlansCompanion plan) =>
       into(exercisePlans).insert(plan.copyWith(
@@ -40,13 +44,14 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
             ..where((t) => t.id.equals(planId)))
           .getSingleOrNull();
       if (plan == null) throw ArgumentError('Exercise plan $planId not found');
-
       await (update(exercisePlans))
           .write(const ExercisePlansCompanion(isActive: Value(false)));
       await (update(exercisePlans)..where((t) => t.id.equals(planId)))
           .write(const ExercisePlansCompanion(isActive: Value(true)));
     });
   }
+
+  // ── Routines ─────────────────────────────────────────────────────────────
 
   Future<int> insertExerciseRoutine(ExerciseRoutinesCompanion routine) =>
       into(exerciseRoutines).insert(routine);
@@ -61,14 +66,55 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
       (select(exerciseRoutines)..where((t) => t.id.equals(routineId)))
           .getSingleOrNull();
 
-  Future<int> insertExerciseRoutineItem(
-          ExerciseRoutineItemsCompanion item) =>
+  // ── Routine Items ─────────────────────────────────────────────────────────
+
+  Future<int> insertExerciseRoutineItem(ExerciseRoutineItemsCompanion item) =>
       into(exerciseRoutineItems).insert(item);
 
   Future<List<ExerciseRoutineItem>> getRoutineItems(int routineId) =>
       (select(exerciseRoutineItems)
             ..where((t) => t.routineId.equals(routineId)))
           .get();
+
+  Future<List<ExerciseRoutineItem>> getRoutineItemsOrdered(int routineId) =>
+      (select(exerciseRoutineItems)
+            ..where((t) => t.routineId.equals(routineId))
+            ..orderBy([(t) => OrderingTerm.asc(t.orderIndex)]))
+          .get();
+
+  Future<void> updateRoutineItem(
+    int itemId,
+    ExerciseRoutineItemsCompanion data,
+  ) =>
+      (update(exerciseRoutineItems)..where((t) => t.id.equals(itemId)))
+          .write(data);
+
+  Future<void> deleteRoutineItem(int itemId) =>
+      (delete(exerciseRoutineItems)..where((t) => t.id.equals(itemId))).go();
+
+  // ── Routine Set Defs ──────────────────────────────────────────────────────
+
+  Future<List<ExerciseRoutineSetDef>> getRoutineSetDefs(int routineItemId) =>
+      (select(exerciseRoutineSetDefs)
+            ..where((t) => t.routineItemId.equals(routineItemId))
+            ..orderBy([(t) => OrderingTerm.asc(t.setNumber)]))
+          .get();
+
+  Future<void> replaceRoutineSetDefs(
+    int routineItemId,
+    List<ExerciseRoutineSetDefsCompanion> defs,
+  ) async {
+    await db.transaction(() async {
+      await (delete(exerciseRoutineSetDefs)
+            ..where((t) => t.routineItemId.equals(routineItemId)))
+          .go();
+      for (final def in defs) {
+        await into(exerciseRoutineSetDefs).insert(def);
+      }
+    });
+  }
+
+  // ── Sessions ──────────────────────────────────────────────────────────────
 
   Future<int> insertExerciseSession(ExerciseSessionLogsCompanion session) =>
       into(exerciseSessionLogs).insert(session);
@@ -81,14 +127,8 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
       (update(exerciseSessionLogs)..where((t) => t.id.equals(sessionId)))
           .write(ExerciseSessionLogsCompanion(gymLeftAt: Value(endTime)));
 
-  Future<int> insertExerciseSetLog(ExerciseSetLogsCompanion setLog) =>
-      into(exerciseSetLogs).insert(setLog);
-
-  Future<List<ExerciseSetLog>> getSessionSets(int sessionId) =>
-      (select(exerciseSetLogs)
-            ..where((t) => t.sessionId.equals(sessionId))
-            ..orderBy([(t) => OrderingTerm.asc(t.setNumber)]))
-          .get();
+  Future<void> deleteSession(int sessionId) =>
+      (delete(exerciseSessionLogs)..where((t) => t.id.equals(sessionId))).go();
 
   Future<List<ExerciseSessionLog>> getSessionsForDate(DateTime date) {
     final start = DateTime.utc(date.year, date.month, date.day);
@@ -101,6 +141,44 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  Future<List<ExerciseSessionLog>> getCompletedRoutineSessionsForWeek(
+    DateTime weekStart,
+  ) {
+    final end = weekStart.add(const Duration(days: 7));
+    return (select(exerciseSessionLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(weekStart) &
+              t.date.isSmallerThanValue(end) &
+              t.routineId.isNotNull() &
+              t.gymLeftAt.isNotNull()))
+        .get();
+  }
+
+  // ── Set Logs ──────────────────────────────────────────────────────────────
+
+  Future<int> insertExerciseSetLog(ExerciseSetLogsCompanion setLog) =>
+      into(exerciseSetLogs).insert(setLog);
+
+  Future<List<ExerciseSetLog>> getSessionSets(int sessionId) =>
+      (select(exerciseSetLogs)
+            ..where((t) => t.sessionId.equals(sessionId))
+            ..orderBy([(t) => OrderingTerm.asc(t.setNumber)]))
+          .get();
+
+  Future<List<ExerciseSetLog>> getLastSessionSetsForExercise(
+    String exerciseName,
+  ) async {
+    final allSets = await (select(exerciseSetLogs)
+          ..where((t) => t.exerciseName.equals(exerciseName))
+          ..orderBy([(t) => OrderingTerm.desc(t.id)]))
+        .get();
+    if (allSets.isEmpty) return [];
+    final lastSessionId = allSets.first.sessionId;
+    return allSets.where((s) => s.sessionId == lastSessionId).toList();
+  }
+
+  // ── Daily Logs ────────────────────────────────────────────────────────────
+
   Future<int> insertDailyExerciseLog(DailyExerciseLogsCompanion log) =>
       into(dailyExerciseLogs).insert(log);
 
@@ -112,5 +190,44 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
               t.date.isBiggerOrEqualValue(start) &
               t.date.isSmallerThanValue(end)))
         .getSingleOrNull();
+  }
+
+  // ── Cardio Logs ───────────────────────────────────────────────────────────
+
+  Future<int> insertCardioLog(CardioLogsCompanion log) =>
+      into(cardioLogs).insert(log.copyWith(
+        date: Value(log.date.value.toUtc()),
+      ));
+
+  Future<void> updateCardioLog(int id, CardioLogsCompanion data) =>
+      (update(cardioLogs)..where((t) => t.id.equals(id))).write(data);
+
+  Future<void> deleteCardioLog(int id) =>
+      (delete(cardioLogs)..where((t) => t.id.equals(id))).go();
+
+  Future<List<CardioLog>> getCardioLogsForWeek(DateTime weekStart) {
+    final start = DateTime.utc(weekStart.year, weekStart.month, weekStart.day);
+    final end = start.add(const Duration(days: 7));
+    return (select(cardioLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+        .get();
+  }
+
+  // ── Exercise Config ───────────────────────────────────────────────────────
+
+  Future<ExerciseConfigData?> getExerciseConfig() =>
+      (select(exerciseConfig)).getSingleOrNull();
+
+  Future<void> upsertExerciseConfig(ExerciseConfigCompanion config) async {
+    final existing = await getExerciseConfig();
+    if (existing == null) {
+      await into(exerciseConfig).insert(config.copyWith(id: const Value.absent()));
+    } else {
+      await (update(exerciseConfig)..where((t) => t.id.equals(existing.id)))
+          .write(config);
+    }
   }
 }
