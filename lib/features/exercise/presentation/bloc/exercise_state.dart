@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import 'package:kiolog/features/exercise/domain/models/weekly_stat.dart';
 
 enum ExerciseStatus { initial, loading, success, failure }
 
@@ -13,6 +14,11 @@ class ExerciseState extends Equatable {
   final ExerciseSessionLog? activeSession;
   final List<ExerciseSetLog> sessionSets;
   final List<ExerciseSessionLog> recentSessions;
+  final Set<int> completedRoutineItemIds;
+  final List<CardioLog> weeklyCardioLogs;
+  final int routineDaysGoal;
+  final int cardioDaysGoal;
+  final List<WeeklyStat> weeklyStats;
   final String? error;
 
   const ExerciseState({
@@ -25,13 +31,17 @@ class ExerciseState extends Equatable {
     this.activeSession,
     this.sessionSets = const [],
     this.recentSessions = const [],
+    this.completedRoutineItemIds = const {},
+    this.weeklyCardioLogs = const [],
+    this.routineDaysGoal = 4,
+    this.cardioDaysGoal = 3,
+    this.weeklyStats = const [],
     this.error,
   });
 
   bool get hasActiveSession =>
       activeSession != null && activeSession!.gymLeftAt == null;
 
-  /// Ejercicios de la rutina que se está entrenando en la sesión activa.
   List<ExerciseRoutineItem> get activeRoutineItems {
     final routineId = activeSession?.routineId;
     if (routineId == null) return const [];
@@ -46,6 +56,10 @@ class ExerciseState extends Equatable {
     return null;
   }
 
+  int get completedRoutineSessionsThisWeek => recentSessions
+      .where((s) => s.routineId != null && s.gymLeftAt != null)
+      .length;
+
   ExerciseState copyWith({
     ExerciseStatus? status,
     ExercisePlan? activePlan,
@@ -56,6 +70,11 @@ class ExerciseState extends Equatable {
     ExerciseSessionLog? activeSession,
     List<ExerciseSetLog>? sessionSets,
     List<ExerciseSessionLog>? recentSessions,
+    Set<int>? completedRoutineItemIds,
+    List<CardioLog>? weeklyCardioLogs,
+    int? routineDaysGoal,
+    int? cardioDaysGoal,
+    List<WeeklyStat>? weeklyStats,
     String? error,
   }) =>
       ExerciseState(
@@ -69,6 +88,12 @@ class ExerciseState extends Equatable {
         activeSession: activeSession ?? this.activeSession,
         sessionSets: sessionSets ?? this.sessionSets,
         recentSessions: recentSessions ?? this.recentSessions,
+        completedRoutineItemIds:
+            completedRoutineItemIds ?? this.completedRoutineItemIds,
+        weeklyCardioLogs: weeklyCardioLogs ?? this.weeklyCardioLogs,
+        routineDaysGoal: routineDaysGoal ?? this.routineDaysGoal,
+        cardioDaysGoal: cardioDaysGoal ?? this.cardioDaysGoal,
+        weeklyStats: weeklyStats ?? this.weeklyStats,
         error: error,
       );
 
@@ -83,6 +108,11 @@ class ExerciseState extends Equatable {
         activeSession,
         sessionSets,
         recentSessions,
+        completedRoutineItemIds,
+        weeklyCardioLogs,
+        routineDaysGoal,
+        cardioDaysGoal,
+        weeklyStats,
         error,
       ];
 }

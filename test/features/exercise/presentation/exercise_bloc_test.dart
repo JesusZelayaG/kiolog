@@ -29,8 +29,11 @@ void main() {
         when(() => repository.getActivePlan()).thenAnswer((_) async => plan);
         when(() => repository.getDailyLog(any())).thenAnswer((_) async => null);
         when(() => repository.getRoutinesForPlan(any())).thenAnswer((_) async => [routine]);
-        when(() => repository.getRoutineItems(any())).thenAnswer((_) async => items);
+        when(() => repository.getRoutineItemsOrdered(any())).thenAnswer((_) async => items);
         when(() => repository.getSessionsForDate(any())).thenAnswer((_) async => []);
+        when(() => repository.getExerciseConfig()).thenAnswer((_) async => null);
+        when(() => repository.getCardioLogsForWeek(any())).thenAnswer((_) async => []);
+        when(() => repository.getWeeklyStats(weeksBack: any(named: 'weeksBack'))).thenAnswer((_) async => []);
         return ExerciseBloc(repository);
       },
       act: (bloc) => bloc.add(ExerciseLoaded(date: DateTime(2026, 6, 8))),
@@ -90,6 +93,7 @@ void main() {
         );
         when(() => repository.endSession(any())).thenAnswer((_) async {});
         when(() => repository.getSession(any())).thenAnswer((_) async => session);
+        when(() => repository.getWeeklyStats(weeksBack: any(named: 'weeksBack'))).thenAnswer((_) async => []);
         return ExerciseBloc(repository)
           ..emit(ExerciseState(
             status: ExerciseStatus.success,
@@ -112,6 +116,55 @@ void main() {
           ),
         ),
       ],
+    );
+
+    blocTest<ExerciseBloc, ExerciseState>(
+      'ExerciseItemCompleted agrega id al set completedRoutineItemIds',
+      build: () => ExerciseBloc(repository),
+      seed: () => const ExerciseState(
+        status: ExerciseStatus.success,
+        completedRoutineItemIds: {1},
+      ),
+      act: (bloc) => bloc.add(const ExerciseItemCompleted(routineItemId: 2)),
+      expect: () => [
+        isA<ExerciseState>().having(
+          (s) => s.completedRoutineItemIds,
+          'completedIds',
+          containsAll([1, 2]),
+        ),
+      ],
+    );
+
+    blocTest<ExerciseBloc, ExerciseState>(
+      'CardioLogged llama repository.logCardio y recarga logs',
+      build: () {
+        when(() => repository.logCardio(
+              date: any(named: 'date'),
+              cardioType: any(named: 'cardioType'),
+              durationMinutes: any(named: 'durationMinutes'),
+              notes: any(named: 'notes'),
+            )).thenAnswer((_) async => 1);
+        when(() => repository.getCardioLogsForWeek(any()))
+            .thenAnswer((_) async => []);
+        when(() => repository.getWeeklyStats(
+                weeksBack: any(named: 'weeksBack')))
+            .thenAnswer((_) async => []);
+        return ExerciseBloc(repository);
+      },
+      seed: () => const ExerciseState(status: ExerciseStatus.success),
+      act: (bloc) => bloc.add(CardioLogged(
+        date: DateTime(2026, 6, 8),
+        cardioType: 'treadmill',
+        durationMinutes: 30,
+      )),
+      verify: (_) {
+        verify(() => repository.logCardio(
+              date: any(named: 'date'),
+              cardioType: 'treadmill',
+              durationMinutes: 30,
+              notes: null,
+            )).called(1);
+      },
     );
   });
 }
