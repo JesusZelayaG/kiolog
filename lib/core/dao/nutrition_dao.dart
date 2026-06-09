@@ -27,19 +27,26 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
           .getSingleOrNull();
 
   Future<void> setActivePlan(int planId) async {
+    final now = DateTime.now().toUtc();
     await db.transaction(() async {
-      // Verify plan exists first
       final plan = await (select(mealPlans)..where((t) => t.id.equals(planId)))
           .getSingleOrNull();
       if (plan == null) throw ArgumentError('Plan $planId not found');
 
-      // Deactivate all plans
-      await (update(mealPlans))
-          .write(const MealPlansCompanion(isActive: Value(false)));
+      // Close period on currently active plan
+      await (update(mealPlans)..where((t) => t.isActive.equals(true)))
+          .write(MealPlansCompanion(
+            isActive: const Value(false),
+            periodEnd: Value(now),
+          ));
 
-      // Activate the target plan
+      // Open period on new plan
       await (update(mealPlans)..where((t) => t.id.equals(planId)))
-          .write(const MealPlansCompanion(isActive: Value(true)));
+          .write(MealPlansCompanion(
+            isActive: const Value(true),
+            periodStart: Value(now),
+            periodEnd: const Value(null),
+          ));
     });
   }
 
@@ -79,4 +86,11 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
               t.date.isSmallerThanValue(end)))
         .get();
   }
+
+  Future<List<DailyMealLog>> getLogsInRange(DateTime from, DateTime to) =>
+      (select(dailyMealLogs)
+            ..where((t) =>
+                t.date.isBiggerOrEqualValue(from) &
+                t.date.isSmallerThanValue(to)))
+          .get();
 }
