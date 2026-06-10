@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import '../../domain/models/nutrition_weekly_stat.dart';
 
 enum NutritionStatus { initial, loading, success, failure }
 
@@ -9,6 +10,7 @@ class NutritionState extends Equatable {
   final List<MealPlan> allPlans;
   final Map<String, List<MealPlanOption>> planOptions;
   final List<DailyMealLog> dailyLogs;
+  final List<NutritionWeeklyStat> weeklyAdherence;
   final String? error;
 
   const NutritionState({
@@ -17,6 +19,7 @@ class NutritionState extends Equatable {
     this.allPlans = const [],
     this.planOptions = const {},
     this.dailyLogs = const [],
+    this.weeklyAdherence = const [],
     this.error,
   });
 
@@ -32,6 +35,7 @@ class NutritionState extends Equatable {
     List<MealPlan>? allPlans,
     Map<String, List<MealPlanOption>>? planOptions,
     List<DailyMealLog>? dailyLogs,
+    List<NutritionWeeklyStat>? weeklyAdherence,
     String? error,
   }) =>
       NutritionState(
@@ -40,10 +44,11 @@ class NutritionState extends Equatable {
         allPlans: allPlans ?? this.allPlans,
         planOptions: planOptions ?? this.planOptions,
         dailyLogs: dailyLogs ?? this.dailyLogs,
+        weeklyAdherence: weeklyAdherence ?? this.weeklyAdherence,
         error: error,
       );
 
   @override
   List<Object?> get props =>
-      [status, activePlan, allPlans, planOptions, dailyLogs, error];
+      [status, activePlan, allPlans, planOptions, dailyLogs, weeklyAdherence, error];
 }

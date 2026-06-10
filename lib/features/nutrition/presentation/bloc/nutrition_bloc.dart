@@ -32,11 +32,14 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
         }
       }
 
+      final adherence = await _repository.getWeeklyAdherence(weeksBack: 8);
+
       emit(state.copyWith(
         status: NutritionStatus.success,
         activePlan: plan,
         dailyLogs: logs,
         planOptions: options,
+        weeklyAdherence: adherence,
       ));
     } catch (e) {
       emit(state.copyWith(status: NutritionStatus.failure, error: e.toString()));
