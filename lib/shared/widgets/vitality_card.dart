@@ -24,18 +24,13 @@ class VitalityCard extends StatelessWidget {
       ),
       elevation: 0,
       clipBehavior: Clip.antiAlias,
-      child: onTap != null
-          ? InkWell(
-              onTap: onTap,
-              child: Padding(
-                padding: padding ?? const EdgeInsets.all(16),
-                child: child,
-              ),
-            )
-          : Padding(
-              padding: padding ?? const EdgeInsets.all(16),
-              child: child,
-            ),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: padding ?? const EdgeInsets.all(16),
+          child: child,
+        ),
+      ),
     );
   }
 }
