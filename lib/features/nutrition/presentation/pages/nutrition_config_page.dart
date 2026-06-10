@@ -16,6 +16,7 @@ class NutritionConfigPage extends StatefulWidget {
 class _NutritionConfigPageState extends State<NutritionConfigPage> {
   final _planNameController = TextEditingController(text: 'Mi Plan');
   final List<_MealTimeEntry> _mealTimes = [_MealTimeEntry()];
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -28,6 +29,7 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
   }
 
   Future<void> _save() async {
+    setState(() => _saving = true);
     final nutritionRepo = getIt<NutritionRepository>();
     final planId = await nutritionRepo.createPlan(
       _planNameController.text,
@@ -51,8 +53,8 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
     await getIt<ModulesCubit>().setModuleEnabled(AppModule.nutrition, true);
     if (mounted) {
       Navigator.of(context).pop();
+      widget.onComplete();
     }
-    widget.onComplete();
   }
 
   @override
@@ -189,7 +191,7 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _save,
+                onPressed: _saving ? null : _save,
                 child: const Text('Guardar'),
               ),
             ),

@@ -16,6 +16,7 @@ class ExerciseConfigPage extends StatefulWidget {
 class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
   final _planNameController = TextEditingController(text: 'Mi Rutina');
   final List<_RoutineDayLocal> _routineDays = [];
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -33,6 +34,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
   }
 
   Future<void> _save() async {
+    setState(() => _saving = true);
     final exerciseRepo = getIt<ExerciseRepository>();
     final exercisePlanId = await exerciseRepo.createPlan(_planNameController.text);
     for (int i = 0; i < _routineDays.length; i++) {
@@ -63,8 +65,8 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
     await getIt<ModulesCubit>().setModuleEnabled(AppModule.exercise, true);
     if (mounted) {
       Navigator.of(context).pop();
+      widget.onComplete();
     }
-    widget.onComplete();
   }
 
   @override
@@ -156,7 +158,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _save,
+                onPressed: _saving ? null : _save,
                 child: const Text('Guardar'),
               ),
             ),

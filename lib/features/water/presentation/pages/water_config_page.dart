@@ -17,6 +17,7 @@ class _WaterConfigPageState extends State<WaterConfigPage> {
   String _waterUnit = 'bottle';
   int _containerMl = 1000;
   int _dailyGoalMl = 3000;
+  bool _saving = false;
 
   late final TextEditingController _containerMlController;
   late final TextEditingController _dailyGoalMlController;
@@ -36,6 +37,7 @@ class _WaterConfigPageState extends State<WaterConfigPage> {
   }
 
   Future<void> _save() async {
+    setState(() => _saving = true);
     await getIt<WaterRepository>().saveConfig(
       unitType: _waterUnit,
       containerMl: _containerMl,
@@ -44,8 +46,8 @@ class _WaterConfigPageState extends State<WaterConfigPage> {
     await getIt<ModulesCubit>().setModuleEnabled(AppModule.water, true);
     if (mounted) {
       Navigator.of(context).pop();
+      widget.onComplete();
     }
-    widget.onComplete();
   }
 
   @override
@@ -100,7 +102,7 @@ class _WaterConfigPageState extends State<WaterConfigPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Eso equivale a aproximadamente ${_dailyGoalMl ~/ _containerMl} ${_waterUnit == 'bottle' ? 'botellas' : 'vasos'} al día.',
+              'Eso equivale a aproximadamente ${_containerMl > 0 ? _dailyGoalMl ~/ _containerMl : 0} ${_waterUnit == 'bottle' ? 'botellas' : 'vasos'} al día.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -109,7 +111,7 @@ class _WaterConfigPageState extends State<WaterConfigPage> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _save,
+                onPressed: _saving ? null : _save,
                 child: const Text('Guardar'),
               ),
             ),
