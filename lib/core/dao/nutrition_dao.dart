@@ -10,13 +10,20 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
     with _$NutritionDaoMixin {
   NutritionDao(super.db);
 
-  Future<int> insertMealPlan(MealPlansCompanion plan) =>
-      into(mealPlans).insert(plan.copyWith(
-        createdAt: plan.createdAt.present
-            ? plan.createdAt
-            : Value(DateTime.now().toUtc()),
-        isActive: const Value(true),
+  Future<int> insertMealPlan(MealPlansCompanion plan) async {
+    return db.transaction(() async {
+      final now = DateTime.now().toUtc();
+      final hasActive = await (select(mealPlans)
+                ..where((t) => t.isActive.equals(true)))
+              .getSingleOrNull() !=
+          null;
+      return into(mealPlans).insert(plan.copyWith(
+        createdAt: plan.createdAt.present ? plan.createdAt : Value(now),
+        isActive: Value(!hasActive),
+        periodStart: hasActive ? const Value(null) : Value(now),
       ));
+    });
+  }
 
   Future<List<MealPlan>> getMealPlans() =>
       (select(mealPlans)..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
@@ -27,11 +34,12 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
           .getSingleOrNull();
 
   Future<void> setActivePlan(int planId) async {
-    final now = DateTime.now().toUtc();
     await db.transaction(() async {
+      final now = DateTime.now().toUtc();
       final plan = await (select(mealPlans)..where((t) => t.id.equals(planId)))
           .getSingleOrNull();
       if (plan == null) throw ArgumentError('Plan $planId not found');
+      if (plan.isActive) return; // already active, nothing to do
 
       // Close period on currently active plan
       await (update(mealPlans)..where((t) => t.isActive.equals(true)))
@@ -87,10 +95,13 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  Future<List<DailyMealLog>> getLogsInRange(DateTime from, DateTime to) =>
-      (select(dailyMealLogs)
-            ..where((t) =>
-                t.date.isBiggerOrEqualValue(from) &
-                t.date.isSmallerThanValue(to)))
-          .get();
+  Future<List<DailyMealLog>> getLogsInRange(DateTime from, DateTime to) {
+    final f = DateTime.utc(from.year, from.month, from.day);
+    final t = DateTime.utc(to.year, to.month, to.day);
+    return (select(dailyMealLogs)
+          ..where((r) =>
+              r.date.isBiggerOrEqualValue(f) &
+              r.date.isSmallerThanValue(t)))
+        .get();
+  }
 }
