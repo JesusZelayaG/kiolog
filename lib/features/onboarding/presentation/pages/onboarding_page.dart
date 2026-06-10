@@ -7,6 +7,9 @@ import 'package:kiolog/features/exercise/domain/repositories/exercise_repository
 import 'package:kiolog/features/nutrition/domain/repositories/nutrition_repository.dart';
 import 'package:kiolog/features/progress/domain/repositories/progress_repository.dart';
 import 'package:kiolog/features/water/domain/repositories/water_repository.dart';
+import '../../../../core/domain/app_module.dart';
+import '../../../../core/dao/user_modules_dao.dart';
+import '../../../../core/modules/cubit/modules_cubit.dart';
 
 class OnboardingPage extends StatelessWidget {
   const OnboardingPage({super.key});
@@ -27,7 +30,9 @@ class _OnboardingView extends StatefulWidget {
 class _OnboardingViewState extends State<_OnboardingView> {
   final _pageController = PageController();
   int _currentStep = 0;
-  final int _totalSteps = 5;
+  final int _totalSteps = 6;
+
+  final Set<AppModule> _activeModules = Set.from(AppModule.values);
 
   // Step 2: Water config
   String _waterUnit = 'bottle';
@@ -69,91 +74,129 @@ class _OnboardingViewState extends State<_OnboardingView> {
     super.dispose();
   }
 
+  bool _isStepEnabled(int stepIndex) {
+    switch (stepIndex) {
+      case 2:
+        return _activeModules.contains(AppModule.water);
+      case 3:
+        return _activeModules.contains(AppModule.nutrition);
+      case 4:
+        return _activeModules.contains(AppModule.exercise);
+      default:
+        return true;
+    }
+  }
+
+  int get _totalActiveSteps => 3 + _activeModules.length;
+
+  int get _currentActiveStep {
+    int count = 0;
+    for (int i = 0; i <= _currentStep; i++) {
+      if (_isStepEnabled(i)) count++;
+    }
+    return count;
+  }
+
+  bool get _canProceed =>
+      _currentStep != 1 || _activeModules.isNotEmpty;
+
   void _nextStep() {
-    if (_currentStep < _totalSteps - 1) {
-      setState(() => _currentStep++);
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+    var next = _currentStep + 1;
+    while (next < _totalSteps && !_isStepEnabled(next)) next++;
+    if (next < _totalSteps) {
+      setState(() => _currentStep = next);
+      _pageController.jumpToPage(next);
     }
   }
 
   void _prevStep() {
-    if (_currentStep > 0) {
-      setState(() => _currentStep--);
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+    var prev = _currentStep - 1;
+    while (prev >= 0 && !_isStepEnabled(prev)) prev--;
+    if (prev >= 0) {
+      setState(() => _currentStep = prev);
+      _pageController.jumpToPage(prev);
     }
   }
 
   Future<void> _finish() async {
-    // Save water config
-    await getIt<WaterRepository>().saveConfig(
-      unitType: _waterUnit,
-      containerMl: _containerMl,
-      dailyGoalMl: _dailyGoalMl,
-    );
-
-    // Save nutrition plan
-    final nutritionRepo = getIt<NutritionRepository>();
-    final planId = await nutritionRepo.createPlan(
-      _mealPlanNameController.text,
-      dailyMealGoal: _mealTimes.length,
-    );
-    for (final mealTime in _mealTimes) {
-      final typeName = mealTime.nameController.text.trim();
-      if (typeName.isEmpty) continue;
-      for (int i = 0; i < mealTime.options.length; i++) {
-        final text = mealTime.options[i].text.trim();
-        if (text.isNotEmpty) {
-          await nutritionRepo.addPlanOption(
-            planId: planId,
-            mealType: typeName,
-            optionNumber: i + 1,
-            description: text,
-          );
-        }
-      }
-    }
-
-    // Save exercise plan
-    final exerciseRepo = getIt<ExerciseRepository>();
-    final exercisePlanId =
-        await exerciseRepo.createPlan(_exercisePlanNameController.text);
-    for (int i = 0; i < _routineDays.length; i++) {
-      final day = _routineDays[i];
-      final routineName = day.nameController.text.trim().isEmpty
-          ? 'Día ${i + 1}'
-          : day.nameController.text.trim();
-      final routineId = await exerciseRepo.addRoutine(
-        planId: exercisePlanId,
-        dayNumber: i + 1,
-        routineName: routineName,
+    // Save water config (only if active)
+    if (_activeModules.contains(AppModule.water)) {
+      await getIt<WaterRepository>().saveConfig(
+        unitType: _waterUnit,
+        containerMl: _containerMl,
+        dailyGoalMl: _dailyGoalMl,
       );
-      for (final ex in day.exercises) {
-        final sets = int.tryParse(ex.sets.text) ?? 3;
-        final reps = int.tryParse(ex.reps.text) ?? 10;
-        final weight = double.tryParse(ex.weight.text);
-        if (ex.name.text.isNotEmpty) {
-          await exerciseRepo.addRoutineItem(
-            routineId: routineId,
-            exerciseName: ex.name.text,
-            sets: sets,
-            reps: reps,
-            weightKg: weight,
-          );
+    }
+
+    // Save nutrition plan (only if active)
+    if (_activeModules.contains(AppModule.nutrition)) {
+      final nutritionRepo = getIt<NutritionRepository>();
+      final planId = await nutritionRepo.createPlan(
+        _mealPlanNameController.text,
+        dailyMealGoal: _mealTimes.length,
+      );
+      for (final mealTime in _mealTimes) {
+        final typeName = mealTime.nameController.text.trim();
+        if (typeName.isEmpty) continue;
+        for (int i = 0; i < mealTime.options.length; i++) {
+          final text = mealTime.options[i].text.trim();
+          if (text.isNotEmpty) {
+            await nutritionRepo.addPlanOption(
+              planId: planId,
+              mealType: typeName,
+              optionNumber: i + 1,
+              description: text,
+            );
+          }
         }
       }
     }
 
-    // Save initial weight
+    // Save exercise plan (only if active)
+    if (_activeModules.contains(AppModule.exercise)) {
+      final exerciseRepo = getIt<ExerciseRepository>();
+      final exercisePlanId =
+          await exerciseRepo.createPlan(_exercisePlanNameController.text);
+      for (int i = 0; i < _routineDays.length; i++) {
+        final day = _routineDays[i];
+        final routineName = day.nameController.text.trim().isEmpty
+            ? 'Día ${i + 1}'
+            : day.nameController.text.trim();
+        final routineId = await exerciseRepo.addRoutine(
+          planId: exercisePlanId,
+          dayNumber: i + 1,
+          routineName: routineName,
+        );
+        for (final ex in day.exercises) {
+          final sets = int.tryParse(ex.sets.text) ?? 3;
+          final reps = int.tryParse(ex.reps.text) ?? 10;
+          final weight = double.tryParse(ex.weight.text);
+          if (ex.name.text.isNotEmpty) {
+            await exerciseRepo.addRoutineItem(
+              routineId: routineId,
+              exerciseName: ex.name.text,
+              sets: sets,
+              reps: reps,
+              weightKg: weight,
+            );
+          }
+        }
+      }
+    }
+
+    // Save initial weight (unconditional)
     final weight = double.tryParse(_weightController.text);
     if (weight != null) {
       await getIt<ProgressRepository>().addWeightLog(_startDate, weight);
     }
+
+    // Seed module statuses BEFORE marking onboarding complete
+    await getIt<UserModulesDao>().seedModules({
+      AppModule.water.key: _activeModules.contains(AppModule.water),
+      AppModule.nutrition.key: _activeModules.contains(AppModule.nutrition),
+      AppModule.exercise.key: _activeModules.contains(AppModule.exercise),
+    });
+    await getIt<ModulesCubit>().loadModules();
 
     // Mark onboarding complete
     await getIt<UserProfileDao>().completeOnboarding(_startDate);
@@ -172,7 +215,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
         child: Column(
           children: [
             LinearProgressIndicator(
-              value: (_currentStep + 1) / _totalSteps,
+              value: _currentActiveStep / _totalActiveSteps,
               backgroundColor: theme.colorScheme.surfaceContainerHighest,
             ),
             Expanded(
@@ -181,6 +224,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   _buildWelcomeStep(theme),
+                  _buildModuleSelectionStep(theme),
                   _buildWaterStep(theme),
                   _buildNutritionStep(theme),
                   _buildExerciseStep(theme),
@@ -201,8 +245,9 @@ class _OnboardingViewState extends State<_OnboardingView> {
                     const SizedBox(width: 80),
                   const Spacer(),
                   FilledButton(
-                    onPressed:
-                        _currentStep == _totalSteps - 1 ? _finish : _nextStep,
+                    onPressed: _canProceed
+                        ? (_currentStep == _totalSteps - 1 ? _finish : _nextStep)
+                        : null,
                     child: Text(_currentStep == _totalSteps - 1
                         ? 'Finalizar'
                         : 'Siguiente'),
@@ -212,6 +257,114 @@ class _OnboardingViewState extends State<_OnboardingView> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildModuleSelectionStep(ThemeData theme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('¿Qué quieres registrar?',
+              style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 8),
+          Text(
+            'Puedes cambiar esto más adelante en Ajustes.',
+            style: theme.textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 24),
+          _buildModuleToggle(
+            theme,
+            icon: Icons.water_drop_outlined,
+            title: 'Hidratación',
+            subtitle: 'Meta diaria de agua',
+            module: AppModule.water,
+          ),
+          const Divider(),
+          _buildModuleToggle(
+            theme,
+            icon: Icons.restaurant_outlined,
+            title: 'Nutrición',
+            subtitle: 'Plan de comidas',
+            module: AppModule.nutrition,
+          ),
+          const Divider(),
+          _buildModuleToggle(
+            theme,
+            icon: Icons.fitness_center_outlined,
+            title: 'Ejercicio',
+            subtitle: 'Rutinas y series',
+            module: AppModule.exercise,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Al menos un módulo debe estar activo.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModuleToggle(
+    ThemeData theme, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required AppModule module,
+  }) {
+    final isEnabled = _activeModules.contains(module);
+    final isLast = _activeModules.length == 1 && isEnabled;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: isEnabled
+                ? null
+                : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: isEnabled
+                        ? null
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant
+                        .withValues(alpha: isEnabled ? 1.0 : 0.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: isEnabled,
+            onChanged: isLast
+                ? null
+                : (val) => setState(() {
+                      if (val) {
+                        _activeModules.add(module);
+                      } else {
+                        _activeModules.remove(module);
+                      }
+                    }),
+          ),
+        ],
       ),
     );
   }
@@ -273,7 +426,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
             segments: const [
               ButtonSegment(value: 'bottle', label: Text('Botella')),
               ButtonSegment(value: 'glass', label: Text('Vaso')),
-            ],
+            ], 
             selected: {_waterUnit},
             onSelectionChanged: (set) {
               setState(() {
