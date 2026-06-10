@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
@@ -27,6 +28,10 @@ class MockProgressRepository extends Mock implements ProgressRepository {}
 class MockModulesCubit extends MockCubit<ModulesState> implements ModulesCubit {}
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting('es_ES');
+  });
+
   setUp(() {
     getIt.registerLazySingleton<NutritionRepository>(
       () => MockNutritionRepository(),
