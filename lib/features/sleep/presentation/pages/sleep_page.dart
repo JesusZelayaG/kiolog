@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:kiolog/shared/widgets/vitality_card.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/repositories/sleep_repository.dart';
 import '../bloc/sleep_bloc.dart';
@@ -52,7 +53,7 @@ class _SleepView extends StatelessWidget {
                 const SizedBox(height: 16),
                 _buildWeeklyCard(context, state),
                 const SizedBox(height: 16),
-                FilledButton.icon(
+                ElevatedButton.icon(
                   onPressed: () => _showAddSleepDialog(context),
                   icon: const Icon(Icons.bedtime_outlined),
                   label: const Text('Registrar sueño'),
@@ -70,51 +71,49 @@ class _SleepView extends StatelessWidget {
     final hours = log?.hoursCalculated.toStringAsFixed(1) ?? '--';
     final theme = Theme.of(context);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Hoy', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(
-                  Icons.nightlight_round,
-                  size: 40,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$hours h',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+    return VitalityCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Hoy', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.nightlight_round,
+                size: 40,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$hours h',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                    if (log != null)
-                      Text(
-                        '${DateFormat.Hm().format(log.sleepTime)} – ${DateFormat.Hm().format(log.wakeTime)}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                      )
-                    else
-                      Text(
-                        'No registrado',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                  ),
+                  if (log != null)
+                    Text(
+                      '${DateFormat.Hm().format(log.sleepTime)} – ${DateFormat.Hm().format(log.wakeTime)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
+                    )
+                  else
+                    Text(
+                      'No registrado',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -123,34 +122,31 @@ class _SleepView extends StatelessWidget {
     final theme = Theme.of(context);
     final avg = state.weeklyAverage?.toStringAsFixed(1) ?? '--';
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Últimos 7 días', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text('Promedio: $avg h/noche',
-                style: theme.textTheme.bodyLarge),
-            const SizedBox(height: 12),
-            if (state.weeklyLogs.isEmpty)
-              const Text('Sin registros esta semana')
-            else
-              ...state.weeklyLogs.map((log) {
-                final day = DateFormat.E('es').format(log.date);
-                return ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: Text(day),
-                  title: Text('${log.hoursCalculated.toStringAsFixed(1)} h'),
-                  trailing: Text(
-                    '${DateFormat.Hm().format(log.sleepTime)} – ${DateFormat.Hm().format(log.wakeTime)}',
-                  ),
-                );
-              }),
-          ],
-        ),
+    return VitalityCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Últimos 7 días', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Text('Promedio: $avg h/noche', style: theme.textTheme.bodyLarge),
+          const SizedBox(height: 12),
+          if (state.weeklyLogs.isEmpty)
+            const Text('Sin registros esta semana')
+          else
+            ...state.weeklyLogs.map((log) {
+              final day = DateFormat.E('es').format(log.date);
+              return ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: Text(day),
+                title: Text('${log.hoursCalculated.toStringAsFixed(1)} h'),
+                trailing: Text(
+                  '${DateFormat.Hm().format(log.sleepTime)} – ${DateFormat.Hm().format(log.wakeTime)}',
+                ),
+              );
+            }),
+        ],
       ),
     );
   }
@@ -231,13 +227,14 @@ class _SleepView extends StatelessWidget {
                 onPressed: () => Navigator.pop(dialogContext),
                 child: const Text('Cancelar'),
               ),
-              FilledButton(
+              ElevatedButton(
                 onPressed: (sleepTime != null && wakeTime != null)
                     ? () {
                         // Adjust if wakeTime is before sleepTime (next day)
                         var adjustedWake = wakeTime!;
                         if (adjustedWake.isBefore(sleepTime!)) {
-                          adjustedWake = adjustedWake.add(const Duration(days: 1));
+                          adjustedWake =
+                              adjustedWake.add(const Duration(days: 1));
                         }
                         context.read<SleepBloc>().add(
                               SleepLogAdded(

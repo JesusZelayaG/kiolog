@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:kiolog/shared/widgets/vitality_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -54,7 +55,7 @@ class _ReportViewState extends State<_ReportView> {
           children: [
             _buildDateRangeSelector(context),
             const SizedBox(height: 16),
-            FilledButton.icon(
+            ElevatedButton.icon(
               onPressed: () {
                 context.read<ReportBloc>().add(
                       ReportGenerated(start: _range.start, end: _range.end),
@@ -72,7 +73,8 @@ class _ReportViewState extends State<_ReportView> {
                 if (state.status == ReportStatus.failure) {
                   return Text('Error: ${state.error}');
                 }
-                if (state.status == ReportStatus.success && state.data != null) {
+                if (state.status == ReportStatus.success &&
+                    state.data != null) {
                   return _buildReportContent(context, state.data!);
                 }
                 return const SizedBox.shrink();
@@ -85,7 +87,8 @@ class _ReportViewState extends State<_ReportView> {
   }
 
   Widget _buildDateRangeSelector(BuildContext context) {
-    return Card(
+    return VitalityCard(
+      padding: EdgeInsets.zero,
       child: ListTile(
         leading: const Icon(Icons.date_range),
         title: const Text('Período'),
@@ -138,7 +141,7 @@ class _ReportViewState extends State<_ReportView> {
             subtitle: 'Por noche',
           ),
         const SizedBox(height: 24),
-        FilledButton.icon(
+        ElevatedButton.icon(
           onPressed: () => _exportPdf(data),
           icon: const Icon(Icons.picture_as_pdf),
           label: const Text('Exportar PDF'),
@@ -156,8 +159,8 @@ class _ReportViewState extends State<_ReportView> {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.Text('Kiolog — Reporte de Salud',
-                style: pw.TextStyle(
-                    fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                style:
+                    pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 8),
             pw.Text(
               '${DateFormat.yMMMd('es').format(data.start)} – ${DateFormat.yMMMd('es').format(data.end)}',
@@ -223,16 +226,19 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(label),
-        subtitle: Text(subtitle),
-        trailing: Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-              ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: VitalityCard(
+        padding: EdgeInsets.zero,
+        child: ListTile(
+          title: Text(label),
+          subtitle: Text(subtitle),
+          trailing: Text(
+            value,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+          ),
         ),
       ),
     );

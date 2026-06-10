@@ -47,7 +47,8 @@ class _AchievementsView extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 if (state.unlocked.isNotEmpty) ...[
-                  Text('Desbloqueados', style: Theme.of(context).textTheme.titleMedium),
+                  Text('Desbloqueados',
+                      style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   ...state.unlocked.map((a) => _AchievementTile(
                         achievement: a,
@@ -55,7 +56,8 @@ class _AchievementsView extends StatelessWidget {
                       )),
                   const SizedBox(height: 24),
                 ],
-                Text('Por desbloquear', style: Theme.of(context).textTheme.titleMedium),
+                Text('Por desbloquear',
+                    style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 ...state.locked.map((a) => _AchievementTile(
                       achievement: a,
@@ -85,8 +87,8 @@ class _AchievementTile extends StatelessWidget {
 
     return Card(
       color: isUnlocked
-          ? theme.colorScheme.primaryContainer.withOpacity(0.4)
-          : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+          ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
+          : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       child: ListTile(
         leading: Icon(
           isUnlocked ? Icons.emoji_events : Icons.emoji_events_outlined,
@@ -95,7 +97,7 @@ class _AchievementTile extends StatelessWidget {
         title: Text(achievement.title),
         subtitle: Text(achievement.description),
         trailing: isUnlocked
-            ? const Icon(Icons.check_circle, color: Colors.green)
+            ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
             : null,
       ),
     );

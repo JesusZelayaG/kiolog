@@ -123,7 +123,7 @@ class _DayCell extends StatelessWidget {
       margin: const EdgeInsets.all(2),
       color: count == 4
           ? theme.colorScheme.primaryContainer
-          : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+          : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       child: Padding(
         padding: const EdgeInsets.all(4),
         child: Column(
@@ -132,8 +132,8 @@ class _DayCell extends StatelessWidget {
             Text(
               '${day.date.day}',
               style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 4),
             Wrap(
@@ -141,14 +141,10 @@ class _DayCell extends StatelessWidget {
               runSpacing: 2,
               alignment: WrapAlignment.center,
               children: [
-                if (day.hasWater)
-                  const _MiniDot(color: Colors.blue),
-                if (day.hasSleep)
-                  const _MiniDot(color: Colors.indigo),
-                if (day.hasMeals)
-                  const _MiniDot(color: Colors.orange),
-                if (day.hasExercise)
-                  const _MiniDot(color: Colors.red),
+                if (day.hasWater) const _MiniDot(color: Colors.blue),
+                if (day.hasSleep) const _MiniDot(color: Colors.indigo),
+                if (day.hasMeals) const _MiniDot(color: Colors.orange),
+                if (day.hasExercise) const _MiniDot(color: Colors.red),
               ],
             ),
           ],
