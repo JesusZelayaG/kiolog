@@ -11,6 +11,7 @@ import 'tables/water_sleep_tables.dart';
 import 'tables/measurements_tables.dart';
 import 'tables/achievements_tables.dart';
 import 'tables/config_tables.dart';
+import 'tables/user_modules_table.dart';
 
 import '../dao/nutrition_dao.dart';
 import '../dao/exercise_dao.dart';
@@ -19,6 +20,7 @@ import '../dao/measurements_dao.dart';
 import '../dao/config_dao.dart';
 import '../dao/achievements_dao.dart';
 import '../dao/user_profile_dao.dart';
+import '../dao/user_modules_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -51,6 +53,8 @@ part 'app_database.g.dart';
     NotificationSettings,
     AiConfig,
     UserProfiles,
+    // Modules
+    UserModules,
   ],
   daos: [
     NutritionDao,
@@ -60,6 +64,7 @@ part 'app_database.g.dart';
     ConfigDao,
     AchievementsDao,
     UserProfileDao,
+    UserModulesDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -68,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -110,6 +115,9 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(mealPlans, mealPlans.periodStart);
           await m.addColumn(mealPlans, mealPlans.periodEnd);
           await m.addColumn(mealPlans, mealPlans.dailyMealGoal);
+        }
+        if (from < 6) {
+          await m.createTable(userModules);
         }
       },
     );
