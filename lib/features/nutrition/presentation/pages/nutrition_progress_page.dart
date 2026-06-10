@@ -352,7 +352,10 @@ class _BarChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BarChartPainter old) =>
-      old.lastBarIsPartial != lastBarIsPartial || !listEquals(old.bars, bars);
+      old.lastBarIsPartial != lastBarIsPartial ||
+      old.barColor != barColor ||
+      old.trackColor != trackColor ||
+      !listEquals(old.bars, bars);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -364,7 +367,7 @@ class _BarChartPainter extends CustomPainter {
 
     // Dashed goal line at top
     final goalPaint = Paint()
-      ..color = barColor.withOpacity(0.4)
+      ..color = barColor.withValues(alpha: 0.4)
       ..strokeWidth = 1;
     _drawDashedLine(canvas, Offset.zero, Offset(size.width, 0), goalPaint);
 
@@ -394,11 +397,11 @@ class _BarChartPainter extends CustomPainter {
           RRect.fromRectAndCorners(rect,
               topLeft: const Radius.circular(3),
               topRight: const Radius.circular(3)),
-          Paint()..color = barColor.withOpacity(0.25),
+          Paint()..color = barColor.withValues(alpha: 0.25),
         );
         _drawDashedRect(canvas, rect,
             Paint()
-              ..color = barColor.withOpacity(0.8)
+              ..color = barColor.withValues(alpha: 0.8)
               ..strokeWidth = 1
               ..style = PaintingStyle.stroke);
       } else {
@@ -406,7 +409,7 @@ class _BarChartPainter extends CustomPainter {
           RRect.fromRectAndCorners(rect,
               topLeft: const Radius.circular(3),
               topRight: const Radius.circular(3)),
-          Paint()..color = barColor.withOpacity(0.85),
+          Paint()..color = barColor.withValues(alpha: 0.85),
         );
       }
     }
