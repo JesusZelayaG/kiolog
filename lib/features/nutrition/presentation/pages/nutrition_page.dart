@@ -255,7 +255,7 @@ class _MealSection extends StatelessWidget {
                       chipColor = theme.colorScheme.primaryContainer;
                     } else if (l.freeDescription != null) {
                       chipLabel = 'Fuera de plan';
-                      chipColor = const Color(0xFF3D2E00);
+                      chipColor = theme.colorScheme.surfaceContainerHighest;
                     } else {
                       chipLabel = 'No seguido';
                       chipColor = theme.colorScheme.errorContainer;
