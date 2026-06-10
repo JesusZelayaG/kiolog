@@ -69,6 +69,15 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(t) => OrderingTerm.asc(t.optionNumber)]))
           .get();
 
+  Future<List<MealPlanOption>> getAllPlanOptions(int planId) =>
+      (select(mealPlanOptions)
+            ..where((t) => t.planId.equals(planId))
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.mealType),
+              (t) => OrderingTerm.asc(t.optionNumber),
+            ]))
+          .get();
+
   Future<int> insertDailyMealLog(DailyMealLogsCompanion log) =>
       into(dailyMealLogs).insert(log);
 

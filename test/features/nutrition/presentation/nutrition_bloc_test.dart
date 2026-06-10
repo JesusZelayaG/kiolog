@@ -45,18 +45,12 @@ void main() {
     ];
 
     blocTest<NutritionBloc, NutritionState>(
-      'emits [loading, success] with weeklyAdherence when NutritionLoaded succeeds',
+      'emits [loading, success] grouping options by mealType via getAllPlanOptions',
       build: () {
         when(() => repository.getActivePlan()).thenAnswer((_) async => plan);
         when(() => repository.getDailyLogs(any())).thenAnswer((_) async => []);
-        when(() => repository.getPlanOptions(any(), 'breakfast'))
+        when(() => repository.getAllPlanOptions(any()))
             .thenAnswer((_) async => options);
-        when(() => repository.getPlanOptions(any(), 'lunch'))
-            .thenAnswer((_) async => []);
-        when(() => repository.getPlanOptions(any(), 'dinner'))
-            .thenAnswer((_) async => []);
-        when(() => repository.getPlanOptions(any(), 'snack'))
-            .thenAnswer((_) async => []);
         when(() => repository.getWeeklyAdherence(weeksBack: 8))
             .thenAnswer((_) async => adherence);
         return NutritionBloc(repository);
@@ -67,12 +61,7 @@ void main() {
         NutritionState(
           status: NutritionStatus.success,
           activePlan: plan,
-          planOptions: {
-            'breakfast': options,
-            'lunch': [],
-            'dinner': [],
-            'snack': []
-          },
+          planOptions: {'breakfast': options},
           weeklyAdherence: adherence,
         ),
       ],

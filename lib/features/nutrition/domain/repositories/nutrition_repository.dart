@@ -8,6 +8,7 @@ abstract class NutritionRepository {
   Future<int> createPlan(String name, {required int dailyMealGoal});
 
   Future<List<MealPlanOption>> getPlanOptions(int planId, String mealType);
+  Future<List<MealPlanOption>> getAllPlanOptions(int planId);
   Future<void> addPlanOption({
     required int planId,
     required String mealType,

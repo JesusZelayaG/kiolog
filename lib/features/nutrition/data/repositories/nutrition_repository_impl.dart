@@ -38,6 +38,10 @@ class NutritionRepositoryImpl implements NutritionRepository {
       _nutritionDao.getMealPlanOptions(planId, mealType);
 
   @override
+  Future<List<MealPlanOption>> getAllPlanOptions(int planId) =>
+      _nutritionDao.getAllPlanOptions(planId);
+
+  @override
   Future<void> addPlanOption({
     required int planId,
     required String mealType,

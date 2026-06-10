@@ -26,9 +26,9 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
       final options = <String, List<MealPlanOption>>{};
 
       if (plan != null) {
-        for (final mealType in ['breakfast', 'lunch', 'dinner', 'snack']) {
-          final opts = await _repository.getPlanOptions(plan.id, mealType);
-          options[mealType] = opts;
+        final allOpts = await _repository.getAllPlanOptions(plan.id);
+        for (final opt in allOpts) {
+          options.putIfAbsent(opt.mealType, () => []).add(opt);
         }
       }
 
