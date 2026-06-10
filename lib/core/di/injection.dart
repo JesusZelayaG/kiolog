@@ -18,9 +18,11 @@ import '../dao/config_dao.dart';
 import '../dao/exercise_dao.dart';
 import '../dao/measurements_dao.dart';
 import '../dao/nutrition_dao.dart';
+import '../dao/user_modules_dao.dart';
 import '../dao/user_profile_dao.dart';
 import '../dao/water_sleep_dao.dart';
 import '../database/app_database.dart';
+import '../modules/cubit/modules_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -36,6 +38,10 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton(() => getIt<AppDatabase>().configDao);
   getIt.registerLazySingleton(() => getIt<AppDatabase>().achievementsDao);
   getIt.registerLazySingleton(() => getIt<AppDatabase>().userProfileDao);
+  getIt.registerLazySingleton(() => getIt<AppDatabase>().userModulesDao);
+  getIt.registerLazySingleton<ModulesCubit>(
+    () => ModulesCubit(getIt<UserModulesDao>()),
+  );
 
   // Repositories
   getIt.registerLazySingleton<WaterRepository>(
@@ -92,4 +98,6 @@ Future<void> setupDependencies() async {
       cardioMinutesGoal: 30,
     );
   }
+
+  await getIt<ModulesCubit>().loadModules();
 }
