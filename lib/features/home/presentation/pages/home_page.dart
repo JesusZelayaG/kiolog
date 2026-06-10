@@ -31,15 +31,35 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class _HomeView extends StatelessWidget {
+class _HomeView extends StatefulWidget {
   const _HomeView();
+
+  @override
+  State<_HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<_HomeView> {
+  late final String _greeting;
+  late final String _dateLabel;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _greeting = _timeGreeting(now.hour);
+    _dateLabel = DateFormat('EEEE, d MMM', 'es').format(now);
+  }
+
+  String _timeGreeting(int hour) {
+    if (hour < 12) return 'Buenos días';
+    if (hour < 20) return 'Buenas tardes';
+    return 'Buenas noches';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final now = DateTime.now();
-    final dateLabel = DateFormat('EEEE, d MMM', 'es').format(now);
 
     return Scaffold(
       appBar: AppBar(
@@ -73,12 +93,12 @@ class _HomeView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Buenos días',
+                        _greeting,
                         style: theme.textTheme.displayLarge,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        dateLabel,
+                        _dateLabel,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: cs.onSurfaceVariant,
                         ),

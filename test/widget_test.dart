@@ -29,7 +29,7 @@ class MockModulesCubit extends MockCubit<ModulesState> implements ModulesCubit {
 
 void main() {
   setUpAll(() async {
-    await initializeDateFormatting('es_ES');
+    await initializeDateFormatting('es');
   });
 
   setUp(() {
