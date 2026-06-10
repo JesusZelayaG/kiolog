@@ -21,22 +21,18 @@ class AppScaffold extends StatelessWidget {
   }
 
   Widget _moduleIcon({
-    required IconData activeIcon,
-    required IconData inactiveIcon,
+    required IconData icon,
     required AppModule module,
     required ModulesState state,
-    bool selected = false,
   }) {
     final isActive = state.isEnabled(module);
-    if (isActive) return Icon(selected ? activeIcon : inactiveIcon);
+    if (isActive) return Icon(icon);
     return Stack(
-      clipBehavior: Clip.none,
       children: [
-        Icon(selected ? activeIcon : inactiveIcon,
-            color: Colors.grey.withValues(alpha: 0.4)),
+        Icon(icon, color: Colors.grey.withValues(alpha: 0.4)),
         const Positioned(
-          right: -4,
-          top: -4,
+          right: 0,
+          top: 0,
           child: Icon(Icons.lock, size: 10, color: Colors.grey),
         ),
       ],
@@ -78,33 +74,27 @@ class AppScaffold extends StatelessWidget {
                 ),
                 NavigationDestination(
                   icon: _moduleIcon(
-                    activeIcon: Icons.restaurant_outlined,
-                    inactiveIcon: Icons.restaurant_outlined,
+                    icon: Icons.restaurant_outlined,
                     module: AppModule.nutrition,
                     state: modulesState,
                   ),
                   selectedIcon: _moduleIcon(
-                    activeIcon: Icons.restaurant,
-                    inactiveIcon: Icons.restaurant,
+                    icon: Icons.restaurant,
                     module: AppModule.nutrition,
                     state: modulesState,
-                    selected: true,
                   ),
                   label: 'Nutrición',
                 ),
                 NavigationDestination(
                   icon: _moduleIcon(
-                    activeIcon: Icons.fitness_center_outlined,
-                    inactiveIcon: Icons.fitness_center_outlined,
+                    icon: Icons.fitness_center_outlined,
                     module: AppModule.exercise,
                     state: modulesState,
                   ),
                   selectedIcon: _moduleIcon(
-                    activeIcon: Icons.fitness_center,
-                    inactiveIcon: Icons.fitness_center,
+                    icon: Icons.fitness_center,
                     module: AppModule.exercise,
                     state: modulesState,
-                    selected: true,
                   ),
                   label: 'Ejercicio',
                 ),
