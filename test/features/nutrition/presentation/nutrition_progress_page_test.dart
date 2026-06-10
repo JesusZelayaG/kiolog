@@ -163,5 +163,23 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    // Test 7: month › button is disabled at current month
+    testWidgets('month › button is disabled at current month',
+        (tester) async {
+      whenListen(bloc, const Stream<NutritionState>.empty(),
+          initialState: _state());
+
+      await tester.pumpWidget(_wrap(bloc));
+      await tester.pump();
+
+      // Switch to Mes mode
+      await tester.tap(find.text('Mes'));
+      await tester.pump();
+
+      final rightBtn = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.chevron_right));
+      expect(rightBtn.onPressed, isNull);
+    });
   });
 }
