@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/nutrition_bloc.dart';
 import '../bloc/nutrition_state.dart';
 import '../../domain/models/nutrition_weekly_stat.dart';
+import 'package:kiolog/shared/widgets/stat_chip.dart';
 
 enum _Periodo { semana, mes }
 
@@ -19,8 +20,6 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
   _Periodo _periodo = _Periodo.semana;
   int _weekOffset = 0;
   int _monthOffset = 0;
-
-  static const _orange = Colors.orange;
 
   DateTime _currentWeekMonday() {
     final now = DateTime.now().toUtc();
@@ -51,6 +50,7 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
   }
 
   Widget _buildSemanaChips(NutritionState state) {
+    final cs = Theme.of(context).colorScheme;
     final stat = _statAt(state.weeklyAdherence, _weekOffset);
     final pct = stat == null || stat.mealsExpected == 0
         ? null
@@ -58,16 +58,18 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
     final logged = stat?.mealsLogged ?? 0;
     final offPlan = stat?.offPlanMeals ?? 0;
 
-    return Row(children: [
-      _Chip(value: pct == null ? '—' : '$pct%', label: 'adherencia', color: _orange),
-      const SizedBox(width: 8),
-      _Chip(value: '$logged', label: 'comidas plan', color: Colors.green),
-      const SizedBox(width: 8),
-      _Chip(value: '$offPlan', label: 'fuera plan', color: Colors.blueGrey),
-    ]);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        StatChip(value: pct == null ? '—' : '$pct%', label: 'Adherencia'),
+        StatChip(value: '$logged', label: 'En plan'),
+        StatChip(value: '$offPlan', label: 'Fuera plan', color: cs.error),
+      ],
+    );
   }
 
   Widget _buildMesChips(NutritionState state) {
+    final cs = Theme.of(context).colorScheme;
     final weeks = _weeksInMonth(state.weeklyAdherence, _monthOffset);
     final totalLogged = weeks.fold(0, (s, w) => s + w.mealsLogged);
     final totalExpected = weeks.fold(0, (s, w) => s + w.mealsExpected);
@@ -76,13 +78,14 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
         ? null
         : (totalLogged / totalExpected * 100).round();
 
-    return Row(children: [
-      _Chip(value: pct == null ? '—' : '$pct%', label: 'adherencia', color: _orange),
-      const SizedBox(width: 8),
-      _Chip(value: '$totalLogged', label: 'comidas plan', color: Colors.green),
-      const SizedBox(width: 8),
-      _Chip(value: '$totalOff', label: 'fuera plan', color: Colors.blueGrey),
-    ]);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        StatChip(value: pct == null ? '—' : '$pct%', label: 'Adherencia'),
+        StatChip(value: '$totalLogged', label: 'En plan'),
+        StatChip(value: '$totalOff', label: 'Fuera plan', color: cs.error),
+      ],
+    );
   }
 
   Widget _buildWeekNavigator(List<NutritionWeeklyStat> stats) {
@@ -131,7 +134,11 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
   Widget _buildWeekBarChart(List<NutritionWeeklyStat> stats) {
     if (stats.isEmpty) return const SizedBox.shrink();
     final bars = stats.map((s) => (s.mealsLogged, s.mealsExpected)).toList();
-    return _AdherenceBarChart(bars: bars, barColor: _orange, lastBarIsPartial: true);
+    return _AdherenceBarChart(
+      bars: bars,
+      barColor: Theme.of(context).colorScheme.primaryContainer,
+      lastBarIsPartial: true,
+    );
   }
 
   Widget _buildMonthBarChart(List<NutritionWeeklyStat> stats) {
@@ -139,7 +146,10 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
     if (weeks.isEmpty) return const SizedBox.shrink();
     final bars = weeks.map((s) => (s.mealsLogged, s.mealsExpected)).toList();
     return _AdherenceBarChart(
-        bars: bars, barColor: _orange, lastBarIsPartial: _monthOffset == 0);
+      bars: bars,
+      barColor: Theme.of(context).colorScheme.primaryContainer,
+      lastBarIsPartial: _monthOffset == 0,
+    );
   }
 
   @override
@@ -258,45 +268,12 @@ class _Navigator extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
-                  ?.copyWith(color: Colors.orange),
+                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center),
         ]),
       ),
       IconButton(icon: const Icon(Icons.chevron_right), onPressed: onForward),
     ]);
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
-
-  const _Chip({required this.value, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(value,
-              style: TextStyle(
-                  fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-          const SizedBox(height: 2),
-          Text(label,
-              style: Theme.of(context)
-                  .textTheme
-                  .labelSmall
-                  ?.copyWith(color: Colors.grey)),
-        ]),
-      ),
-    );
   }
 }
 
@@ -331,6 +308,7 @@ class _AdherenceBarChart extends StatelessWidget {
             painter: _BarChartPainter(
               bars: bars,
               barColor: barColor,
+              trackColor: Theme.of(context).colorScheme.surfaceContainerHigh,
               lastBarIsPartial: lastBarIsPartial,
             ),
             size: Size.infinite,
@@ -362,11 +340,13 @@ class _AdherenceBarChart extends StatelessWidget {
 class _BarChartPainter extends CustomPainter {
   final List<(int logged, int expected)> bars;
   final Color barColor;
+  final Color trackColor;
   final bool lastBarIsPartial;
 
   const _BarChartPainter({
     required this.bars,
     required this.barColor,
+    required this.trackColor,
     required this.lastBarIsPartial,
   });
 
@@ -403,7 +383,7 @@ class _BarChartPainter extends CustomPainter {
             topLeft: const Radius.circular(2),
             topRight: const Radius.circular(2),
           ),
-          Paint()..color = Colors.grey.shade800,
+          Paint()..color = trackColor,
         );
         continue;
       }

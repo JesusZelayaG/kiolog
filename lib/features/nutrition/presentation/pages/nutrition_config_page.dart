@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/shared/widgets/vitality_card.dart';
 import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
@@ -81,9 +82,11 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
             ..._mealTimes.asMap().entries.map((e) {
               final index = e.key;
               final mt = e.value;
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: Column(
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: VitalityCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
@@ -171,6 +174,7 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
                     ),
                   ],
                 ),
+                ),
               );
             }),
             OutlinedButton.icon(
@@ -190,7 +194,7 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
+              child: ElevatedButton(
                 onPressed: _saving ? null : _save,
                 child: const Text('Guardar'),
               ),

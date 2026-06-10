@@ -6,6 +6,7 @@ import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
 import 'package:kiolog/shared/widgets/inactive_module_page.dart';
+import 'package:kiolog/shared/widgets/vitality_card.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/repositories/nutrition_repository.dart';
 import '../bloc/nutrition_bloc.dart';
@@ -78,7 +79,7 @@ class _NutritionView extends StatelessWidget {
 
           return SafeArea(
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               children: [
                 Text(
                   state.activePlan!.name,
@@ -115,7 +116,7 @@ class _NutritionView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.restaurant_menu, size: 64, color: Colors.grey),
+            Icon(Icons.restaurant_menu, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Sin plan activo',
@@ -127,7 +128,7 @@ class _NutritionView extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            FilledButton.icon(
+            ElevatedButton.icon(
               onPressed: () => _showCreatePlanDialog(context),
               icon: const Icon(Icons.add),
               label: const Text('Crear plan'),
@@ -193,7 +194,7 @@ class _NutritionView extends StatelessWidget {
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancelar'),
             ),
-            FilledButton(
+            ElevatedButton(
               onPressed: () {
                 if (nameController.text.isNotEmpty) {
                   context.read<NutritionBloc>().add(
@@ -232,10 +233,9 @@ class _MealSection extends StatelessWidget {
     final theme = Theme.of(context);
     final isLogged = log != null;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: VitalityCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -365,20 +365,21 @@ class _MealSection extends StatelessWidget {
   }
 
   Widget _buildOffPlanText(BuildContext context, String text) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF3D2E00),
+        color: cs.errorContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          const Icon(Icons.edit_note, color: Color(0xFFFFCC80)),
+          Icon(Icons.edit_note, color: cs.error),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(color: Color(0xFFFFCC80)),
+              style: TextStyle(color: cs.onErrorContainer),
             ),
           ),
         ],
@@ -426,7 +427,7 @@ class _MealSection extends StatelessWidget {
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          ElevatedButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
                 context.read<NutritionBloc>().add(
