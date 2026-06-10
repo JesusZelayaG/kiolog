@@ -37,7 +37,8 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
   Future<void> _save() async {
     setState(() => _saving = true);
     final exerciseRepo = getIt<ExerciseRepository>();
-    final exercisePlanId = await exerciseRepo.createPlan(_planNameController.text);
+    final exercisePlanId =
+        await exerciseRepo.createPlan(_planNameController.text);
     for (int i = 0; i < _routineDays.length; i++) {
       final day = _routineDays[i];
       final routineName = day.nameController.text.trim().isEmpty
@@ -99,56 +100,57 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
                 child: VitalityCard(
                   padding: EdgeInsets.zero,
                   child: ExpansionTile(
-                  initiallyExpanded: true,
-                  title: Text('Día ${index + 1}'),
-                  subtitle: day.exercises.isEmpty
-                      ? const Text('Sin ejercicios')
-                      : Text('${day.exercises.length} ejercicio(s)'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () {
-                      setState(() {
-                        final removed = _routineDays.removeAt(index);
-                        removed.nameController.dispose();
-                        for (final e in removed.exercises) {
-                          e.name.dispose();
-                          e.sets.dispose();
-                          e.reps.dispose();
-                          e.weight.dispose();
-                        }
-                      });
-                    },
-                  ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: TextField(
-                        controller: day.nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre de la rutina',
-                          hintText: 'Ej: Pecho y tríceps',
-                        ),
-                      ),
-                    ),
-                    ...day.exercises.asMap().entries.map((e) {
-                      return _ExerciseRowLocal(
-                        entry: e.value,
-                        onDelete: () {
-                          setState(() => day.exercises.removeAt(e.key));
-                        },
-                      );
-                    }),
-                    ListTile(
-                      leading: const Icon(Icons.add),
-                      title: const Text('Agregar ejercicio'),
-                      onTap: () {
-                        setState(() => day.exercises.add(_ExerciseEntryLocal()));
+                    initiallyExpanded: true,
+                    title: Text('Día ${index + 1}'),
+                    subtitle: day.exercises.isEmpty
+                        ? const Text('Sin ejercicios')
+                        : Text('${day.exercises.length} ejercicio(s)'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () {
+                        setState(() {
+                          final removed = _routineDays.removeAt(index);
+                          removed.nameController.dispose();
+                          for (final e in removed.exercises) {
+                            e.name.dispose();
+                            e.sets.dispose();
+                            e.reps.dispose();
+                            e.weight.dispose();
+                          }
+                        });
                       },
                     ),
-                  ],
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: TextField(
+                          controller: day.nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre de la rutina',
+                            hintText: 'Ej: Pecho y tríceps',
+                          ),
+                        ),
+                      ),
+                      ...day.exercises.asMap().entries.map((e) {
+                        return _ExerciseRowLocal(
+                          entry: e.value,
+                          onDelete: () {
+                            setState(() => day.exercises.removeAt(e.key));
+                          },
+                        );
+                      }),
+                      ListTile(
+                        leading: const Icon(Icons.add),
+                        title: const Text('Agregar ejercicio'),
+                        onTap: () {
+                          setState(
+                              () => day.exercises.add(_ExerciseEntryLocal()));
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               );
             }),
             OutlinedButton.icon(

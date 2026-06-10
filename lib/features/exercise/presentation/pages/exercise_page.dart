@@ -135,7 +135,9 @@ class _ExerciseViewState extends State<_ExerciseView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.fitness_center, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(Icons.fitness_center,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Sin plan de ejercicio',
@@ -252,8 +254,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
           ...state.routines.map((routine) {
             final isCompleted = completedIds.contains(routine.id);
             final isExpanded = _expandedRoutineId == routine.id;
-            final items =
-                state.routineItemsByRoutine[routine.id] ?? const [];
+            final items = state.routineItemsByRoutine[routine.id] ?? const [];
 
             return _buildRoutineDayCard(
               context: context,
@@ -300,12 +301,10 @@ class _ExerciseViewState extends State<_ExerciseView> {
           InkWell(
             borderRadius: BorderRadius.circular(8),
             onTap: () => setState(() {
-              _expandedRoutineId =
-                  isExpanded ? null : routine.id;
+              _expandedRoutineId = isExpanded ? null : routine.id;
             }),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
                 children: [
                   CircleAvatar(
@@ -315,8 +314,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                         : theme.colorScheme.surfaceContainerHighest,
                     child: isCompleted
                         ? Icon(Icons.check,
-                            size: 14,
-                            color: theme.colorScheme.onTertiary)
+                            size: 14, color: theme.colorScheme.onTertiary)
                         : Text(
                             '${routine.dayNumber}',
                             style: theme.textTheme.labelSmall,
@@ -368,8 +366,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
               child: Align(
                 alignment: Alignment.centerRight,
                 child: OutlinedButton.icon(
-                  onPressed: () =>
-                      _showExerciseDialog(context, state, routineId: routine.id),
+                  onPressed: () => _showExerciseDialog(context, state,
+                      routineId: routine.id),
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Ejercicio'),
                   style: OutlinedButton.styleFrom(
@@ -384,10 +382,10 @@ class _ExerciseViewState extends State<_ExerciseView> {
     );
   }
 
-  Widget _buildItemRow(BuildContext context, ExerciseRoutineItem item, int routineId) {
+  Widget _buildItemRow(
+      BuildContext context, ExerciseRoutineItem item, int routineId) {
     final theme = Theme.of(context);
-    final weightStr =
-        item.weightKg != null ? ' @ ${item.weightKg}kg' : '';
+    final weightStr = item.weightKg != null ? ' @ ${item.weightKg}kg' : '';
     return ListTile(
       dense: true,
       contentPadding: const EdgeInsets.only(left: 16, right: 4),
@@ -402,9 +400,9 @@ class _ExerciseViewState extends State<_ExerciseView> {
         children: [
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 18),
-            onPressed: () =>
-                _showExerciseDialog(context, context.read<ExerciseBloc>().state,
-                    item: item, routineId: routineId),
+            onPressed: () => _showExerciseDialog(
+                context, context.read<ExerciseBloc>().state,
+                item: item, routineId: routineId),
             visualDensity: VisualDensity.compact,
           ),
           IconButton(
@@ -424,8 +422,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
     ExerciseRoutineItem? item,
     required int routineId,
   }) {
-    final nameCtrl =
-        TextEditingController(text: item?.exerciseName ?? '');
+    final nameCtrl = TextEditingController(text: item?.exerciseName ?? '');
     final setsCtrl =
         TextEditingController(text: item != null ? '${item.sets}' : '');
     final repsCtrl =
@@ -457,7 +454,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
           final setsCount = int.tryParse(setsCtrl.text) ?? 0;
 
           return AlertDialog(
-            title: Text(item == null ? 'Agregar ejercicio' : 'Editar ejercicio'),
+            title:
+                Text(item == null ? 'Agregar ejercicio' : 'Editar ejercicio'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -465,8 +463,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    decoration:
-                        const InputDecoration(labelText: 'Nombre *'),
+                    decoration: const InputDecoration(labelText: 'Nombre *'),
                     autofocus: item == null,
                   ),
                   const SizedBox(height: 8),
@@ -480,8 +477,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                           keyboardType: TextInputType.number,
                           onChanged: (v) {
                             if (!isNormal) {
-                              rebuildRows(
-                                  int.tryParse(v) ?? 0, setInner);
+                              rebuildRows(int.tryParse(v) ?? 0, setInner);
                             }
                           },
                         ),
@@ -499,8 +495,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                       Expanded(
                         child: TextField(
                           controller: weightCtrl,
-                          decoration:
-                              const InputDecoration(labelText: 'kg'),
+                          decoration: const InputDecoration(labelText: 'kg'),
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
                         ),
@@ -513,8 +508,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                     decoration:
                         const InputDecoration(labelText: 'Tipo de serie'),
                     items: const [
-                      DropdownMenuItem(
-                          value: 'normal', child: Text('Normal')),
+                      DropdownMenuItem(value: 'normal', child: Text('Normal')),
                       DropdownMenuItem(
                           value: 'pyramid', child: Text('Pirámide')),
                       DropdownMenuItem(
@@ -551,16 +545,13 @@ class _ExerciseViewState extends State<_ExerciseView> {
                             SizedBox(
                                 width: 24,
                                 child: Text('${i + 1}',
-                                    style: Theme.of(ctx)
-                                        .textTheme
-                                        .bodySmall)),
+                                    style: Theme.of(ctx).textTheme.bodySmall)),
                             const SizedBox(width: 8),
                             Expanded(
                               child: TextField(
                                 controller: rCtrl,
                                 decoration: const InputDecoration(
-                                    labelText: 'Reps',
-                                    isDense: true),
+                                    labelText: 'Reps', isDense: true),
                                 keyboardType: TextInputType.number,
                               ),
                             ),
@@ -609,13 +600,17 @@ class _ExerciseViewState extends State<_ExerciseView> {
                           return (
                             setNumber: i + 1,
                             dropOfSetNumber: null as int?,
-                            reps:
-                                int.tryParse(rCtrl.text) ?? reps,
+                            reps: int.tryParse(rCtrl.text) ?? reps,
                             weightKg: double.tryParse(
                                 wCtrl.text.replaceAll(',', '.')),
                           );
                         })
-                      : <({int setNumber, int? dropOfSetNumber, int reps, double? weightKg})>[];
+                      : <({
+                          int setNumber,
+                          int? dropOfSetNumber,
+                          int reps,
+                          double? weightKg
+                        })>[];
 
                   if (item == null) {
                     context.read<ExerciseBloc>().add(
@@ -704,8 +699,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const Spacer(),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
               decoration: BoxDecoration(
                 color: done >= goal
                     ? theme.colorScheme.tertiaryContainer
@@ -727,6 +721,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
         const SizedBox(height: 6),
         VitalityProgressBar(
           value: goal > 0 ? (done / goal).clamp(0.0, 1.0) : 0,
+          color: theme.colorScheme.primary,
         ),
         const SizedBox(height: 10),
         ...state.weeklyCardioLogs.map((log) => _buildCardioItem(context, log)),
@@ -809,8 +804,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                 value: selectedType,
                 decoration: const InputDecoration(labelText: 'Tipo'),
                 items: types
-                    .map((t) =>
-                        DropdownMenuItem(value: t, child: Text(t)))
+                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setInner(() => selectedType = v);
@@ -890,10 +884,10 @@ class _ExerciseViewState extends State<_ExerciseView> {
     );
   }
 
-  Widget _buildIndependentItem(BuildContext context, IndependentExerciseLog log) {
+  Widget _buildIndependentItem(
+      BuildContext context, IndependentExerciseLog log) {
     final theme = Theme.of(context);
-    final weightStr =
-        log.weightKg != null ? ' @ ${log.weightKg}kg' : '';
+    final weightStr = log.weightKg != null ? ' @ ${log.weightKg}kg' : '';
     final weekday = _weekdayName(log.date.weekday);
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -939,8 +933,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                 Expanded(
                   child: TextField(
                     controller: setsCtrl,
-                    decoration:
-                        const InputDecoration(labelText: 'Series *'),
+                    decoration: const InputDecoration(labelText: 'Series *'),
                     keyboardType: TextInputType.number,
                   ),
                 ),
@@ -957,8 +950,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
                   child: TextField(
                     controller: weightCtrl,
                     decoration: const InputDecoration(labelText: 'kg'),
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                   ),
                 ),
               ],
@@ -976,8 +969,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
               final sets = int.tryParse(setsCtrl.text);
               final reps = int.tryParse(repsCtrl.text);
               if (name.isEmpty || sets == null || reps == null) return;
-              final weight = double.tryParse(
-                  weightCtrl.text.replaceAll(',', '.'));
+              final weight =
+                  double.tryParse(weightCtrl.text.replaceAll(',', '.'));
               context.read<ExerciseBloc>().add(IndependentExerciseLogged(
                     date: DateTime.now(),
                     exerciseName: name,
@@ -1064,8 +1057,14 @@ class _ExerciseViewState extends State<_ExerciseView> {
 
   String _weekdayName(int weekday) {
     const names = [
-      '', 'lunes', 'martes', 'miércoles',
-      'jueves', 'viernes', 'sábado', 'domingo'
+      '',
+      'lunes',
+      'martes',
+      'miércoles',
+      'jueves',
+      'viernes',
+      'sábado',
+      'domingo'
     ];
     return names[weekday.clamp(1, 7)];
   }

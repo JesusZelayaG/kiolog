@@ -72,8 +72,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: items.length,
-                  itemBuilder: (ctx, i) =>
-                      _buildItemTile(ctx, state, items[i]),
+                  itemBuilder: (ctx, i) => _buildItemTile(ctx, state, items[i]),
                 ),
               ),
             ],
@@ -136,38 +135,37 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
         child: Column(
           children: [
             ListTile(
-            leading: Icon(
-              icon,
-              color: isCompleted
-                  ? Theme.of(context).colorScheme.tertiary
-                  : isExpanded
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
+              leading: Icon(
+                icon,
+                color: isCompleted
+                    ? Theme.of(context).colorScheme.tertiary
+                    : isExpanded
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+              ),
+              title: Text(
+                item.exerciseName,
+                style: isCompleted
+                    ? const TextStyle(decoration: TextDecoration.lineThrough)
+                    : null,
+              ),
+              subtitle: Text('${item.sets} series × ${item.reps} reps'
+                  '${item.weightKg != null ? ' @ ${item.weightKg}kg' : ''}'),
+              onTap: isCompleted
+                  ? null
+                  : () {
+                      if (!isExpanded) {
+                        _initRowsIfNeeded(item, state);
+                      }
+                      setState(() {
+                        _expandedItemId = isExpanded ? null : item.id;
+                      });
+                    },
             ),
-            title: Text(
-              item.exerciseName,
-              style: isCompleted
-                  ? const TextStyle(decoration: TextDecoration.lineThrough)
-                  : null,
-            ),
-            subtitle: Text('${item.sets} series × ${item.reps} reps'
-                '${item.weightKg != null ? ' @ ${item.weightKg}kg' : ''}'),
-            onTap: isCompleted
-                ? null
-                : () {
-                    if (!isExpanded) {
-                      _initRowsIfNeeded(item, state);
-                    }
-                    setState(() {
-                      _expandedItemId = isExpanded ? null : item.id;
-                    });
-                  },
-          ),
-          if (isExpanded)
-            _buildExpandedPanel(context, state, item),
-        ],
+            if (isExpanded) _buildExpandedPanel(context, state, item),
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -259,7 +257,8 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
       final routineId = state.activeSession?.routineId;
       if (routineId == null) continue;
       final items = state.routineItemsByRoutine[routineId] ?? [];
-      final item = items.cast<ExerciseRoutineItem?>()
+      final item = items
+          .cast<ExerciseRoutineItem?>()
           .firstWhere((i) => i?.id == itemId, orElse: () => null);
       if (item == null) continue;
 
@@ -363,8 +362,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
 
     final saved = state.sessionSets.cast<ExerciseSetLog?>().firstWhere(
           (s) =>
-              s?.exerciseName == item.exerciseName &&
-              s?.setNumber == parentNum,
+              s?.exerciseName == item.exerciseName && s?.setNumber == parentNum,
           orElse: () => null,
         );
     return saved?.id;
@@ -425,7 +423,8 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
                 value: row.setType == 'drop' ? 'drop' : row.setType,
                 isDense: true,
                 items: [
-                  const DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                  const DropdownMenuItem(
+                      value: 'normal', child: Text('Normal')),
                   const DropdownMenuItem(
                       value: 'pyramid', child: Text('Pirámide')),
                   if (row.setType == 'drop')
@@ -448,8 +447,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
           readOnly: isReadonly,
           decoration: const InputDecoration(
             isDense: true,
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             border: OutlineInputBorder(),
           ),
           onChanged: (_) => setState(() {}),
@@ -461,13 +459,11 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: TextField(
           controller: row.weightCtrl,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           readOnly: isReadonly,
           decoration: const InputDecoration(
             isDense: true,
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             border: OutlineInputBorder(),
           ),
           onChanged: (_) => setState(() {}),
@@ -477,8 +473,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
       // Guardar / check
       isReadonly
           ? const Center(
-              child:
-                  Icon(Icons.check_circle, color: Colors.green, size: 20),
+              child: Icon(Icons.check_circle, color: Colors.green, size: 20),
             )
           : TextButton(
               onPressed: canSave
@@ -544,8 +539,8 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
                 TableRow(
                   decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(
-                          color: theme.colorScheme.outlineVariant),
+                      bottom:
+                          BorderSide(color: theme.colorScheme.outlineVariant),
                     ),
                   ),
                   children: const [

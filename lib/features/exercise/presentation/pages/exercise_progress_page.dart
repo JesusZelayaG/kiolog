@@ -235,11 +235,23 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
     final s = _semanaStats(state);
     return Row(
       children: [
-        Expanded(child: StatChip(value: '${s.routineDays}/${state.routineDaysGoal}', label: 'días rutina', color: theme.colorScheme.primary)),
+        Expanded(
+            child: StatChip(
+                value: '${s.routineDays}/${state.routineDaysGoal}',
+                label: 'días rutina',
+                color: theme.colorScheme.primary)),
         const SizedBox(width: 8),
-        Expanded(child: StatChip(value: '${s.cardioDays}/${state.cardioDaysGoal}', label: 'días cardio', color: theme.colorScheme.tertiary)),
+        Expanded(
+            child: StatChip(
+                value: '${s.cardioDays}/${state.cardioDaysGoal}',
+                label: 'días cardio',
+                color: theme.colorScheme.tertiary)),
         const SizedBox(width: 8),
-        Expanded(child: StatChip(value: '${s.sessions}', label: 'sesiones', color: theme.colorScheme.secondary)),
+        Expanded(
+            child: StatChip(
+                value: '${s.sessions}',
+                label: 'sesiones',
+                color: theme.colorScheme.secondary)),
       ],
     );
   }
@@ -256,8 +268,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
     final weeks = monthStats.isEmpty ? 1 : monthStats.length;
     final totalRoutine =
         monthStats.fold(0, (sum, s) => sum + s.routineDaysDone);
-    final totalCardio =
-        monthStats.fold(0, (sum, s) => sum + s.cardioDaysDone);
+    final totalCardio = monthStats.fold(0, (sum, s) => sum + s.cardioDaysDone);
 
     final routinePct = state.routineDaysGoal > 0
         ? (totalRoutine * 100 / (weeks * state.routineDaysGoal)).round()
@@ -270,11 +281,23 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
     final theme = Theme.of(context);
     return Row(
       children: [
-        Expanded(child: StatChip(value: '$routinePct%', label: 'rutina', color: theme.colorScheme.primary)),
+        Expanded(
+            child: StatChip(
+                value: '$routinePct%',
+                label: 'rutina',
+                color: theme.colorScheme.primary)),
         const SizedBox(width: 8),
-        Expanded(child: StatChip(value: '$cardioPct%', label: 'cardio', color: theme.colorScheme.tertiary)),
+        Expanded(
+            child: StatChip(
+                value: '$cardioPct%',
+                label: 'cardio',
+                color: theme.colorScheme.tertiary)),
         const SizedBox(width: 8),
-        Expanded(child: StatChip(value: '$sessions', label: 'sesiones', color: theme.colorScheme.secondary)),
+        Expanded(
+            child: StatChip(
+                value: '$sessions',
+                label: 'sesiones',
+                color: theme.colorScheme.secondary)),
       ],
     );
   }
@@ -343,16 +366,38 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
 
   String _monthAbbr(int month) {
     const abbrs = [
-      '', 'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
+      '',
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic'
     ];
     return abbrs[month.clamp(1, 12)];
   }
 
   String _monthName(int month) {
     const names = [
-      '', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+      '',
+      'enero',
+      'febrero',
+      'marzo',
+      'abril',
+      'mayo',
+      'junio',
+      'julio',
+      'agosto',
+      'septiembre',
+      'octubre',
+      'noviembre',
+      'diciembre'
     ];
     return names[month.clamp(1, 12)];
   }
@@ -428,8 +473,7 @@ class _BarChartPainter extends CustomPainter {
         (i + 1) * barW - pad,
         chartH,
       );
-      final rr =
-          RRect.fromRectAndRadius(rect, const Radius.circular(3));
+      final rr = RRect.fromRectAndRadius(rect, const Radius.circular(3));
 
       if (isPartial) {
         canvas.drawRRect(rr, partialFill);
@@ -459,8 +503,7 @@ class _BarChartPainter extends CustomPainter {
         canvas, Offset(r.right, r.top), Offset(r.right, r.bottom), paint);
     _dashedSeg(
         canvas, Offset(r.right, r.bottom), Offset(r.left, r.bottom), paint);
-    _dashedSeg(
-        canvas, Offset(r.left, r.bottom), Offset(r.left, r.top), paint);
+    _dashedSeg(canvas, Offset(r.left, r.bottom), Offset(r.left, r.top), paint);
   }
 
   void _dashedSeg(Canvas canvas, Offset a, Offset b, Paint paint) {
