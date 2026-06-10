@@ -1,7 +1,9 @@
 import 'package:go_router/go_router.dart';
 import '../../features/achievements/presentation/pages/achievements_page.dart';
+import '../../features/exercise/presentation/pages/exercise_config_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/nutrition/presentation/pages/nutrition_config_page.dart';
 import '../../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../../features/exercise/presentation/pages/exercise_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
@@ -9,6 +11,7 @@ import '../../features/progress/presentation/pages/progress_page.dart';
 import '../../features/reports/presentation/pages/report_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/sleep/presentation/pages/sleep_page.dart';
+import '../../features/water/presentation/pages/water_config_page.dart';
 import '../../features/water/presentation/pages/water_page.dart';
 import '../../shared/widgets/app_scaffold.dart';
 
@@ -63,6 +66,18 @@ GoRouter createRouter({String initialLocation = '/'}) => GoRouter(
         GoRoute(
           path: '/onboarding',
           builder: (context, state) => const OnboardingPage(),
+        ),
+        GoRoute(
+          path: '/config/water',
+          builder: (_, __) => WaterConfigPage(onComplete: () {}),
+        ),
+        GoRoute(
+          path: '/config/nutrition',
+          builder: (_, __) => NutritionConfigPage(onComplete: () {}),
+        ),
+        GoRoute(
+          path: '/config/exercise',
+          builder: (_, __) => ExerciseConfigPage(onComplete: () {}),
         ),
       ],
     );
