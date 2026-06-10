@@ -28,9 +28,9 @@ class KiologApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Kiolog',
-      theme: AppTheme.light,
+      theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark,
       routerConfig: createRouter(
         initialLocation: onboardingComplete ? '/' : '/onboarding',
       ),
