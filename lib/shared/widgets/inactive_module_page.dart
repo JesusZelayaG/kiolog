@@ -87,7 +87,7 @@ class InactiveModulePage extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-              FilledButton(
+              ElevatedButton(
                 onPressed: () => _openConfigPage(context),
                 child: const Text('Activar y configurar'),
               ),
