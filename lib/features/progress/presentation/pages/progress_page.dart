@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import 'package:kiolog/shared/widgets/vitality_card.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/repositories/progress_repository.dart';
 import '../bloc/progress_bloc.dart';
@@ -66,59 +67,57 @@ class _ProgressView extends StatelessWidget {
     final latest = state.latestWeight;
     final change = state.weightChange;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Peso', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
-            if (latest != null)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${latest.toStringAsFixed(1)}',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+    return VitalityCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Peso', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
+          if (latest != null)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${latest.toStringAsFixed(1)}',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(width: 4),
-                  Text('kg', style: theme.textTheme.bodyLarge),
-                  const Spacer(),
-                  if (change != null)
-                    Chip(
-                      label: Text(
-                        '${change >= 0 ? '+' : ''}${change.toStringAsFixed(1)} kg',
-                        style: TextStyle(
-                          color: change <= 0
-                              ? theme.colorScheme.onPrimaryContainer
-                              : theme.colorScheme.onErrorContainer,
-                        ),
+                ),
+                const SizedBox(width: 4),
+                Text('kg', style: theme.textTheme.bodyLarge),
+                const Spacer(),
+                if (change != null)
+                  Chip(
+                    label: Text(
+                      '${change >= 0 ? '+' : ''}${change.toStringAsFixed(1)} kg',
+                      style: TextStyle(
+                        color: change <= 0
+                            ? theme.colorScheme.onPrimaryContainer
+                            : theme.colorScheme.onErrorContainer,
                       ),
-                      backgroundColor: change <= 0
-                          ? theme.colorScheme.primaryContainer
-                          : theme.colorScheme.errorContainer,
-                      side: BorderSide.none,
                     ),
-                ],
-              )
-            else
-              Text(
-                'Sin registros',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    backgroundColor: change <= 0
+                        ? theme.colorScheme.primaryContainer
+                        : theme.colorScheme.errorContainer,
+                    side: BorderSide.none,
+                  ),
+              ],
+            )
+          else
+            Text(
+              'Sin registros',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => _showAddWeightDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Registrar peso'),
             ),
-          ],
-        ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () => _showAddWeightDialog(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Registrar peso'),
+          ),
+        ],
       ),
     );
   }
@@ -134,7 +133,10 @@ class _ProgressView extends StatelessWidget {
       ('Cintura', m.waistCm != null ? '${m.waistCm} cm' : null),
       ('Cadera', m.hipCm != null ? '${m.hipCm} cm' : null),
       ('Pantorrilla', m.calfCm != null ? '${m.calfCm} cm' : null),
-      ('Abdomen bajo', m.lowerAbdomenCm != null ? '${m.lowerAbdomenCm} cm' : null),
+      (
+        'Abdomen bajo',
+        m.lowerAbdomenCm != null ? '${m.lowerAbdomenCm} cm' : null
+      ),
       ('Muslo', m.thighCm != null ? '${m.thighCm} cm' : null),
       ('Glúteo', m.midGluteusCm != null ? '${m.midGluteusCm} cm' : null),
       ('Tórax', m.chestCm != null ? '${m.chestCm} cm' : null),
@@ -143,35 +145,34 @@ class _ProgressView extends StatelessWidget {
       ('Masa visceral', m.visceralMass != null ? '${m.visceralMass}' : null),
     ];
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Última consulta', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              DateFormat.yMMMd('es').format(m.date),
-              style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+    return VitalityCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Última consulta', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            DateFormat.yMMMd('es').format(m.date),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: fields
-                  .where((f) => f.$2 != null)
-                  .map((f) => Chip(
-                        label: Text('${f.$1}: ${f.$2}'),
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                        side: BorderSide.none,
-                      ))
-                  .toList(),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: fields
+                .where((f) => f.$2 != null)
+                .map((f) => Chip(
+                      label: Text('${f.$1}: ${f.$2}'),
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
+                      side: BorderSide.none,
+                    ))
+                .toList(),
+          ),
+        ],
       ),
     );
   }
@@ -179,32 +180,30 @@ class _ProgressView extends StatelessWidget {
   Widget _buildWeightHistory(BuildContext context, ProgressState state) {
     final theme = Theme.of(context);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Historial de peso', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
-            ...state.weightLogs.reversed.take(10).map((log) {
-              return ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: Text(
-                  DateFormat.MMMd('es').format(log.date),
-                  style: theme.textTheme.bodyMedium,
+    return VitalityCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Historial de peso', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
+          ...state.weightLogs.reversed.take(10).map((log) {
+            return ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Text(
+                DateFormat.MMMd('es').format(log.date),
+                style: theme.textTheme.bodyMedium,
+              ),
+              trailing: Text(
+                '${log.weightKg.toStringAsFixed(1)} kg',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                trailing: Text(
-                  '${log.weightKg.toStringAsFixed(1)} kg',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              );
-            }),
-          ],
-        ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
@@ -229,7 +228,7 @@ class _ProgressView extends StatelessWidget {
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          ElevatedButton(
             onPressed: () {
               final weight = double.tryParse(controller.text);
               if (weight != null && weight > 0) {
@@ -279,7 +278,8 @@ class _ProgressView extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: TextField(
                   controller: e.value,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(labelText: e.key),
                 ),
               );
@@ -291,7 +291,7 @@ class _ProgressView extends StatelessWidget {
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          ElevatedButton(
             onPressed: () {
               final weight = double.tryParse(fields['Peso (kg)']!.text);
               final height = double.tryParse(fields['Talla (cm)']!.text);
@@ -306,7 +306,8 @@ class _ProgressView extends StatelessWidget {
                         waistCm: _parse(fields['Cintura (cm)']!.text),
                         hipCm: _parse(fields['Cadera (cm)']!.text),
                         calfCm: _parse(fields['Pantorrilla (cm)']!.text),
-                        lowerAbdomenCm: _parse(fields['Abdomen bajo (cm)']!.text),
+                        lowerAbdomenCm:
+                            _parse(fields['Abdomen bajo (cm)']!.text),
                         thighCm: _parse(fields['Muslo (cm)']!.text),
                         midGluteusCm: _parse(fields['Glúteo (cm)']!.text),
                         chestCm: _parse(fields['Tórax (cm)']!.text),

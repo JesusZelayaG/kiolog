@@ -35,7 +35,8 @@ class WaterPage extends StatelessWidget {
 class _WaterView extends StatelessWidget {
   const _WaterView();
 
-  String _unitLabel(String unitType) => unitType == 'bottle' ? 'botella' : 'vaso';
+  String _unitLabel(String unitType) =>
+      unitType == 'bottle' ? 'botella' : 'vaso';
 
   String _unitLabelPlural(String unitType) =>
       unitType == 'bottle' ? 'botellas' : 'vasos';
@@ -101,7 +102,7 @@ class _WaterView extends StatelessWidget {
                           backgroundColor: Theme.of(context)
                               .colorScheme
                               .primaryContainer
-                              .withOpacity(0.4),
+                              .withValues(alpha: 0.4),
                         ),
                         Center(
                           child: Icon(
@@ -114,7 +115,7 @@ class _WaterView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  FilledButton.icon(
+                  ElevatedButton.icon(
                     onPressed: () {
                       context.read<WaterBloc>().add(
                             WaterAdded(
@@ -179,7 +180,7 @@ class _WaterView extends StatelessWidget {
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          ElevatedButton(
             onPressed: () {
               final amount = int.tryParse(controller.text);
               if (amount != null && amount > 0) {
@@ -251,7 +252,7 @@ class _WaterView extends StatelessWidget {
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancelar'),
             ),
-            FilledButton(
+            ElevatedButton(
               onPressed: () {
                 context.read<WaterBloc>().add(
                       WaterConfigUpdated(

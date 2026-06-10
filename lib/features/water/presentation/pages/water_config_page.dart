@@ -110,7 +110,7 @@ class _WaterConfigPageState extends State<WaterConfigPage> {
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
+              child: ElevatedButton(
                 onPressed: _saving ? null : _save,
                 child: const Text('Guardar'),
               ),
