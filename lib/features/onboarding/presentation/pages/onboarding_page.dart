@@ -132,7 +132,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
 
     // Save nutrition plan
     final nutritionRepo = getIt<NutritionRepository>();
-    final planId = await nutritionRepo.createPlan(_mealPlanNameController.text);
+    final planId = await nutritionRepo.createPlan(_mealPlanNameController.text, dailyMealGoal: 4);
     for (final entry in _mealOptions.entries) {
       for (int i = 0; i < entry.value.length; i++) {
         final text = entry.value[i].text.trim();
