@@ -6,6 +6,7 @@ import '../../domain/repositories/nutrition_repository.dart';
 import '../bloc/nutrition_bloc.dart';
 import '../bloc/nutrition_event.dart';
 import '../bloc/nutrition_state.dart';
+import 'nutrition_progress_page.dart';
 
 class NutritionPage extends StatelessWidget {
   const NutritionPage({super.key});
@@ -49,6 +50,20 @@ class _NutritionView extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Nutrición'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () {
+              final bloc = context.read<NutritionBloc>();
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => BlocProvider.value(
+                    value: bloc,
+                    child: const NutritionProgressPage(),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             onPressed: () => _showPlansDialog(context),
@@ -144,33 +159,65 @@ class _NutritionView extends StatelessWidget {
   }
 
   void _showCreatePlanDialog(BuildContext context) {
-    final controller = TextEditingController();
+    final nameController = TextEditingController();
+    int goalValue = 4;
+
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Nuevo plan alimenticio'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'Nombre del plan'),
-          autofocus: true,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setLocalState) => AlertDialog(
+          title: const Text('Nuevo plan alimenticio'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration:
+                    const InputDecoration(labelText: 'Nombre del plan'),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              Row(children: [
+                const Expanded(child: Text('Comidas por día')),
+                IconButton(
+                  icon: const Icon(Icons.remove),
+                  onPressed: goalValue > 1
+                      ? () => setLocalState(() => goalValue--)
+                      : null,
+                ),
+                Text('$goalValue',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: goalValue < 10
+                      ? () => setLocalState(() => goalValue++)
+                      : null,
+                ),
+              ]),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (nameController.text.isNotEmpty) {
+                  context.read<NutritionBloc>().add(
+                        NutritionPlanCreated(
+                          name: nameController.text,
+                          dailyMealGoal: goalValue,
+                        ),
+                      );
+                }
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Crear'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                context.read<NutritionBloc>().add(
-                      NutritionPlanCreated(name: controller.text),
-                    );
-              }
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Crear'),
-          ),
-        ],
       ),
     );
   }
