@@ -95,6 +95,8 @@ void main() {
                   freeDescription: null,
                   photoPath: null),
             ]);
+        when(() => repository.getWeeklyAdherence(weeksBack: 8))
+            .thenAnswer((_) async => []);
         return NutritionBloc(repository)
           ..emit(const NutritionState(status: NutritionStatus.success));
       },
@@ -115,6 +117,44 @@ void main() {
                 freeDescription: null,
                 photoPath: null),
           ],
+          weeklyAdherence: [],
+        ),
+      ],
+    );
+
+    blocTest<NutritionBloc, NutritionState>(
+      '_onLoaded emits failure on repository error',
+      build: () {
+        when(() => repository.getActivePlan())
+            .thenThrow(Exception('DB error'));
+        return NutritionBloc(repository);
+      },
+      act: (bloc) => bloc.add(NutritionLoaded(date: DateTime(2026, 6, 8))),
+      expect: () => [
+        const NutritionState(status: NutritionStatus.loading),
+        isA<NutritionState>().having(
+          (s) => s.status,
+          'status',
+          NutritionStatus.failure,
+        ),
+      ],
+    );
+
+    blocTest<NutritionBloc, NutritionState>(
+      '_onLoaded emits empty weeklyAdherence when list is empty',
+      build: () {
+        when(() => repository.getActivePlan()).thenAnswer((_) async => null);
+        when(() => repository.getDailyLogs(any())).thenAnswer((_) async => []);
+        when(() => repository.getWeeklyAdherence(weeksBack: 8))
+            .thenAnswer((_) async => []);
+        return NutritionBloc(repository);
+      },
+      act: (bloc) => bloc.add(NutritionLoaded(date: DateTime(2026, 6, 8))),
+      expect: () => [
+        const NutritionState(status: NutritionStatus.loading),
+        const NutritionState(
+          status: NutritionStatus.success,
+          weeklyAdherence: [],
         ),
       ],
     );

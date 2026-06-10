@@ -71,7 +71,8 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
         planOptionId: event.planOptionId,
       );
       final logs = await _repository.getDailyLogs(event.date);
-      emit(state.copyWith(dailyLogs: logs));
+      final adherence = await _repository.getWeeklyAdherence(weeksBack: 8);
+      emit(state.copyWith(dailyLogs: logs, weeklyAdherence: adherence));
     } catch (e) {
       emit(state.copyWith(status: NutritionStatus.failure, error: e.toString()));
     }
@@ -88,7 +89,8 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
         mealType: event.mealType,
       );
       final logs = await _repository.getDailyLogs(event.date);
-      emit(state.copyWith(dailyLogs: logs));
+      final adherence = await _repository.getWeeklyAdherence(weeksBack: 8);
+      emit(state.copyWith(dailyLogs: logs, weeklyAdherence: adherence));
     } catch (e) {
       emit(state.copyWith(status: NutritionStatus.failure, error: e.toString()));
     }
@@ -106,7 +108,8 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
         description: event.description,
       );
       final logs = await _repository.getDailyLogs(event.date);
-      emit(state.copyWith(dailyLogs: logs));
+      final adherence = await _repository.getWeeklyAdherence(weeksBack: 8);
+      emit(state.copyWith(dailyLogs: logs, weeklyAdherence: adherence));
     } catch (e) {
       emit(state.copyWith(status: NutritionStatus.failure, error: e.toString()));
     }
