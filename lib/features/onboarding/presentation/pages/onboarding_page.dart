@@ -36,28 +36,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
 
   // Step 3: Nutrition
   final _mealPlanNameController = TextEditingController(text: 'Mi Plan');
-  final Map<String, List<TextEditingController>> _mealOptions = {
-    'breakfast': [
-      TextEditingController(),
-      TextEditingController(),
-      TextEditingController(),
-    ],
-    'lunch': [
-      TextEditingController(),
-      TextEditingController(),
-      TextEditingController(),
-    ],
-    'dinner': [
-      TextEditingController(),
-      TextEditingController(),
-      TextEditingController(),
-    ],
-    'snack': [
-      TextEditingController(),
-      TextEditingController(),
-      TextEditingController(),
-    ],
-  };
+  final List<_MealTime> _mealTimes = [_MealTime()];
 
   // Step 4: Exercise — días de rutina numerados (Día 1, Día 2, ...)
   final _exercisePlanNameController = TextEditingController(text: 'Mi Rutina');
@@ -67,17 +46,6 @@ class _OnboardingViewState extends State<_OnboardingView> {
   final _weightController = TextEditingController();
   DateTime _startDate = DateTime.now();
 
-  String _mealTypeLabel(String type) {
-    return switch (type) {
-      'breakfast' => 'Desayuno',
-      'lunch' => 'Almuerzo',
-      'dinner' => 'Cena',
-      'snack' => 'Entrecomida',
-      _ => type,
-    };
-  }
-
-
 
   @override
   void dispose() {
@@ -85,10 +53,9 @@ class _OnboardingViewState extends State<_OnboardingView> {
     _mealPlanNameController.dispose();
     _exercisePlanNameController.dispose();
     _weightController.dispose();
-    for (final list in _mealOptions.values) {
-      for (final c in list) {
-        c.dispose();
-      }
+    for (final mt in _mealTimes) {
+      mt.nameController.dispose();
+      for (final c in mt.options) c.dispose();
     }
     for (final day in _routineDays) {
       day.nameController.dispose();
@@ -132,14 +99,19 @@ class _OnboardingViewState extends State<_OnboardingView> {
 
     // Save nutrition plan
     final nutritionRepo = getIt<NutritionRepository>();
-    final planId = await nutritionRepo.createPlan(_mealPlanNameController.text, dailyMealGoal: 4);
-    for (final entry in _mealOptions.entries) {
-      for (int i = 0; i < entry.value.length; i++) {
-        final text = entry.value[i].text.trim();
+    final planId = await nutritionRepo.createPlan(
+      _mealPlanNameController.text,
+      dailyMealGoal: _mealTimes.length,
+    );
+    for (final mealTime in _mealTimes) {
+      final typeName = mealTime.nameController.text.trim();
+      if (typeName.isEmpty) continue;
+      for (int i = 0; i < mealTime.options.length; i++) {
+        final text = mealTime.options[i].text.trim();
         if (text.isNotEmpty) {
           await nutritionRepo.addPlanOption(
             planId: planId,
-            mealType: entry.key,
+            mealType: typeName,
             optionNumber: i + 1,
             description: text,
           );
@@ -353,7 +325,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
           Text('Plan de Alimentación', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text(
-            'Ingresa hasta 3 opciones para cada tiempo de comida. Puedes dejar en blanco las que no uses.',
+            'Define tus tiempos de comida y las opciones para cada uno.',
             style: theme.textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -362,31 +334,115 @@ class _OnboardingViewState extends State<_OnboardingView> {
             decoration: const InputDecoration(labelText: 'Nombre del plan'),
           ),
           const SizedBox(height: 24),
-          ..._mealOptions.entries.map((entry) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _mealTypeLabel(entry.key),
-                  style: theme.textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                ...entry.value.asMap().entries.map((opt) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: TextField(
-                      controller: opt.value,
-                      decoration: InputDecoration(
-                        labelText: 'Opción ${opt.key + 1}',
-                        hintText: 'Ej: Avena con frutas',
-                      ),
+          ..._mealTimes.asMap().entries.map((e) {
+            final index = e.key;
+            final mt = e.value;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Tiempo ${index + 1}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: mt.nameController,
+                            decoration: const InputDecoration(
+                              hintText: 'Ej: Desayuno',
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                        if (_mealTimes.length > 1)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            color: theme.colorScheme.error,
+                            onPressed: () {
+                              setState(() {
+                                mt.nameController.dispose();
+                                for (final c in mt.options) c.dispose();
+                                _mealTimes.removeAt(index);
+                              });
+                            },
+                          ),
+                      ],
                     ),
-                  );
-                }),
-                const SizedBox(height: 16),
-              ],
+                  ),
+                  const Divider(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        ...mt.options.asMap().entries.map((oe) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: oe.value,
+                                    decoration: InputDecoration(
+                                      labelText: 'Opción ${oe.key + 1}',
+                                      hintText: 'Ej: Avena con frutas',
+                                      isDense: true,
+                                    ),
+                                  ),
+                                ),
+                                if (mt.options.length > 1)
+                                  IconButton(
+                                    icon: const Icon(Icons.close, size: 18),
+                                    onPressed: () {
+                                      setState(() {
+                                        oe.value.dispose();
+                                        mt.options.removeAt(oe.key);
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              setState(() =>
+                                  mt.options.add(TextEditingController()));
+                            },
+                            icon: const Icon(Icons.add, size: 16),
+                            label: const Text('Agregar opción'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             );
           }),
+          OutlinedButton.icon(
+            onPressed: () {
+              setState(() => _mealTimes.add(_MealTime()));
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Agregar tiempo de comida'),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Meta diaria automática: ${_mealTimes.length} ${_mealTimes.length == 1 ? 'comida' : 'comidas'}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -522,6 +578,11 @@ class _OnboardingViewState extends State<_OnboardingView> {
       ),
     );
   }
+}
+
+class _MealTime {
+  final nameController = TextEditingController();
+  final List<TextEditingController> options = [TextEditingController()];
 }
 
 class _RoutineDay {
