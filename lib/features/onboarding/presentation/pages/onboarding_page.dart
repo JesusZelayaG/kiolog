@@ -38,6 +38,10 @@ class _OnboardingViewState extends State<_OnboardingView> {
   String _waterUnit = 'bottle';
   int _containerMl = 1000;
   int _dailyGoalMl = 3000;
+  late final _containerMlController =
+      TextEditingController(text: '$_containerMl');
+  late final _dailyGoalMlController =
+      TextEditingController(text: '$_dailyGoalMl');
 
   // Step 3: Nutrition
   final _mealPlanNameController = TextEditingController(text: 'Mi Plan');
@@ -55,6 +59,8 @@ class _OnboardingViewState extends State<_OnboardingView> {
   @override
   void dispose() {
     _pageController.dispose();
+    _containerMlController.dispose();
+    _dailyGoalMlController.dispose();
     _mealPlanNameController.dispose();
     _exercisePlanNameController.dispose();
     _weightController.dispose();
@@ -426,12 +432,13 @@ class _OnboardingViewState extends State<_OnboardingView> {
             segments: const [
               ButtonSegment(value: 'bottle', label: Text('Botella')),
               ButtonSegment(value: 'glass', label: Text('Vaso')),
-            ], 
+            ],
             selected: {_waterUnit},
             onSelectionChanged: (set) {
               setState(() {
                 _waterUnit = set.first;
                 _containerMl = _waterUnit == 'bottle' ? 1000 : 250;
+                _containerMlController.text = '$_containerMl';
               });
             },
           ),
@@ -442,8 +449,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
               suffixText: 'ml',
             ),
             keyboardType: TextInputType.number,
-            controller: TextEditingController(text: '$_containerMl')
-              ..selection = TextSelection.collapsed(offset: '$_containerMl'.length),
+            controller: _containerMlController,
             onChanged: (v) => _containerMl = int.tryParse(v) ?? _containerMl,
           ),
           const SizedBox(height: 16),
@@ -453,8 +459,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
               suffixText: 'ml',
             ),
             keyboardType: TextInputType.number,
-            controller: TextEditingController(text: '$_dailyGoalMl')
-              ..selection = TextSelection.collapsed(offset: '$_dailyGoalMl'.length),
+            controller: _dailyGoalMlController,
             onChanged: (v) => _dailyGoalMl = int.tryParse(v) ?? _dailyGoalMl,
           ),
           const SizedBox(height: 16),
@@ -633,7 +638,16 @@ class _OnboardingViewState extends State<_OnboardingView> {
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () {
-                    setState(() => _routineDays.removeAt(index));
+                    setState(() {
+                      final removed = _routineDays.removeAt(index);
+                      removed.nameController.dispose();
+                      for (final e in removed.exercises) {
+                        e.name.dispose();
+                        e.sets.dispose();
+                        e.reps.dispose();
+                        e.weight.dispose();
+                      }
+                    });
                   },
                 ),
                 children: [
