@@ -13,14 +13,14 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
   Future<int> insertMealPlan(MealPlansCompanion plan) async {
     return db.transaction(() async {
       final now = DateTime.now().toUtc();
-      final hasActive = await (select(mealPlans)
+      final hasActivePlan = await (select(mealPlans)
                 ..where((t) => t.isActive.equals(true)))
               .getSingleOrNull() !=
           null;
       return into(mealPlans).insert(plan.copyWith(
         createdAt: plan.createdAt.present ? plan.createdAt : Value(now),
-        isActive: Value(!hasActive),
-        periodStart: hasActive ? const Value(null) : Value(now),
+        isActive: Value(!hasActivePlan),
+        periodStart: hasActivePlan ? const Value(null) : Value(now),
       ));
     });
   }
@@ -95,13 +95,14 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Returns logs where from <= date < to (to is exclusive).
   Future<List<DailyMealLog>> getLogsInRange(DateTime from, DateTime to) {
     final f = DateTime.utc(from.year, from.month, from.day);
-    final t = DateTime.utc(to.year, to.month, to.day);
+    final tDay = DateTime.utc(to.year, to.month, to.day);
     return (select(dailyMealLogs)
           ..where((r) =>
               r.date.isBiggerOrEqualValue(f) &
-              r.date.isSmallerThanValue(t)))
+              r.date.isSmallerThanValue(tDay)))
         .get();
   }
 }

@@ -141,6 +141,21 @@ void main() {
       expect(plan.isActive, isTrue);
     });
 
+    test('insertMealPlan inserts second plan as inactive with no periodStart', () async {
+      // First plan auto-activates
+      await db.nutritionDao.insertMealPlan(
+        const MealPlansCompanion(name: Value('Plan A'), dailyMealGoal: Value(4)),
+      );
+      // Second plan should be inactive, no periodStart
+      final id2 = await db.nutritionDao.insertMealPlan(
+        const MealPlansCompanion(name: Value('Plan B'), dailyMealGoal: Value(3)),
+      );
+      final plans = await db.nutritionDao.getMealPlans();
+      final planB = plans.firstWhere((p) => p.id == id2);
+      expect(planB.isActive, isFalse);
+      expect(planB.periodStart, isNull);
+    });
+
     test('getLogsInRange returns only logs within range', () async {
       final planId = await db.nutritionDao.insertMealPlan(
         const MealPlansCompanion(name: Value('Plan'), dailyMealGoal: Value(4)),
@@ -173,6 +188,20 @@ void main() {
       );
       expect(logs.length, 1);
       expect(logs.first.date.toUtc(), DateTime.utc(2026, 6, 5));
+
+      // Verify the June 3 log is included (inclusive lower bound)
+      // Insert a log on June 3 first, re-run the range query
+      await db.nutritionDao.insertDailyMealLog(DailyMealLogsCompanion(
+        date: Value(DateTime.utc(2026, 6, 3)),
+        mealType: const Value('lunch'),
+        planOptionId: Value(optId),
+      ));
+      final logs2 = await db.nutritionDao.getLogsInRange(
+        DateTime.utc(2026, 6, 3),
+        DateTime.utc(2026, 6, 10),
+      );
+      expect(logs2.length, 2); // June 3 + June 5
+      expect(logs2.any((l) => l.date.toUtc() == DateTime.utc(2026, 6, 3)), isTrue);
     });
   });
 }
