@@ -579,7 +579,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
                 label: const Text('+ Drop'),
               ),
               const Spacer(),
-              FilledButton.icon(
+              ElevatedButton.icon(
                 onPressed: () => _markItemCompleted(context, item),
                 icon: const Icon(Icons.flag, size: 16),
                 label: const Text('Listo'),
