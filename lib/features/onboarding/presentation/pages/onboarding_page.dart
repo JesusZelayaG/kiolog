@@ -248,16 +248,13 @@ class _OnboardingViewState extends State<_OnboardingView> {
                   else
                     const SizedBox(width: 80),
                   const Spacer(),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _canProceed
-                          ? (_currentStep == _totalSteps - 1 ? _finish : _nextStep)
-                          : null,
-                      child: Text(_currentStep == _totalSteps - 1
-                          ? 'Finalizar'
-                          : 'Siguiente'),
-                    ),
+                  ElevatedButton(
+                    onPressed: _canProceed
+                        ? (_currentStep == _totalSteps - 1 ? _finish : _nextStep)
+                        : null,
+                    child: Text(_currentStep == _totalSteps - 1
+                        ? 'Finalizar'
+                        : 'Siguiente'),
                   ),
                 ],
               ),
