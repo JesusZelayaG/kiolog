@@ -97,6 +97,7 @@ class NutritionRepositoryImpl implements NutritionRepository {
   @override
   Future<List<NutritionWeeklyStat>> getWeeklyAdherence(
       {required int weeksBack}) async {
+    assert(weeksBack >= 1, 'weeksBack must be at least 1');
     final now = DateTime.now().toUtc();
     final todayMidnight = DateTime.utc(now.year, now.month, now.day);
     final daysToMonday = todayMidnight.weekday - 1; // Monday=1
@@ -105,6 +106,7 @@ class NutritionRepositoryImpl implements NutritionRepository {
 
     final rangeStart =
         currentWeekMonday.subtract(Duration(days: 7 * (weeksBack - 1)));
+    // rangeEnd is exclusive upper bound — tomorrow midnight includes all of today's logs.
     final rangeEnd = todayMidnight.add(const Duration(days: 1));
 
     final allPlans = await _nutritionDao.getMealPlans();
@@ -133,6 +135,7 @@ class NutritionRepositoryImpl implements NutritionRepository {
           if (startDay.isAfter(day)) continue;
           if (end != null) {
             final endDay = DateTime.utc(end.year, end.month, end.day);
+            // On the day of a plan switch, the new plan claims the full day's goal.
             if (!endDay.isAfter(day)) continue;
           }
           activePlan = plan;

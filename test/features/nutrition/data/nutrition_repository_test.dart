@@ -233,7 +233,22 @@ void main() {
       expect(stats.length, 1);
       expect(stats.first.mealsLogged, 1);
       expect(stats.first.offPlanMeals, 1);
-      expect(stats.first.mealsExpected, greaterThan(0));
+      // The plan was activated just before this call. Drift stores DateTimes as milliseconds
+      // and retrieves them as local time, so periodStart comes back in local timezone.
+      // The implementation builds startDay from those local-time components via DateTime.utc(),
+      // meaning startDay = local date of plan activation as a UTC midnight value.
+      // Days counted = days from startDay up to todayMidnight (UTC) inclusive.
+      final nowUtc = DateTime.now().toUtc();
+      final todayMidnightUtc = DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
+      // periodStart was stored as DateTime.now().toUtc() and comes back as local DateTime.
+      final planStartLocal = DateTime.now(); // approximation: plan was just activated
+      final startDayAsUtc = DateTime.utc(planStartLocal.year, planStartLocal.month, planStartLocal.day);
+      final daysToMonday = todayMidnightUtc.weekday - 1;
+      final weekStartUtc = todayMidnightUtc.subtract(Duration(days: daysToMonday));
+      // Effective start = max(weekStart, startDay)
+      final effectiveStart = startDayAsUtc.isAfter(weekStartUtc) ? startDayAsUtc : weekStartUtc;
+      final daysActive = todayMidnightUtc.difference(effectiveStart).inDays + 1;
+      expect(stats.first.mealsExpected, daysActive * 2);
     });
 
     test('getWeeklyAdherence returns 0 expected when no plan active that week', () async {
@@ -242,6 +257,56 @@ void main() {
       expect(stats.first.mealsExpected, 0);
       expect(stats.first.mealsLogged, 0);
       expect(stats.first.adherencePct, 0.0);
+    });
+
+    test('getWeeklyAdherence returns stats ordered oldest-first across multiple weeks', () async {
+      // Create and activate a plan
+      final planId = await repository.createPlan('Plan', dailyMealGoal: 3);
+      await repository.activatePlan(planId);
+
+      final stats = await repository.getWeeklyAdherence(weeksBack: 3);
+      expect(stats.length, 3);
+
+      // Ordered oldest-first: stats[0].weekStart < stats[1].weekStart < stats[2].weekStart
+      expect(stats[0].weekStart.isBefore(stats[1].weekStart), isTrue);
+      expect(stats[1].weekStart.isBefore(stats[2].weekStart), isTrue);
+
+      // stats[2] is current week (its weekStart is this week's Monday)
+      final now = DateTime.now().toUtc();
+      final today = DateTime.utc(now.year, now.month, now.day);
+      final daysToMonday = today.weekday - 1;
+      final currentMonday = today.subtract(Duration(days: daysToMonday));
+      expect(stats[2].weekStart, currentMonday);
+    });
+
+    test('getWeeklyAdherence: week with active plan but no logs has mealsExpected > 0, mealsLogged == 0', () async {
+      final planId = await repository.createPlan('Plan', dailyMealGoal: 2);
+      await repository.activatePlan(planId);
+
+      // No meals logged — plan is active but nothing was eaten
+      final stats = await repository.getWeeklyAdherence(weeksBack: 1);
+      expect(stats.length, 1);
+      expect(stats.first.mealsExpected, greaterThan(0));
+      expect(stats.first.mealsLogged, 0);
+      expect(stats.first.offPlanMeals, 0);
+      expect(stats.first.adherencePct, 0.0);
+    });
+
+    test('getWeeklyAdherence: week with no active plan has all zeros', () async {
+      // No plans created at all
+      final stats = await repository.getWeeklyAdherence(weeksBack: 1);
+      expect(stats.length, 1);
+      expect(stats.first.mealsExpected, 0);
+      expect(stats.first.mealsLogged, 0);
+      expect(stats.first.offPlanMeals, 0);
+      expect(stats.first.adherencePct, 0.0);
+    });
+
+    test('getWeeklyAdherence with weeksBack: 8 returns 8 entries', () async {
+      final stats = await repository.getWeeklyAdherence(weeksBack: 8);
+      expect(stats.length, 8);
+      // All zeros since no plans
+      expect(stats.every((s) => s.mealsExpected == 0), isTrue);
     });
   });
 }
