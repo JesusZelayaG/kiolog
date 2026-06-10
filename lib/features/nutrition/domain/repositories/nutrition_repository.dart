@@ -25,7 +25,7 @@ abstract class NutritionRepository {
   Future<void> logOffPlanMeal({
     required DateTime date,
     required String mealType,
-    required String description,
+    String? description,
     String? photoPath,
   });
   Future<void> removeMealLog({

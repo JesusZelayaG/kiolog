@@ -38,12 +38,12 @@ class NutritionMealLogged extends NutritionEvent {
 class NutritionOffPlanMealLogged extends NutritionEvent {
   final DateTime date;
   final String mealType;
-  final String description;
+  final String? description;
 
   const NutritionOffPlanMealLogged({
     required this.date,
     required this.mealType,
-    required this.description,
+    this.description,
   });
 
   @override

@@ -79,7 +79,7 @@ class NutritionRepositoryImpl implements NutritionRepository {
   Future<void> logOffPlanMeal({
     required DateTime date,
     required String mealType,
-    required String description,
+    String? description,
     String? photoPath,
   }) =>
       _nutritionDao.insertDailyMealLog(

@@ -176,5 +176,51 @@ void main() {
         NutritionState(allPlans: [plan]),
       ],
     );
+
+    blocTest<NutritionBloc, NutritionState>(
+      'logs off-plan meal with null description (no seguí el plan)',
+      build: () {
+        when(() => repository.logOffPlanMeal(
+              date: any(named: 'date'),
+              mealType: any(named: 'mealType'),
+              description: null,
+            )).thenAnswer((_) async {});
+        when(() => repository.getDailyLogs(any())).thenAnswer((_) async => [
+              DailyMealLog(
+                id: 2,
+                date: DateTime(2026, 6, 8),
+                mealType: 'Almuerzo',
+                planOptionId: null,
+                freeDescription: null,
+                photoPath: null,
+              ),
+            ]);
+        when(() => repository.getWeeklyAdherence(weeksBack: 8))
+            .thenAnswer((_) async => []);
+        return NutritionBloc(repository)
+          ..emit(const NutritionState(status: NutritionStatus.success));
+      },
+      act: (bloc) => bloc.add(NutritionOffPlanMealLogged(
+        date: DateTime(2026, 6, 8),
+        mealType: 'Almuerzo',
+        description: null,
+      )),
+      expect: () => [
+        NutritionState(
+          status: NutritionStatus.success,
+          dailyLogs: [
+            DailyMealLog(
+              id: 2,
+              date: DateTime(2026, 6, 8),
+              mealType: 'Almuerzo',
+              planOptionId: null,
+              freeDescription: null,
+              photoPath: null,
+            ),
+          ],
+          weeklyAdherence: [],
+        ),
+      ],
+    );
   });
 }
