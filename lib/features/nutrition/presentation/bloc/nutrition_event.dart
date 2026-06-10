@@ -74,11 +74,12 @@ class NutritionPlanActivated extends NutritionEvent {
 
 class NutritionPlanCreated extends NutritionEvent {
   final String name;
+  final int dailyMealGoal;
 
-  const NutritionPlanCreated({required this.name});
+  const NutritionPlanCreated({required this.name, required this.dailyMealGoal});
 
   @override
-  List<Object?> get props => [name];
+  List<Object?> get props => [name, dailyMealGoal];
 }
 
 class NutritionOptionAdded extends NutritionEvent {

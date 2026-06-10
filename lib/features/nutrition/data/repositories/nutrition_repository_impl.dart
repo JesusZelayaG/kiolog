@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:kiolog/core/dao/nutrition_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import '../../domain/models/nutrition_weekly_stat.dart';
 import '../../domain/repositories/nutrition_repository.dart';
 
 class NutritionRepositoryImpl implements NutritionRepository {
@@ -21,8 +22,12 @@ class NutritionRepositoryImpl implements NutritionRepository {
   Future<void> activatePlan(int planId) => _nutritionDao.setActivePlan(planId);
 
   @override
-  Future<int> createPlan(String name) => _nutritionDao.insertMealPlan(
-        MealPlansCompanion(name: Value(name)),
+  Future<int> createPlan(String name, {required int dailyMealGoal}) =>
+      _nutritionDao.insertMealPlan(
+        MealPlansCompanion(
+          name: Value(name),
+          dailyMealGoal: Value(dailyMealGoal),
+        ),
       );
 
   @override
@@ -88,4 +93,76 @@ class NutritionRepositoryImpl implements NutritionRepository {
     required String mealType,
   }) =>
       _nutritionDao.deleteDailyMealLog(_dateOnly(date), mealType);
+
+  @override
+  Future<List<NutritionWeeklyStat>> getWeeklyAdherence(
+      {required int weeksBack}) async {
+    final now = DateTime.now().toUtc();
+    final todayMidnight = DateTime.utc(now.year, now.month, now.day);
+    final daysToMonday = todayMidnight.weekday - 1; // Monday=1
+    final currentWeekMonday =
+        todayMidnight.subtract(Duration(days: daysToMonday));
+
+    final rangeStart =
+        currentWeekMonday.subtract(Duration(days: 7 * (weeksBack - 1)));
+    final rangeEnd = todayMidnight.add(const Duration(days: 1));
+
+    final allPlans = await _nutritionDao.getMealPlans();
+    final allLogs = await _nutritionDao.getLogsInRange(rangeStart, rangeEnd);
+
+    final result = <NutritionWeeklyStat>[];
+
+    for (int w = weeksBack - 1; w >= 0; w--) {
+      final weekStart =
+          currentWeekMonday.subtract(Duration(days: 7 * w));
+      int mealsLogged = 0;
+      int mealsExpected = 0;
+      int offPlanMeals = 0;
+
+      for (int d = 0; d < 7; d++) {
+        final day = weekStart.add(Duration(days: d));
+        if (day.isAfter(todayMidnight)) break;
+
+        // Find plan active on this day
+        MealPlan? activePlan;
+        for (final plan in allPlans) {
+          final start = plan.periodStart;
+          final end = plan.periodEnd;
+          if (start == null) continue;
+          final startDay = DateTime.utc(start.year, start.month, start.day);
+          if (startDay.isAfter(day)) continue;
+          if (end != null) {
+            final endDay = DateTime.utc(end.year, end.month, end.day);
+            if (!endDay.isAfter(day)) continue;
+          }
+          activePlan = plan;
+          break;
+        }
+
+        if (activePlan == null) continue;
+
+        mealsExpected += activePlan.dailyMealGoal;
+
+        for (final log in allLogs) {
+          final logDay =
+              DateTime.utc(log.date.year, log.date.month, log.date.day);
+          if (logDay != day) continue;
+          if (log.planOptionId != null) {
+            mealsLogged++;
+          } else {
+            offPlanMeals++;
+          }
+        }
+      }
+
+      result.add(NutritionWeeklyStat(
+        weekStart: weekStart,
+        mealsLogged: mealsLogged,
+        mealsExpected: mealsExpected,
+        offPlanMeals: offPlanMeals,
+      ));
+    }
+
+    return result;
+  }
 }

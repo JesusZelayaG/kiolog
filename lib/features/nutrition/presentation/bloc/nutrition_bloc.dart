@@ -128,7 +128,7 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
     Emitter<NutritionState> emit,
   ) async {
     try {
-      await _repository.createPlan(event.name);
+      await _repository.createPlan(event.name, dailyMealGoal: event.dailyMealGoal);
       final plans = await _repository.getAllPlans();
       emit(state.copyWith(allPlans: plans));
     } catch (e) {

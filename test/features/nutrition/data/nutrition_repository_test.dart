@@ -18,7 +18,7 @@ void main() {
 
   group('NutritionRepositoryImpl', () {
     test('createPlan and getActivePlan', () async {
-      final id = await repository.createPlan('Plan Test');
+      final id = await repository.createPlan('Plan Test', dailyMealGoal: 4);
       expect(id, isPositive);
 
       final active = await repository.getActivePlan();
@@ -26,8 +26,8 @@ void main() {
     });
 
     test('activatePlan switches active plan', () async {
-      final id1 = await repository.createPlan('Plan A');
-      final id2 = await repository.createPlan('Plan B');
+      final id1 = await repository.createPlan('Plan A', dailyMealGoal: 4);
+      final id2 = await repository.createPlan('Plan B', dailyMealGoal: 4);
 
       await repository.activatePlan(id2);
 
@@ -40,7 +40,7 @@ void main() {
     });
 
     test('addPlanOption and getPlanOptions', () async {
-      final planId = await repository.createPlan('Plan');
+      final planId = await repository.createPlan('Plan', dailyMealGoal: 4);
       await repository.addPlanOption(
         planId: planId,
         mealType: 'breakfast',
@@ -54,7 +54,7 @@ void main() {
     });
 
     test('logMeal and getDailyLogs', () async {
-      final planId = await repository.createPlan('Plan');
+      final planId = await repository.createPlan('Plan', dailyMealGoal: 4);
       final optionId = await db.nutritionDao.insertMealPlanOption(
         MealPlanOptionsCompanion(
           planId: Value(planId),
@@ -202,6 +202,46 @@ void main() {
       );
       expect(logs2.length, 2); // June 3 + June 5
       expect(logs2.any((l) => l.date.toUtc() == DateTime.utc(2026, 6, 3)), isTrue);
+    });
+
+    test('getWeeklyAdherence returns correct adherence for current week', () async {
+      final planId = await repository.createPlan('Plan', dailyMealGoal: 2);
+      await repository.activatePlan(planId);
+
+      final optId = await db.nutritionDao.insertMealPlanOption(
+        MealPlanOptionsCompanion(
+          planId: Value(planId),
+          mealType: const Value('breakfast'),
+          optionNumber: const Value(1),
+          description: const Value('Avena'),
+        ),
+      );
+
+      final today = DateTime.now().toUtc();
+      await repository.logMeal(
+        date: today,
+        mealType: 'breakfast',
+        planOptionId: optId,
+      );
+      await repository.logOffPlanMeal(
+        date: today,
+        mealType: 'snack',
+        description: 'Pizza',
+      );
+
+      final stats = await repository.getWeeklyAdherence(weeksBack: 1);
+      expect(stats.length, 1);
+      expect(stats.first.mealsLogged, 1);
+      expect(stats.first.offPlanMeals, 1);
+      expect(stats.first.mealsExpected, greaterThan(0));
+    });
+
+    test('getWeeklyAdherence returns 0 expected when no plan active that week', () async {
+      final stats = await repository.getWeeklyAdherence(weeksBack: 1);
+      expect(stats.length, 1);
+      expect(stats.first.mealsExpected, 0);
+      expect(stats.first.mealsLogged, 0);
+      expect(stats.first.adherencePct, 0.0);
     });
   });
 }
