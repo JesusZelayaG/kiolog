@@ -219,7 +219,7 @@ class _NutritionView extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ).then((_) => nameController.dispose());
   }
 }
 

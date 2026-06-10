@@ -1,3 +1,4 @@
+import 'dart:math' show sqrt;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -32,10 +33,7 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
 
   DateTime _monthStartAt(int offset) {
     final now = DateTime.now().toUtc();
-    final totalMonths = now.month - 1 + offset;
-    final year = now.year + (totalMonths ~/ 12);
-    final month = (totalMonths % 12) + 1;
-    return DateTime.utc(year, month, 1);
+    return DateTime.utc(now.year, now.month + offset, 1);
   }
 
   NutritionWeeklyStat? _statAt(List<NutritionWeeklyStat> stats, int weekOffset) {
@@ -439,7 +437,7 @@ class _BarChartPainter extends CustomPainter {
     const gapLen = 4.0;
     final dx = p2.dx - p1.dx;
     final dy = p2.dy - p1.dy;
-    final dist = ((dx * dx + dy * dy)).abs();
+    final dist = sqrt(dx * dx + dy * dy);
     final steps = (dist / (dashLen + gapLen)).floor();
     if (steps == 0) return;
     final stepX = dx / (steps * 2);
