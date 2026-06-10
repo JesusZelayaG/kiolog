@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
@@ -23,26 +24,6 @@ class NutritionPage extends StatelessWidget {
 
 class _NutritionView extends StatelessWidget {
   const _NutritionView();
-
-  String _mealTypeLabel(String type) {
-    return switch (type) {
-      'breakfast' => 'Desayuno',
-      'lunch' => 'Almuerzo',
-      'dinner' => 'Cena',
-      'snack' => 'Entrecomida',
-      _ => type,
-    };
-  }
-
-  String _mealTypeIcon(String type) {
-    return switch (type) {
-      'breakfast' => '🍳',
-      'lunch' => '🍱',
-      'dinner' => '🍽️',
-      'snack' => '🍎',
-      _ => '🍽️',
-    };
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,11 +81,10 @@ class _NutritionView extends StatelessWidget {
                       ),
                 ),
                 const SizedBox(height: 16),
-                ...['breakfast', 'lunch', 'dinner', 'snack'].map(
+                ...state.planOptions.keys.map(
                   (type) => _MealSection(
                     mealType: type,
-                    label: _mealTypeLabel(type),
-                    icon: _mealTypeIcon(type),
+                    label: type,
                     options: state.planOptions[type] ?? [],
                     log: state.getLogForMeal(type),
                   ),
@@ -226,14 +206,12 @@ class _NutritionView extends StatelessWidget {
 class _MealSection extends StatelessWidget {
   final String mealType;
   final String label;
-  final String icon;
   final List<MealPlanOption> options;
   final DailyMealLog? log;
 
   const _MealSection({
     required this.mealType,
     required this.label,
-    required this.icon,
     required this.options,
     this.log,
   });
@@ -252,28 +230,40 @@ class _MealSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(icon, style: const TextStyle(fontSize: 24)),
+                const Icon(Icons.restaurant_menu),
                 const SizedBox(width: 8),
                 Text(label, style: theme.textTheme.titleMedium),
                 const Spacer(),
                 if (isLogged)
-                  Chip(
-                    label: const Text('Registrado'),
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    side: BorderSide.none,
-                  ),
+                  Builder(builder: (_) {
+                    final l = log!;
+                    final String chipLabel;
+                    final Color chipColor;
+                    if (l.planOptionId != null) {
+                      chipLabel = 'Registrado';
+                      chipColor = theme.colorScheme.primaryContainer;
+                    } else if (l.freeDescription != null) {
+                      chipLabel = 'Fuera de plan';
+                      chipColor = const Color(0xFF3D2E00);
+                    } else {
+                      chipLabel = 'No seguido';
+                      chipColor = theme.colorScheme.errorContainer;
+                    }
+                    return Chip(
+                      label: Text(chipLabel),
+                      backgroundColor: chipColor,
+                      side: BorderSide.none,
+                    );
+                  }),
               ],
             ),
             const SizedBox(height: 12),
-            if (log?.freeDescription != null)
-              Text(
-                'Fuera de plan: ${log!.freeDescription}',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-              )
-            else if (log?.planOptionId != null)
+            if (log?.planOptionId != null)
               _buildSelectedOption(context)
+            else if (log?.freeDescription != null)
+              _buildOffPlanText(context, log!.freeDescription!)
+            else if (log != null)
+              _buildNotFollowed(context)
             else if (options.isEmpty)
               Text(
                 'Sin opciones configuradas',
@@ -284,7 +274,7 @@ class _MealSection extends StatelessWidget {
             else
               ...options.map((opt) => _OptionTile(
                     option: opt,
-                    isSelected: log?.planOptionId == opt.id,
+                    isSelected: false,
                     onTap: () {
                       context.read<NutritionBloc>().add(
                             NutritionMealLogged(
@@ -295,15 +285,35 @@ class _MealSection extends StatelessWidget {
                           );
                     },
                   )),
+            const Divider(height: 24),
             if (!isLogged) ...[
-              const Divider(height: 24),
-              TextButton.icon(
-                onPressed: () => _showOffPlanDialog(context),
-                icon: const Icon(Icons.edit_note),
-                label: const Text('Registrar fuera de plan'),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () {
+                        context.read<NutritionBloc>().add(
+                              NutritionOffPlanMealLogged(
+                                date: DateTime.now(),
+                                mealType: mealType,
+                                description: null,
+                              ),
+                            );
+                      },
+                      icon: const Icon(Icons.close),
+                      label: const Text('No seguí el plan'),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () => _showOffPlanDialog(context),
+                      icon: const Icon(Icons.edit_note),
+                      label: const Text('Fuera de plan'),
+                    ),
+                  ),
+                ],
               ),
             ] else ...[
-              const Divider(height: 24),
               TextButton.icon(
                 onPressed: () {
                   context.read<NutritionBloc>().add(
@@ -324,11 +334,12 @@ class _MealSection extends StatelessWidget {
   }
 
   Widget _buildSelectedOption(BuildContext context) {
-    final opt = options.firstWhere((o) => o.id == log!.planOptionId);
+    final opt = options.firstWhereOrNull((o) => o.id == log!.planOptionId);
+    if (opt == null) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
+        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -337,6 +348,48 @@ class _MealSection extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
           Expanded(child: Text('Opción ${opt.optionNumber}: ${opt.description}')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOffPlanText(BuildContext context, String text) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3D2E00),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.edit_note, color: Color(0xFFFFCC80)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: Color(0xFFFFCC80)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotFollowed(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.close, color: Theme.of(context).colorScheme.error),
+          const SizedBox(width: 8),
+          Text(
+            'No seguí el plan',
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
         ],
       ),
     );
