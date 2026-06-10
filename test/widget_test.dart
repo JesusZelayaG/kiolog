@@ -1,7 +1,10 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:kiolog/core/di/injection.dart';
+import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
+import 'package:kiolog/core/modules/cubit/modules_state.dart';
 import 'package:kiolog/core/router/app_router.dart';
 import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:kiolog/features/exercise/domain/repositories/exercise_repository.dart';
@@ -21,6 +24,8 @@ class MockExerciseRepository extends Mock implements ExerciseRepository {}
 
 class MockProgressRepository extends Mock implements ProgressRepository {}
 
+class MockModulesCubit extends MockCubit<ModulesState> implements ModulesCubit {}
+
 void main() {
   setUp(() {
     getIt.registerLazySingleton<NutritionRepository>(
@@ -38,6 +43,10 @@ void main() {
     getIt.registerLazySingleton<ProgressRepository>(
       () => MockProgressRepository(),
     );
+    final modulesCubit = MockModulesCubit();
+    when(() => modulesCubit.state).thenReturn(const ModulesState());
+    whenListen(modulesCubit, Stream<ModulesState>.empty());
+    getIt.registerSingleton<ModulesCubit>(modulesCubit);
   });
 
   tearDown(() async {
