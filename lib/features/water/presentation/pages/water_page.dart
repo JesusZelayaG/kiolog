@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kiolog/core/domain/app_module.dart';
+import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
+import 'package:kiolog/core/modules/cubit/modules_state.dart';
+import 'package:kiolog/shared/widgets/inactive_module_page.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/repositories/water_repository.dart';
 import '../bloc/water_bloc.dart';
@@ -12,11 +16,21 @@ class WaterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => WaterBloc(getIt<WaterRepository>())
-        ..add(WaterLoaded(date: DateTime.now()))
-        ..add(const WaterConfigLoaded()),
-      child: const _WaterView(),
+    return BlocProvider<ModulesCubit>.value(
+      value: getIt<ModulesCubit>(),
+      child: BlocBuilder<ModulesCubit, ModulesState>(
+        builder: (context, modulesState) {
+          if (!modulesState.isEnabled(AppModule.water)) {
+            return const InactiveModulePage(module: AppModule.water);
+          }
+          return BlocProvider(
+            create: (_) => WaterBloc(getIt<WaterRepository>())
+              ..add(WaterLoaded(date: DateTime.now()))
+              ..add(const WaterConfigLoaded()),
+            child: const _WaterView(),
+          );
+        },
+      ),
     );
   }
 }

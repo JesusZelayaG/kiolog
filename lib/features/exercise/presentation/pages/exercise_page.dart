@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import 'package:kiolog/core/domain/app_module.dart';
+import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
+import 'package:kiolog/core/modules/cubit/modules_state.dart';
+import 'package:kiolog/shared/widgets/inactive_module_page.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/models/independent_exercise_log.dart';
 import '../../domain/repositories/exercise_repository.dart';
@@ -15,10 +19,20 @@ class ExercisePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => ExerciseBloc(getIt<ExerciseRepository>())
-        ..add(ExerciseLoaded(date: DateTime.now())),
-      child: const _ExerciseView(),
+    return BlocProvider<ModulesCubit>.value(
+      value: getIt<ModulesCubit>(),
+      child: BlocBuilder<ModulesCubit, ModulesState>(
+        builder: (context, modulesState) {
+          if (!modulesState.isEnabled(AppModule.exercise)) {
+            return const InactiveModulePage(module: AppModule.exercise);
+          }
+          return BlocProvider(
+            create: (_) => ExerciseBloc(getIt<ExerciseRepository>())
+              ..add(ExerciseLoaded(date: DateTime.now())),
+            child: const _ExerciseView(),
+          );
+        },
+      ),
     );
   }
 }

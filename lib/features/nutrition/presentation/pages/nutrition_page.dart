@@ -2,6 +2,10 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import 'package:kiolog/core/domain/app_module.dart';
+import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
+import 'package:kiolog/core/modules/cubit/modules_state.dart';
+import 'package:kiolog/shared/widgets/inactive_module_page.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/repositories/nutrition_repository.dart';
 import '../bloc/nutrition_bloc.dart';
@@ -14,10 +18,20 @@ class NutritionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => NutritionBloc(getIt<NutritionRepository>())
-        ..add(NutritionLoaded(date: DateTime.now())),
-      child: const _NutritionView(),
+    return BlocProvider<ModulesCubit>.value(
+      value: getIt<ModulesCubit>(),
+      child: BlocBuilder<ModulesCubit, ModulesState>(
+        builder: (context, modulesState) {
+          if (!modulesState.isEnabled(AppModule.nutrition)) {
+            return const InactiveModulePage(module: AppModule.nutrition);
+          }
+          return BlocProvider(
+            create: (_) => NutritionBloc(getIt<NutritionRepository>())
+              ..add(NutritionLoaded(date: DateTime.now())),
+            child: const _NutritionView(),
+          );
+        },
+      ),
     );
   }
 }
