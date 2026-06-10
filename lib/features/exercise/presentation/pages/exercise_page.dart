@@ -19,20 +19,17 @@ class ExercisePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ModulesCubit>.value(
-      value: getIt<ModulesCubit>(),
-      child: BlocBuilder<ModulesCubit, ModulesState>(
-        builder: (context, modulesState) {
-          if (!modulesState.isEnabled(AppModule.exercise)) {
-            return const InactiveModulePage(module: AppModule.exercise);
-          }
-          return BlocProvider(
-            create: (_) => ExerciseBloc(getIt<ExerciseRepository>())
-              ..add(ExerciseLoaded(date: DateTime.now())),
-            child: const _ExerciseView(),
-          );
-        },
-      ),
+    return BlocBuilder<ModulesCubit, ModulesState>(
+      builder: (context, modulesState) {
+        if (!modulesState.isEnabled(AppModule.exercise)) {
+          return const InactiveModulePage(module: AppModule.exercise);
+        }
+        return BlocProvider(
+          create: (_) => ExerciseBloc(getIt<ExerciseRepository>())
+            ..add(ExerciseLoaded(date: DateTime.now())),
+          child: const _ExerciseView(),
+        );
+      },
     );
   }
 }

@@ -18,20 +18,17 @@ class NutritionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ModulesCubit>.value(
-      value: getIt<ModulesCubit>(),
-      child: BlocBuilder<ModulesCubit, ModulesState>(
-        builder: (context, modulesState) {
-          if (!modulesState.isEnabled(AppModule.nutrition)) {
-            return const InactiveModulePage(module: AppModule.nutrition);
-          }
-          return BlocProvider(
-            create: (_) => NutritionBloc(getIt<NutritionRepository>())
-              ..add(NutritionLoaded(date: DateTime.now())),
-            child: const _NutritionView(),
-          );
-        },
-      ),
+    return BlocBuilder<ModulesCubit, ModulesState>(
+      builder: (context, modulesState) {
+        if (!modulesState.isEnabled(AppModule.nutrition)) {
+          return const InactiveModulePage(module: AppModule.nutrition);
+        }
+        return BlocProvider(
+          create: (_) => NutritionBloc(getIt<NutritionRepository>())
+            ..add(NutritionLoaded(date: DateTime.now())),
+          child: const _NutritionView(),
+        );
+      },
     );
   }
 }

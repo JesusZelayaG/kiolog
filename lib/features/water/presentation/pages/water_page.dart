@@ -16,21 +16,18 @@ class WaterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ModulesCubit>.value(
-      value: getIt<ModulesCubit>(),
-      child: BlocBuilder<ModulesCubit, ModulesState>(
-        builder: (context, modulesState) {
-          if (!modulesState.isEnabled(AppModule.water)) {
-            return const InactiveModulePage(module: AppModule.water);
-          }
-          return BlocProvider(
-            create: (_) => WaterBloc(getIt<WaterRepository>())
-              ..add(WaterLoaded(date: DateTime.now()))
-              ..add(const WaterConfigLoaded()),
-            child: const _WaterView(),
-          );
-        },
-      ),
+    return BlocBuilder<ModulesCubit, ModulesState>(
+      builder: (context, modulesState) {
+        if (!modulesState.isEnabled(AppModule.water)) {
+          return const InactiveModulePage(module: AppModule.water);
+        }
+        return BlocProvider(
+          create: (_) => WaterBloc(getIt<WaterRepository>())
+            ..add(WaterLoaded(date: DateTime.now()))
+            ..add(const WaterConfigLoaded()),
+          child: const _WaterView(),
+        );
+      },
     );
   }
 }
