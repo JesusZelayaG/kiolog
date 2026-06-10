@@ -7,6 +7,7 @@ import 'package:kiolog/features/exercise/domain/repositories/exercise_repository
 import 'package:kiolog/features/nutrition/domain/repositories/nutrition_repository.dart';
 import 'package:kiolog/features/progress/domain/repositories/progress_repository.dart';
 import 'package:kiolog/features/water/domain/repositories/water_repository.dart';
+import 'package:kiolog/shared/widgets/vitality_progress_bar.dart';
 import '../../../../core/domain/app_module.dart';
 import '../../../../core/dao/user_modules_dao.dart';
 import '../../../../core/modules/cubit/modules_cubit.dart';
@@ -220,10 +221,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
       body: SafeArea(
         child: Column(
           children: [
-            LinearProgressIndicator(
-              value: _currentActiveStep / _totalActiveSteps,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            ),
+            VitalityProgressBar(value: _currentActiveStep / _totalActiveSteps),
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -250,13 +248,16 @@ class _OnboardingViewState extends State<_OnboardingView> {
                   else
                     const SizedBox(width: 80),
                   const Spacer(),
-                  FilledButton(
-                    onPressed: _canProceed
-                        ? (_currentStep == _totalSteps - 1 ? _finish : _nextStep)
-                        : null,
-                    child: Text(_currentStep == _totalSteps - 1
-                        ? 'Finalizar'
-                        : 'Siguiente'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _canProceed
+                          ? (_currentStep == _totalSteps - 1 ? _finish : _nextStep)
+                          : null,
+                      child: Text(_currentStep == _totalSteps - 1
+                          ? 'Finalizar'
+                          : 'Siguiente'),
+                    ),
                   ),
                 ],
               ),
@@ -377,37 +378,27 @@ class _OnboardingViewState extends State<_OnboardingView> {
 
   Widget _buildWelcomeStep(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.favorite,
-            size: 80,
+            size: 96,
             color: theme.colorScheme.primary,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           Text(
             'Bienvenido a Kiolog',
-            style: theme.textTheme.headlineMedium,
+            style: theme.textTheme.displayLarge,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Text(
-            'Vamos a configurar tu bitácora de salud personal. Este proceso solo toma unos minutos.',
-            style: theme.textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Necesitamos que nos cuentes:\n'
-            '• Cómo medirás tu agua\n'
-            '• Tu plan de alimentación\n'
-            '• Tu rutina de ejercicio\n'
-            '• Tu peso de inicio',
-            style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+            'Tu bitácora de salud personal.\nRegistra agua, comidas, ejercicio y sueño en un solo lugar.',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
