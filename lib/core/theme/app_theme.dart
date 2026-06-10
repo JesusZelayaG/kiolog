@@ -96,5 +96,139 @@ class AppTheme {
         useMaterial3: true,
         colorScheme: _cs,
         textTheme: _buildTextTheme(),
+        scaffoldBackgroundColor: const Color(0xFF0B1326),
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFF0B1326),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          centerTitle: true,
+          titleTextStyle: GoogleFonts.hankenGrotesk(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFFDAE2FD),
+          ),
+          iconTheme: const IconThemeData(color: Color(0xFFDAE2FD)),
+          actionsIconTheme: const IconThemeData(color: Color(0xFFDAE2FD)),
+        ),
+        cardTheme: CardThemeData(
+          color: const Color(0xFF171F33),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF3D4A3D), width: 0.5),
+          ),
+          margin: EdgeInsets.zero,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF22C55E),
+            foregroundColor: const Color(0xFF004B1E),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            textStyle: GoogleFonts.hankenGrotesk(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            elevation: 0,
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF4BE277),
+            side: const BorderSide(color: Color(0xFF4BE277), width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            textStyle: GoogleFonts.hankenGrotesk(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF4BE277),
+            textStyle: GoogleFonts.hankenGrotesk(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFF131B2E),
+          floatingLabelBehavior: FloatingLabelBehavior.always,
+          labelStyle: GoogleFonts.hankenGrotesk(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFFBCCBB9),
+          ),
+          floatingLabelStyle: GoogleFonts.hankenGrotesk(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF4BE277),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFF3D4A3D)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFF22C55E), width: 1.5),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+        progressIndicatorTheme: const ProgressIndicatorThemeData(
+          color: Color(0xFF22C55E),
+          linearTrackColor: Color(0xFF222A3D),
+          linearMinHeight: 8,
+          borderRadius: BorderRadius.all(Radius.circular(100)),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: const Color(0xFF131B2E),
+          height: 64,
+          indicatorColor: const Color(0xFF004B1E),
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          labelTextStyle: WidgetStateProperty.all(
+            GoogleFonts.hankenGrotesk(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFFBCCBB9),
+            ),
+          ),
+        ),
+        chipTheme: const ChipThemeData(
+          backgroundColor: Color(0xFF222A3D),
+          side: BorderSide.none,
+          shape: StadiumBorder(),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: Color(0xFF3D4A3D),
+          thickness: 0.5,
+        ),
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: const Color(0xFF2D3449),
+          contentTextStyle: GoogleFonts.hankenGrotesk(
+            fontSize: 14,
+            color: const Color(0xFFDAE2FD),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: const Color(0xFF171F33),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       );
 }
