@@ -5,6 +5,8 @@ import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
 import 'package:kiolog/shared/widgets/inactive_module_page.dart';
+import 'package:kiolog/shared/widgets/vitality_card.dart';
+import 'package:kiolog/shared/widgets/vitality_progress_bar.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/models/independent_exercise_log.dart';
 import '../../domain/repositories/exercise_repository.dart';
@@ -133,7 +135,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.fitness_center, size: 64, color: Colors.grey),
+            Icon(Icons.fitness_center, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Sin plan de ejercicio',
@@ -145,7 +147,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            FilledButton.icon(
+            ElevatedButton.icon(
               onPressed: () => _showCreatePlanDialog(context),
               icon: const Icon(Icons.add),
               label: const Text('Crear plan'),
@@ -209,7 +211,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
               decoration: BoxDecoration(
                 color: done >= goal
                     ? theme.colorScheme.tertiaryContainer
-                    : theme.colorScheme.surfaceVariant,
+                    : theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -225,29 +227,25 @@ class _ExerciseViewState extends State<_ExerciseView> {
           ],
         ),
         const SizedBox(height: 6),
-        LinearProgressIndicator(
+        VitalityProgressBar(
           value: goal > 0 ? (done / goal).clamp(0.0, 1.0) : 0,
-          backgroundColor: theme.colorScheme.surfaceVariant,
           color: theme.colorScheme.tertiary,
-          borderRadius: BorderRadius.circular(2),
         ),
         const SizedBox(height: 10),
         if (state.routines.isEmpty)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  const Text('Sin días de rutina configurados.',
-                      textAlign: TextAlign.center),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () => _showAddRoutineDialog(context, state),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Agregar día de rutina'),
-                  ),
-                ],
-              ),
+          VitalityCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                const Text('Sin días de rutina configurados.',
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _showAddRoutineDialog(context, state),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Agregar día de rutina'),
+                ),
+              ],
             ),
           )
         else
@@ -285,9 +283,9 @@ class _ExerciseViewState extends State<_ExerciseView> {
             ? theme.colorScheme.primary
             : theme.colorScheme.outline;
     final Color bgColor = isCompleted
-        ? theme.colorScheme.tertiaryContainer.withOpacity(0.3)
+        ? theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3)
         : isExpanded
-            ? theme.colorScheme.primaryContainer.withOpacity(0.2)
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2)
             : Colors.transparent;
 
     return Card(
@@ -314,7 +312,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                     radius: 14,
                     backgroundColor: isCompleted
                         ? theme.colorScheme.tertiary
-                        : theme.colorScheme.surfaceVariant,
+                        : theme.colorScheme.surfaceContainerHighest,
                     child: isCompleted
                         ? Icon(Icons.check,
                             size: 14,
@@ -596,7 +594,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                 },
                 child: const Text('Cancelar'),
               ),
-              FilledButton(
+              ElevatedButton(
                 onPressed: () {
                   final name = nameCtrl.text.trim();
                   final sets = int.tryParse(setsCtrl.text);
@@ -670,7 +668,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          ElevatedButton(
             onPressed: () {
               context.read<ExerciseBloc>().add(ExerciseRoutineItemDeleted(
                     itemId: item.id,
@@ -678,8 +676,9 @@ class _ExerciseViewState extends State<_ExerciseView> {
                   ));
               Navigator.pop(dialogContext);
             },
-            style: FilledButton.styleFrom(
+            style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
             ),
             child: const Text('Eliminar'),
           ),
@@ -710,7 +709,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
               decoration: BoxDecoration(
                 color: done >= goal
                     ? theme.colorScheme.tertiaryContainer
-                    : theme.colorScheme.surfaceVariant,
+                    : theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -726,11 +725,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
           ],
         ),
         const SizedBox(height: 6),
-        LinearProgressIndicator(
+        VitalityProgressBar(
           value: goal > 0 ? (done / goal).clamp(0.0, 1.0) : 0,
-          backgroundColor: theme.colorScheme.surfaceVariant,
-          color: theme.colorScheme.primary,
-          borderRadius: BorderRadius.circular(2),
         ),
         const SizedBox(height: 10),
         ...state.weeklyCardioLogs.map((log) => _buildCardioItem(context, log)),
@@ -748,29 +744,32 @@ class _ExerciseViewState extends State<_ExerciseView> {
     final theme = Theme.of(context);
     final weekday = _weekdayName(log.date.weekday);
     final icon = _cardioIcon(log.cardioType);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 6),
-      child: ListTile(
-        leading: Text(icon, style: const TextStyle(fontSize: 20)),
-        title: Text(log.cardioType),
-        subtitle: Text('${log.durationMinutes} min · $weekday'),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              onPressed: () => _showCardioDialog(context, log: log),
-              visualDensity: VisualDensity.compact,
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 18),
-              color: theme.colorScheme.error,
-              onPressed: () => context
-                  .read<ExerciseBloc>()
-                  .add(CardioDeleted(cardioId: log.id)),
-              visualDensity: VisualDensity.compact,
-            ),
-          ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: VitalityCard(
+        padding: EdgeInsets.zero,
+        child: ListTile(
+          leading: Text(icon, style: const TextStyle(fontSize: 20)),
+          title: Text(log.cardioType),
+          subtitle: Text('${log.durationMinutes} min · $weekday'),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                onPressed: () => _showCardioDialog(context, log: log),
+                visualDensity: VisualDensity.compact,
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18),
+                color: theme.colorScheme.error,
+                onPressed: () => context
+                    .read<ExerciseBloc>()
+                    .add(CardioDeleted(cardioId: log.id)),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -832,7 +831,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancelar'),
             ),
-            FilledButton(
+            ElevatedButton(
               onPressed: () {
                 final duration = int.tryParse(durationCtrl.text);
                 if (duration == null || duration <= 0) return;
@@ -896,18 +895,21 @@ class _ExerciseViewState extends State<_ExerciseView> {
     final weightStr =
         log.weightKg != null ? ' @ ${log.weightKg}kg' : '';
     final weekday = _weekdayName(log.date.weekday);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 6),
-      child: ListTile(
-        title: Text(log.exerciseName),
-        subtitle: Text('${log.sets}×${log.reps}$weightStr · $weekday'),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, size: 18),
-          color: theme.colorScheme.error,
-          onPressed: () => context
-              .read<ExerciseBloc>()
-              .add(IndependentExerciseDeleted(sessionId: log.sessionId)),
-          visualDensity: VisualDensity.compact,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: VitalityCard(
+        padding: EdgeInsets.zero,
+        child: ListTile(
+          title: Text(log.exerciseName),
+          subtitle: Text('${log.sets}×${log.reps}$weightStr · $weekday'),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            color: theme.colorScheme.error,
+            onPressed: () => context
+                .read<ExerciseBloc>()
+                .add(IndependentExerciseDeleted(sessionId: log.sessionId)),
+            visualDensity: VisualDensity.compact,
+          ),
         ),
       ),
     );
@@ -968,7 +970,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          ElevatedButton(
             onPressed: () {
               final name = nameCtrl.text.trim();
               final sets = int.tryParse(setsCtrl.text);
@@ -1012,7 +1014,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: FilledButton.icon(
+        child: ElevatedButton.icon(
           onPressed: enabled
               ? () => context.read<ExerciseBloc>().add(
                     ExerciseSessionStarted(
@@ -1027,7 +1029,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
               : state.routines.isEmpty
                   ? 'Sin rutinas configuradas'
                   : 'Iniciar rutina del día'),
-          style: FilledButton.styleFrom(
+          style: ElevatedButton.styleFrom(
             minimumSize: const Size.fromHeight(48),
           ),
         ),
@@ -1049,7 +1051,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withOpacity(0.5), width: 1),
+          border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
@@ -1094,7 +1096,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          ElevatedButton(
             onPressed: () {
               if (nameController.text.isNotEmpty) {
                 context.read<ExerciseBloc>().add(
@@ -1141,7 +1143,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          ElevatedButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
                 context.read<ExerciseBloc>().add(

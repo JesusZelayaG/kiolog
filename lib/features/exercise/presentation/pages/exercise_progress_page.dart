@@ -3,6 +3,7 @@ import 'dart:math' show sqrt;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kiolog/shared/widgets/stat_chip.dart';
 
 import '../bloc/exercise_bloc.dart';
 import '../bloc/exercise_state.dart';
@@ -61,7 +62,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant,
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(24),
       ),
       padding: const EdgeInsets.all(3),
@@ -118,7 +119,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -230,47 +231,16 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
   }
 
   Widget _buildSemanaChips(BuildContext context, ExerciseState state) {
+    final theme = Theme.of(context);
     final s = _semanaStats(state);
     return Row(
       children: [
-        _chip(context, '${s.routineDays}/${state.routineDaysGoal}',
-            'días rutina', Colors.green),
+        Expanded(child: StatChip(value: '${s.routineDays}/${state.routineDaysGoal}', label: 'días rutina', color: theme.colorScheme.primary)),
         const SizedBox(width: 8),
-        _chip(context, '${s.cardioDays}/${state.cardioDaysGoal}',
-            'días cardio', Colors.blue),
+        Expanded(child: StatChip(value: '${s.cardioDays}/${state.cardioDaysGoal}', label: 'días cardio', color: theme.colorScheme.tertiary)),
         const SizedBox(width: 8),
-        _chip(context, '${s.sessions}', 'sesiones', Colors.orange),
+        Expanded(child: StatChip(value: '${s.sessions}', label: 'sesiones', color: theme.colorScheme.secondary)),
       ],
-    );
-  }
-
-  Widget _chip(
-      BuildContext context, String value, String label, Color color) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.2)),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(color: color, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -297,13 +267,14 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
         : 0;
     final sessions = totalRoutine + totalCardio;
 
+    final theme = Theme.of(context);
     return Row(
       children: [
-        _chip(context, '$routinePct%', 'rutina', Colors.green),
+        Expanded(child: StatChip(value: '$routinePct%', label: 'rutina', color: theme.colorScheme.primary)),
         const SizedBox(width: 8),
-        _chip(context, '$cardioPct%', 'cardio', Colors.blue),
+        Expanded(child: StatChip(value: '$cardioPct%', label: 'cardio', color: theme.colorScheme.tertiary)),
         const SizedBox(width: 8),
-        _chip(context, '$sessions', 'sesiones', Colors.orange),
+        Expanded(child: StatChip(value: '$sessions', label: 'sesiones', color: theme.colorScheme.secondary)),
       ],
     );
   }
@@ -311,7 +282,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
   Widget _buildChartToggle(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(24),
       ),
       padding: const EdgeInsets.all(3),
@@ -327,6 +298,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
   }
 
   Widget _buildWeekBarChartWidget(ExerciseState state) {
+    final cs = Theme.of(context).colorScheme;
     final isRutina = _chart == _Chart.rutina;
     final goal = isRutina ? state.routineDaysGoal : state.cardioDaysGoal;
     final bars = state.weeklyStats
@@ -336,13 +308,14 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
       height: 120,
       child: _WeekBarChart(
         bars: bars,
-        barColor: isRutina ? Colors.green : Colors.blue,
+        barColor: isRutina ? cs.primary : cs.tertiary,
         lastBarIsPartial: true,
       ),
     );
   }
 
   Widget _buildMonthBarChartWidget(ExerciseState state) {
+    final cs = Theme.of(context).colorScheme;
     final isRutina = _chart == _Chart.rutina;
     final goal = isRutina ? state.routineDaysGoal : state.cardioDaysGoal;
     final now = DateTime.now().toUtc();
@@ -359,7 +332,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
       height: 120,
       child: _WeekBarChart(
         bars: bars,
-        barColor: isRutina ? Colors.green : Colors.blue,
+        barColor: isRutina ? cs.primary : cs.tertiary,
         lastBarIsPartial: _monthOffset == 0,
       ),
     );
@@ -429,14 +402,14 @@ class _BarChartPainter extends CustomPainter {
     final barW = size.width / bars.length;
     const pad = 4.0;
 
-    final filledPaint = Paint()..color = barColor.withOpacity(0.8);
-    final partialFill = Paint()..color = barColor.withOpacity(0.2);
+    final filledPaint = Paint()..color = barColor.withValues(alpha: 0.8);
+    final partialFill = Paint()..color = barColor.withValues(alpha: 0.2);
     final dashBorder = Paint()
-      ..color = barColor.withOpacity(0.6)
+      ..color = barColor.withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     final goalLine = Paint()
-      ..color = barColor.withOpacity(0.35)
+      ..color = barColor.withValues(alpha: 0.35)
       ..strokeWidth = 1;
 
     // Dashed horizontal goal line at y=0 (100%)

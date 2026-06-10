@@ -3,6 +3,7 @@ import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/features/exercise/domain/repositories/exercise_repository.dart';
+import 'package:kiolog/shared/widgets/vitality_card.dart';
 
 class ExerciseConfigPage extends StatefulWidget {
   final VoidCallback onComplete;
@@ -93,9 +94,11 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
             ..._routineDays.asMap().entries.map((dayEntry) {
               final index = dayEntry.key;
               final day = dayEntry.value;
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ExpansionTile(
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: VitalityCard(
+                  padding: EdgeInsets.zero,
+                  child: ExpansionTile(
                   initiallyExpanded: true,
                   title: Text('Día ${index + 1}'),
                   subtitle: day.exercises.isEmpty
@@ -145,6 +148,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
                     ),
                   ],
                 ),
+              ),
               );
             }),
             OutlinedButton.icon(
@@ -157,7 +161,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
+              child: ElevatedButton(
                 onPressed: _saving ? null : _save,
                 child: const Text('Guardar'),
               ),

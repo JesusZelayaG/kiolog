@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import 'package:kiolog/shared/widgets/vitality_card.dart';
+import 'package:kiolog/shared/widgets/vitality_progress_bar.dart';
 import '../bloc/exercise_bloc.dart';
 import '../bloc/exercise_event.dart';
 import '../bloc/exercise_state.dart';
@@ -101,7 +103,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
           Text('Iniciada a las $startStr',
               style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 6),
-          LinearProgressIndicator(value: progress, minHeight: 6),
+          VitalityProgressBar(value: progress),
           const SizedBox(height: 4),
           Text('$doneCount / $total ejercicios',
               style: Theme.of(context).textTheme.labelSmall),
@@ -127,11 +129,13 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
       icon = Icons.radio_button_unchecked;
     }
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Column(
-        children: [
-          ListTile(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: VitalityCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: [
+            ListTile(
             leading: Icon(
               icon,
               color: isCompleted
@@ -163,6 +167,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
             _buildExpandedPanel(context, state, item),
         ],
       ),
+    ),
     );
   }
 
@@ -170,7 +175,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: FilledButton.icon(
+        child: ElevatedButton.icon(
           onPressed: () {
             context
                 .read<ExerciseBloc>()
@@ -179,7 +184,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
           },
           icon: const Icon(Icons.flag),
           label: const Text('Finalizar sesión'),
-          style: FilledButton.styleFrom(
+          style: ElevatedButton.styleFrom(
             minimumSize: const Size.fromHeight(48),
           ),
         ),
