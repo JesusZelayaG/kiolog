@@ -62,3 +62,6 @@ android/captures/
 # Env / secretos
 .env
 *.env.local
+
+# Superpowers plugin
+.superpowers/
