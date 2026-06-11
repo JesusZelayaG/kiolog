@@ -178,7 +178,7 @@ void main() {
         ),
         SleepState(
           status: SleepStatus.success,
-          todayLogs: [],
+          todayLogs: const [],
           weeklyLogs: [
             SleepLog(
               id: 2,
