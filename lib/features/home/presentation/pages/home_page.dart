@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../features/exercise/domain/repositories/exercise_repository.dart';
 import '../../../../features/nutrition/domain/repositories/nutrition_repository.dart';
 import '../../../../features/sleep/domain/repositories/sleep_repository.dart';
 import '../../../../features/water/domain/repositories/water_repository.dart';
-import '../../../../shared/widgets/vitality_card.dart';
 import '../../../../shared/widgets/vitality_progress_bar.dart';
 import '../../../../shared/widgets/module_icon_badge.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
+
+double calcOverallProgress(HomeState s) {
+  final values = [
+    s.waterProgress,
+    s.sleepHours != null ? (s.sleepHours! / 8).clamp(0.0, 1.0) : 0.0,
+    s.totalMeals > 0 ? s.mealsLogged / s.totalMeals : 0.0,
+    s.exerciseRoutineDone ? 1.0 : (s.hasGymSession ? 0.5 : 0.0),
+  ];
+  return values.reduce((a, b) => a + b) / values.length;
+}
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -31,30 +39,8 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class _HomeView extends StatefulWidget {
+class _HomeView extends StatelessWidget {
   const _HomeView();
-
-  @override
-  State<_HomeView> createState() => _HomeViewState();
-}
-
-class _HomeViewState extends State<_HomeView> {
-  late final String _greeting;
-  late final String _dateLabel;
-
-  @override
-  void initState() {
-    super.initState();
-    final now = DateTime.now();
-    _greeting = _timeGreeting(now.hour);
-    _dateLabel = DateFormat('EEEE, d MMM', 'es').format(now);
-  }
-
-  String _timeGreeting(int hour) {
-    if (hour < 12) return 'Buenos días';
-    if (hour < 20) return 'Buenas tardes';
-    return 'Buenas noches';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,26 +70,64 @@ class _HomeViewState extends State<_HomeView> {
             return Center(child: Text('Error: ${state.error}'));
           }
 
+          final overall = calcOverallProgress(state);
+
           return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _greeting,
-                        style: theme.textTheme.displayLarge,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'BIENVENIDO DE NUEVO',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Resumen del día',
+                                style:
+                                    theme.textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '${(overall * 100).round()}%',
+                                style:
+                                    theme.textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.primary,
+                                ),
+                              ),
+                              Text(
+                                'META DIARIA',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _dateLabel,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 12),
+                      VitalityProgressBar(value: overall, color: cs.primary),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -112,51 +136,56 @@ class _HomeViewState extends State<_HomeView> {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    _ModuleCard(
+                    _WideModuleCard(
                       icon: Icons.water_drop,
                       label: 'Agua',
-                      color: cs.tertiary,
-                      progress: state.waterProgress,
                       subtitle:
                           '${state.dailyWaterTotalMl} / ${state.dailyWaterGoalMl} ml',
+                      color: cs.tertiary,
+                      bgImage: 'assets/img/water_bg.png',
                       onTap: () => context.push('/water'),
                     ),
-                    const SizedBox(height: 16),
-                    _ModuleCard(
-                      icon: Icons.nightlight_round,
-                      label: 'Sueño',
-                      color: const Color(0xFFAFC7FF),
-                      progress: state.sleepHours != null
-                          ? (state.sleepHours! / 8).clamp(0.0, 1.0)
-                          : 0.0,
-                      subtitle: state.sleepHours != null
-                          ? '${state.sleepHours!.toStringAsFixed(1)} h'
-                          : 'No registrado',
-                      onTap: () => context.push('/sleep'),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _CompactModuleCard(
+                            icon: Icons.nightlight_round,
+                            label: 'Sueño',
+                            subtitle: state.sleepHours != null
+                                ? '${state.sleepHours!.toStringAsFixed(1)} h'
+                                : 'Sin registro',
+                            color: const Color(0xFFAFC7FF),
+                            bgImage: 'assets/img/sleep_bg.png',
+                            onTap: () => context.push('/sleep'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _CompactModuleCard(
+                            icon: Icons.restaurant,
+                            label: 'Nutrición',
+                            subtitle:
+                                '${state.mealsLogged} / ${state.totalMeals} comidas',
+                            color: cs.secondary,
+                            bgImage: 'assets/img/nutrition_bg.png',
+                            onTap: () => context.go('/nutrition'),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    _ModuleCard(
-                      icon: Icons.restaurant,
-                      label: 'Nutrición',
-                      color: cs.secondary,
-                      progress: state.totalMeals > 0
-                          ? state.mealsLogged / state.totalMeals
-                          : 0.0,
-                      subtitle:
-                          '${state.mealsLogged} / ${state.totalMeals} comidas',
-                      onTap: () => context.go('/nutrition'),
-                    ),
-                    const SizedBox(height: 16),
-                    _ModuleCard(
+                    const SizedBox(height: 12),
+                    _WideModuleCard(
                       icon: Icons.fitness_center,
                       label: 'Ejercicio',
-                      color: cs.primary,
-                      progress: state.exerciseRoutineDone ? 1.0 : 0.0,
                       subtitle: state.exerciseRoutineDone
                           ? 'Rutina completada'
                           : state.hasGymSession
                               ? 'Sesión en progreso'
                               : 'Pendiente',
+                      color: cs.primary,
+                      bgImage: 'assets/img/exercise_bg.png',
+                      showAction: true,
                       onTap: () => context.go('/exercise'),
                     ),
                     const SizedBox(height: 32),
@@ -171,20 +200,112 @@ class _HomeViewState extends State<_HomeView> {
   }
 }
 
-class _ModuleCard extends StatelessWidget {
+class _WideModuleCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
-  final double progress;
   final String subtitle;
+  final Color color;
+  final String bgImage;
+  final bool showAction;
   final VoidCallback onTap;
 
-  const _ModuleCard({
+  const _WideModuleCard({
     required this.icon,
     required this.label,
-    required this.color,
-    required this.progress,
     required this.subtitle,
+    required this.color,
+    required this.bgImage,
+    required this.onTap,
+    this.showAction = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          height: 100,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(bgImage, fit: BoxFit.cover),
+              Container(color: Colors.black.withValues(alpha: 0.50)),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    ModuleIconBadge(icon: icon, color: color),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            label,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: cs.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (showAction)
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          shape: const StadiumBorder(),
+                          backgroundColor: cs.primary,
+                          foregroundColor: cs.onPrimary,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          textStyle: const TextStyle(fontSize: 12),
+                        ),
+                        onPressed: onTap,
+                        child: const Text('VER AHORA'),
+                      )
+                    else
+                      Icon(
+                        Icons.chevron_right,
+                        color: cs.onSurface.withValues(alpha: 0.6),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactModuleCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color color;
+  final String bgImage;
+  final VoidCallback onTap;
+
+  const _CompactModuleCard({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    required this.bgImage,
     required this.onTap,
   });
 
@@ -192,33 +313,43 @@ class _ModuleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-
-    return VitalityCard(
+    return GestureDetector(
       onTap: onTap,
-      child: Row(
-        children: [
-          ModuleIconBadge(icon: icon, color: color),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: theme.textTheme.labelLarge),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          height: 120,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(bgImage, fit: BoxFit.cover),
+              Container(color: Colors.black.withValues(alpha: 0.55)),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ModuleIconBadge(icon: icon, color: color, size: 32),
+                    const Spacer(),
+                    Text(
+                      label,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                VitalityProgressBar(value: progress, color: color),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Icon(Icons.chevron_right, color: cs.onSurfaceVariant, size: 20),
-        ],
+        ),
       ),
     );
   }
