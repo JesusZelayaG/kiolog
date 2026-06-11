@@ -38,16 +38,16 @@ class _WaterView extends StatelessWidget {
   String _unitLabel(String unitType) =>
       unitType == 'bottle' ? 'botella' : 'vaso';
 
-  String _unitLabelPlural(String unitType) =>
-      unitType == 'bottle' ? 'botellas' : 'vasos';
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agua'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => context.go('/'),
         ),
         actions: [
@@ -69,88 +69,155 @@ class _WaterView extends StatelessWidget {
           final progress = state.progress.clamp(0.0, 1.0);
           final liters = (state.dailyTotalMl / 1000).toStringAsFixed(1);
           final goalLiters = (state.dailyGoalMl / 1000).toStringAsFixed(1);
+          final pct = (progress * 100).round();
 
           return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 16),
                   Text(
-                    '$liters / $goalLiters L',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    'HIDRATACIÓN DIARIA',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: cs.primary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${state.dailyTotalMl} / ${state.dailyGoalMl} ml',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                    '$liters / $goalLiters L',
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${state.dailyTotalMl} / ${state.dailyGoalMl} ml',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
                   SizedBox(
-                    height: 180,
-                    width: 180,
+                    height: 200,
+                    width: 200,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
                         CircularProgressIndicator(
                           value: progress,
-                          strokeWidth: 16,
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .primaryContainer
-                              .withValues(alpha: 0.4),
+                          strokeWidth: 14,
+                          strokeCap: StrokeCap.round,
+                          backgroundColor:
+                              cs.primaryContainer.withValues(alpha: 0.25),
                         ),
                         Center(
-                          child: Icon(
-                            Icons.water_drop,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.primary,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.water_drop,
+                                size: 40,
+                                color: cs.primary,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '$pct%',
+                                style:
+                                    theme.textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      context.read<WaterBloc>().add(
-                            WaterAdded(
-                              date: DateTime.now(),
-                              amountMl: state.containerMl,
-                            ),
-                          );
-                    },
-                    icon: const Icon(Icons.add),
-                    label: Text(
-                      'Agregar ${_unitLabel(state.unitType)} (${state.containerMl} ml)',
+                  const SizedBox(height: 48),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        shape: const StadiumBorder(),
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
+                      ),
+                      onPressed: () {
+                        context.read<WaterBloc>().add(
+                              WaterAdded(
+                                date: DateTime.now(),
+                                amountMl: state.containerMl,
+                              ),
+                            );
+                      },
+                      icon: const Icon(Icons.add),
+                      label: Text(
+                        'Agregar ${_unitLabel(state.unitType)} (${state.containerMl} ml)',
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () => _showCustomAmountDialog(context),
-                    icon: const Icon(Icons.edit),
-                    label: const Text('Cantidad personalizada'),
-                  ),
-                  const Spacer(),
-                  if (progress >= 1.0)
-                    Card(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      child: const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.celebration),
-                            SizedBox(width: 8),
-                            Text('¡Meta diaria alcanzada!'),
-                          ],
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        shape: const StadiumBorder(),
+                        side: BorderSide(
+                          color: cs.outline.withValues(alpha: 0.5),
                         ),
                       ),
+                      onPressed: () => _showCustomAmountDialog(context),
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: const Text('Cantidad personalizada'),
                     ),
+                  ),
+                  if (progress >= 1.0) ...[
+                    const SizedBox(height: 32),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: cs.primary.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.celebration, color: cs.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '¡Meta alcanzada!',
+                                  style:
+                                      theme.textTheme.labelLarge?.copyWith(
+                                    color: cs.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Consumiste $liters litros hoy',
+                                  style:
+                                      theme.textTheme.bodySmall?.copyWith(
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
