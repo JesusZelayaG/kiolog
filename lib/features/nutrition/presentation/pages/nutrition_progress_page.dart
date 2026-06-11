@@ -2,24 +2,407 @@ import 'dart:math' show sqrt;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kiolog/core/database/app_database.dart';
+import 'package:kiolog/features/nutrition/domain/models/nutrition_weekly_stat.dart';
+import 'package:kiolog/features/nutrition/domain/models/option_frequency_stat.dart';
+import 'package:kiolog/features/nutrition/presentation/pages/nutrition_config_page.dart';
 import '../bloc/nutrition_bloc.dart';
+import '../bloc/nutrition_event.dart';
 import '../bloc/nutrition_state.dart';
-import '../../domain/models/nutrition_weekly_stat.dart';
 import 'package:kiolog/shared/widgets/stat_chip.dart';
 
 enum _Periodo { semana, mes }
 
-class NutritionProgressPage extends StatefulWidget {
+class NutritionProgressPage extends StatelessWidget {
   const NutritionProgressPage({super.key});
 
   @override
-  State<NutritionProgressPage> createState() => _NutritionProgressPageState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Progreso Nutrición')),
+      body: BlocBuilder<NutritionBloc, NutritionState>(
+        builder: (context, state) {
+          final isViewingActive = state.viewingPlanId == null;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _PlanChip(state: state),
+              if (isViewingActive)
+                Expanded(child: _ActivePlanView(state: state))
+              else
+                Expanded(
+                  child: _FrecuenciaTab(
+                    frequencies: state.optionFrequencies,
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }
 
-class _NutritionProgressPageState extends State<NutritionProgressPage> {
+// ── Plan chip + bottom sheet ──────────────────────────────────────────────────
+
+class _PlanChip extends StatelessWidget {
+  final NutritionState state;
+  const _PlanChip({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final plan = state.viewingPlan ?? state.activePlan;
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: () => _showPlanSheet(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        color: cs.surface,
+        child: Row(
+          children: [
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    plan?.name ?? 'Sin plan',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onPrimaryContainer,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.expand_more,
+                      size: 16, color: cs.onPrimaryContainer),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (plan != null)
+              Text(
+                plan.isActive ? 'activo' : _periodLabel(plan),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _periodLabel(MealPlan plan) {
+    final e = plan.periodEnd;
+    if (e == null) return '';
+    return 'hasta ${e.day}/${e.month}/${e.year}';
+  }
+
+  void _showPlanSheet(BuildContext context) {
+    final bloc = context.read<NutritionBloc>();
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => BlocProvider.value(
+        value: bloc,
+        child: const _PlanSelectorSheet(),
+      ),
+    );
+  }
+}
+
+class _PlanSelectorSheet extends StatelessWidget {
+  const _PlanSelectorSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<NutritionBloc, NutritionState>(
+      builder: (context, state) {
+        final cs = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 32,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: cs.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text('Planes alimenticios',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              if (state.activePlan != null)
+                _PlanTile(
+                  plan: state.activePlan!,
+                  isActive: true,
+                  isViewing:
+                      state.viewingPlanId == null ||
+                      state.viewingPlanId == state.activePlan!.id,
+                  onTap: () {
+                    context.read<NutritionBloc>().add(
+                          NutritionProgressPlanSelected(
+                              planId: state.activePlan!.id),
+                        );
+                    Navigator.pop(context);
+                  },
+                ),
+              ...state.allPlans
+                  .where((p) => !p.isActive)
+                  .map((p) => _PlanTile(
+                        plan: p,
+                        isActive: false,
+                        isViewing: state.viewingPlanId == p.id,
+                        onTap: () {
+                          context.read<NutritionBloc>().add(
+                                NutritionProgressPlanSelected(planId: p.id),
+                              );
+                          Navigator.pop(context);
+                        },
+                      )),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () {
+                  final bloc = context.read<NutritionBloc>();
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => NutritionConfigPage(
+                        onComplete: () => bloc
+                            .add(NutritionLoaded(date: DateTime.now())),
+                      ),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                        color: cs.primary,
+                        width: 1.5),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.add_circle_outline, color: cs.primary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Nueva consulta',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: cs.primary,
+                              ),
+                            ),
+                            Text(
+                              'Crear el plan de la nueva sesión',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: cs.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PlanTile extends StatelessWidget {
+  final MealPlan plan;
+  final bool isActive;
+  final bool isViewing;
+  final VoidCallback onTap;
+
+  const _PlanTile({
+    required this.plan,
+    required this.isActive,
+    required this.isViewing,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final start = plan.periodStart;
+    final end = plan.periodEnd;
+    final dateLabel = start == null
+        ? ''
+        : end == null
+            ? 'desde ${start.day}/${start.month}/${start.year}'
+            : '${start.day}/${start.month}/${start.year} – '
+                '${end.day}/${end.month}/${end.year}';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isViewing
+                ? cs.primaryContainer.withValues(alpha: 0.3)
+                : cs.surfaceContainerHighest,
+            border: isViewing
+                ? Border.all(color: cs.primary, width: 1.5)
+                : null,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(plan.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    if (dateLabel.isNotEmpty)
+                      Text(
+                        dateLabel,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                      ),
+                  ],
+                ),
+              ),
+              if (isActive)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: cs.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'ACTIVO',
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: cs.onPrimary,
+                        fontWeight: FontWeight.w700),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Vista plan activo: tabs Adherencia + Frecuencia ───────────────────────────
+
+class _ActivePlanView extends StatefulWidget {
+  final NutritionState state;
+  const _ActivePlanView({required this.state});
+
+  @override
+  State<_ActivePlanView> createState() => _ActivePlanViewState();
+}
+
+class _ActivePlanViewState extends State<_ActivePlanView>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   _Periodo _periodo = _Periodo.semana;
   int _weekOffset = 0;
   int _monthOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Adherencia'),
+            Tab(text: 'Frecuencia'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildAdherenciaContent(),
+              _FrecuenciaTab(
+                  frequencies: widget.state.optionFrequencies),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdherenciaContent() {
+    final stats = widget.state.weeklyAdherence;
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _PeriodToggle(
+            selected: _periodo,
+            onChanged: (p) => setState(() => _periodo = p),
+          ),
+          const SizedBox(height: 16),
+          if (_periodo == _Periodo.semana)
+            _buildWeekNavigator(stats)
+          else
+            _buildMonthNavigator(stats),
+          const SizedBox(height: 16),
+          if (_periodo == _Periodo.semana)
+            _buildSemanaChips(widget.state)
+          else
+            _buildMesChips(widget.state),
+          const SizedBox(height: 20),
+          if (_periodo == _Periodo.semana)
+            _buildWeekBarChart(stats)
+          else
+            _buildMonthBarChart(stats),
+        ],
+      ),
+    );
+  }
 
   DateTime _currentWeekMonday() {
     final now = DateTime.now().toUtc();
@@ -35,7 +418,8 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
     return DateTime.utc(now.year, now.month + offset, 1);
   }
 
-  NutritionWeeklyStat? _statAt(List<NutritionWeeklyStat> stats, int weekOffset) {
+  NutritionWeeklyStat? _statAt(
+      List<NutritionWeeklyStat> stats, int weekOffset) {
     final idx = stats.length - 1 + weekOffset;
     if (idx < 0 || idx >= stats.length) return null;
     return stats[idx];
@@ -45,7 +429,8 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
       List<NutritionWeeklyStat> stats, int monthOffset) {
     final ms = _monthStartAt(monthOffset);
     return stats
-        .where((s) => s.weekStart.month == ms.month && s.weekStart.year == ms.year)
+        .where((s) =>
+            s.weekStart.month == ms.month && s.weekStart.year == ms.year)
         .toList();
   }
 
@@ -57,7 +442,6 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
         : (stat.adherencePct * 100).round();
     final logged = stat?.mealsLogged ?? 0;
     final offPlan = stat?.offPlanMeals ?? 0;
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -77,7 +461,6 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
     final pct = totalExpected == 0
         ? null
         : (totalLogged / totalExpected * 100).round();
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -91,51 +474,57 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
   Widget _buildWeekNavigator(List<NutritionWeeklyStat> stats) {
     final monday = _weekMondayAt(_weekOffset);
     final sunday = monday.add(const Duration(days: 6));
-    final months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-
+    const months = [
+      'ene','feb','mar','abr','may','jun',
+      'jul','ago','sep','oct','nov','dic'
+    ];
     final String label;
     if (monday.month == sunday.month) {
-      label = '${monday.day} – ${sunday.day} ${months[monday.month - 1]} ${monday.year}';
+      label =
+          '${monday.day} – ${sunday.day} ${months[monday.month - 1]} ${monday.year}';
     } else {
-      label = '${monday.day} ${months[monday.month - 1]} – ${sunday.day} ${months[sunday.month - 1]} ${monday.year}';
+      label =
+          '${monday.day} ${months[monday.month - 1]} – ${sunday.day} ${months[sunday.month - 1]} ${monday.year}';
     }
     final sub = _weekOffset == 0
         ? 'semana actual'
         : 'hace ${-_weekOffset} semana${-_weekOffset == 1 ? '' : 's'}';
-    final canGoBack = stats.isNotEmpty && _weekOffset > -(stats.length - 1);
-
+    final canGoBack =
+        stats.isNotEmpty && _weekOffset > -(stats.length - 1);
     return _Navigator(
       label: label,
       subtitle: sub,
       onBack: canGoBack ? () => setState(() => _weekOffset--) : null,
-      onForward: _weekOffset < 0 ? () => setState(() => _weekOffset++) : null,
+      onForward:
+          _weekOffset < 0 ? () => setState(() => _weekOffset++) : null,
     );
   }
 
   Widget _buildMonthNavigator(List<NutritionWeeklyStat> stats) {
     final ms = _monthStartAt(_monthOffset);
-    final months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto',
-        'Septiembre','Octubre','Noviembre','Diciembre'];
+    const months = [
+      'Enero','Febrero','Marzo','Abril','Mayo','Junio',
+      'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
+    ];
     final label = '${months[ms.month - 1]} ${ms.year}';
     final sub = _monthOffset == 0
         ? 'mes actual'
         : 'hace ${-_monthOffset} mes${-_monthOffset == 1 ? '' : 'es'}';
     final canGoBack = stats.any(
         (s) => s.weekStart.isBefore(DateTime.utc(ms.year, ms.month, 1)));
-
     return _Navigator(
       label: label,
       subtitle: sub,
       onBack: canGoBack ? () => setState(() => _monthOffset--) : null,
-      onForward: _monthOffset < 0 ? () => setState(() => _monthOffset++) : null,
+      onForward:
+          _monthOffset < 0 ? () => setState(() => _monthOffset++) : null,
     );
   }
 
   Widget _buildWeekBarChart(List<NutritionWeeklyStat> stats) {
     if (stats.isEmpty) return const SizedBox.shrink();
-    final bars = stats.map((s) => (s.mealsLogged, s.mealsExpected)).toList();
     return _AdherenceBarChart(
-      bars: bars,
+      bars: stats.map((s) => (s.mealsLogged, s.mealsExpected)).toList(),
       barColor: Theme.of(context).colorScheme.primaryContainer,
       lastBarIsPartial: true,
     );
@@ -144,54 +533,139 @@ class _NutritionProgressPageState extends State<NutritionProgressPage> {
   Widget _buildMonthBarChart(List<NutritionWeeklyStat> stats) {
     final weeks = _weeksInMonth(stats, _monthOffset);
     if (weeks.isEmpty) return const SizedBox.shrink();
-    final bars = weeks.map((s) => (s.mealsLogged, s.mealsExpected)).toList();
     return _AdherenceBarChart(
-      bars: bars,
+      bars: weeks.map((s) => (s.mealsLogged, s.mealsExpected)).toList(),
       barColor: Theme.of(context).colorScheme.primaryContainer,
       lastBarIsPartial: _monthOffset == 0,
     );
   }
+}
+
+// ── Tab Frecuencia ────────────────────────────────────────────────────────────
+
+class _FrecuenciaTab extends StatelessWidget {
+  final List<OptionFrequencyStat> frequencies;
+  const _FrecuenciaTab({required this.frequencies});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Progreso Nutrición')),
-      body: BlocBuilder<NutritionBloc, NutritionState>(
-        builder: (context, state) {
-          final stats = state.weeklyAdherence;
-          return SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _PeriodToggle(
-                  selected: _periodo,
-                  onChanged: (p) => setState(() => _periodo = p),
+    if (frequencies.isEmpty) {
+      return Center(
+        child: Text(
+          'Sin registros de frecuencia',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+      );
+    }
+
+    final grouped = <String, List<OptionFrequencyStat>>{};
+    for (final f in frequencies) {
+      grouped.putIfAbsent(f.mealType, () => []).add(f);
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: grouped.entries.map((entry) {
+        final mealType = entry.key;
+        final opts = entry.value;
+        final maxCount =
+            opts.map((o) => o.count).fold(0, (a, b) => a > b ? a : b);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                mealType.toUpperCase(),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 16),
-                if (_periodo == _Periodo.semana)
-                  _buildWeekNavigator(stats)
-                else
-                  _buildMonthNavigator(stats),
-                const SizedBox(height: 16),
-                if (_periodo == _Periodo.semana)
-                  _buildSemanaChips(state)
-                else
-                  _buildMesChips(state),
-                const SizedBox(height: 20),
-                if (_periodo == _Periodo.semana)
-                  _buildWeekBarChart(stats)
-                else
-                  _buildMonthBarChart(stats),
-              ],
-            ),
-          );
-        },
-      ),
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: opts.map((opt) {
+                    final frac = maxCount == 0
+                        ? 0.0
+                        : opt.count / maxCount;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Opción ${opt.optionNumber}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                    ),
+                                    Text(
+                                      opt.description,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${opt.count}×',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          LinearProgressIndicator(
+                            value: frac,
+                            minHeight: 6,
+                            borderRadius: BorderRadius.circular(3),
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHigh,
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }
 
-// ── sub-widgets ────────────────────────────────────────────────────────────
+// ── Sub-widgets reusables ──────────────────────────────────────────────────────
 
 class _PeriodToggle extends StatelessWidget {
   final _Periodo selected;
@@ -258,21 +732,23 @@ class _Navigator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      IconButton(icon: const Icon(Icons.chevron_left), onPressed: onBack),
+      IconButton(
+          icon: const Icon(Icons.chevron_left), onPressed: onBack),
       Expanded(
         child: Column(children: [
           Text(label,
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center),
           Text(subtitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color:
+                        Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
               textAlign: TextAlign.center),
         ]),
       ),
-      IconButton(icon: const Icon(Icons.chevron_right), onPressed: onForward),
+      IconButton(
+          icon: const Icon(Icons.chevron_right), onPressed: onForward),
     ]);
   }
 }
@@ -308,7 +784,8 @@ class _AdherenceBarChart extends StatelessWidget {
             painter: _BarChartPainter(
               bars: bars,
               barColor: barColor,
-              trackColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+              trackColor:
+                  Theme.of(context).colorScheme.surfaceContainerHigh,
               lastBarIsPartial: lastBarIsPartial,
             ),
             size: Size.infinite,
@@ -320,10 +797,10 @@ class _AdherenceBarChart extends StatelessWidget {
           children: [
             Text(
               bars.length > 1 ? 'sem −${bars.length - 1}' : '',
-              style: Theme.of(context)
-                  .textTheme
-                  .labelSmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color:
+                        Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
             Text('actual',
                 style: Theme.of(context)
@@ -360,17 +837,13 @@ class _BarChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (bars.isEmpty) return;
-
     const gap = 4.0;
     final barW = (size.width - gap * (bars.length - 1)) / bars.length;
     final chartH = size.height;
-
-    // Dashed goal line at top
     final goalPaint = Paint()
       ..color = barColor.withValues(alpha: 0.4)
       ..strokeWidth = 1;
     _drawDashedLine(canvas, Offset.zero, Offset(size.width, 0), goalPaint);
-
     for (int i = 0; i < bars.length; i++) {
       final (logged, expected) = bars[i];
       final x = i * (barW + gap);
@@ -378,7 +851,6 @@ class _BarChartPainter extends CustomPainter {
       final barH = pct * chartH;
       final isPartial = lastBarIsPartial && i == bars.length - 1;
       final isNoData = expected == 0;
-
       if (isNoData) {
         canvas.drawRRect(
           RRect.fromRectAndCorners(
@@ -390,7 +862,6 @@ class _BarChartPainter extends CustomPainter {
         );
         continue;
       }
-
       final rect = Rect.fromLTWH(x, chartH - barH, barW, barH);
       if (isPartial) {
         canvas.drawRRect(
@@ -399,7 +870,9 @@ class _BarChartPainter extends CustomPainter {
               topRight: const Radius.circular(3)),
           Paint()..color = barColor.withValues(alpha: 0.25),
         );
-        _drawDashedRect(canvas, rect,
+        _drawDashedRect(
+            canvas,
+            rect,
             Paint()
               ..color = barColor.withValues(alpha: 0.8)
               ..strokeWidth = 1
@@ -415,7 +888,8 @@ class _BarChartPainter extends CustomPainter {
     }
   }
 
-  void _drawDashedLine(Canvas canvas, Offset p1, Offset p2, Paint paint) {
+  void _drawDashedLine(
+      Canvas canvas, Offset p1, Offset p2, Paint paint) {
     const dashLen = 4.0;
     const gapLen = 4.0;
     final dx = p2.dx - p1.dx;

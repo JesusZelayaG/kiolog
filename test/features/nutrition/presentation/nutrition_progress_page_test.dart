@@ -2,7 +2,9 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/nutrition/domain/models/nutrition_weekly_stat.dart';
+import 'package:kiolog/features/nutrition/domain/models/option_frequency_stat.dart';
 import 'package:kiolog/features/nutrition/presentation/bloc/nutrition_bloc.dart';
 import 'package:kiolog/features/nutrition/presentation/bloc/nutrition_event.dart';
 import 'package:kiolog/features/nutrition/presentation/bloc/nutrition_state.dart';
@@ -22,10 +24,16 @@ Widget _wrap(NutritionBloc bloc) => MaterialApp(
 
 NutritionState _state({
   List<NutritionWeeklyStat> weeklyAdherence = const [],
+  List<OptionFrequencyStat> optionFrequencies = const [],
+  MealPlan? activePlan,
+  int? viewingPlanId,
 }) =>
     NutritionState(
       status: NutritionStatus.success,
       weeklyAdherence: weeklyAdherence,
+      optionFrequencies: optionFrequencies,
+      activePlan: activePlan,
+      viewingPlanId: viewingPlanId,
     );
 
 NutritionWeeklyStat _stat({
@@ -46,6 +54,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(NutritionLoaded(date: DateTime(2026)));
+    registerFallbackValue(const NutritionProgressPlanSelected(planId: 0));
   });
 
   setUp(() => bloc = MockNutritionBloc());
@@ -180,6 +189,137 @@ void main() {
       final rightBtn = tester.widget<IconButton>(
           find.widgetWithIcon(IconButton, Icons.chevron_right));
       expect(rightBtn.onPressed, isNull);
+    });
+
+    testWidgets('muestra chip con nombre del plan activo',
+        (tester) async {
+      final plan = MealPlan(
+        id: 1,
+        name: 'Plan Verano',
+        createdAt: DateTime(2026, 6, 1),
+        isActive: true,
+        dailyMealGoal: 3,
+        periodStart: DateTime(2026, 6, 1),
+        periodEnd: null,
+      );
+      whenListen(
+        bloc,
+        const Stream<NutritionState>.empty(),
+        initialState: NutritionState(
+          status: NutritionStatus.success,
+          activePlan: plan,
+          allPlans: [plan],
+        ),
+      );
+
+      await tester.pumpWidget(_wrap(bloc));
+      await tester.pump();
+
+      expect(find.text('Plan Verano'), findsOneWidget);
+    });
+
+    testWidgets('tab Frecuencia muestra opciones con conteo',
+        (tester) async {
+      final plan = MealPlan(
+        id: 1,
+        name: 'Plan',
+        createdAt: DateTime(2026, 6, 1),
+        isActive: true,
+        dailyMealGoal: 2,
+        periodStart: DateTime(2026, 6, 1),
+        periodEnd: null,
+      );
+      const freqs = [
+        OptionFrequencyStat(
+          planOptionId: 1,
+          mealType: 'Desayuno',
+          optionNumber: 1,
+          description: 'Avena con frutas',
+          count: 18,
+        ),
+        OptionFrequencyStat(
+          planOptionId: 2,
+          mealType: 'Desayuno',
+          optionNumber: 2,
+          description: 'Huevos revueltos',
+          count: 7,
+        ),
+      ];
+      whenListen(
+        bloc,
+        const Stream<NutritionState>.empty(),
+        initialState: NutritionState(
+          status: NutritionStatus.success,
+          activePlan: plan,
+          allPlans: [plan],
+          optionFrequencies: freqs,
+        ),
+      );
+
+      await tester.pumpWidget(_wrap(bloc));
+      await tester.pump();
+
+      // Cambiar al tab Frecuencia
+      await tester.tap(find.text('Frecuencia'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Avena con frutas'), findsOneWidget);
+      expect(find.text('18×'), findsOneWidget);
+      expect(find.text('Huevos revueltos'), findsOneWidget);
+      expect(find.text('7×'), findsOneWidget);
+    });
+
+    testWidgets(
+        'ver plan anterior oculta tabs y muestra solo frecuencia',
+        (tester) async {
+      final active = MealPlan(
+        id: 1,
+        name: 'Plan Actual',
+        createdAt: DateTime(2026, 6, 1),
+        isActive: true,
+        dailyMealGoal: 2,
+        periodStart: DateTime(2026, 6, 1),
+        periodEnd: null,
+      );
+      final prev = MealPlan(
+        id: 2,
+        name: 'Plan Anterior',
+        createdAt: DateTime(2026, 1, 1),
+        isActive: false,
+        dailyMealGoal: 3,
+        periodStart: DateTime(2026, 1, 1),
+        periodEnd: DateTime(2026, 5, 31),
+      );
+      const prevFreqs = [
+        OptionFrequencyStat(
+          planOptionId: 10,
+          mealType: 'Almuerzo',
+          optionNumber: 1,
+          description: 'Pollo al horno',
+          count: 12,
+        ),
+      ];
+      whenListen(
+        bloc,
+        const Stream<NutritionState>.empty(),
+        initialState: NutritionState(
+          status: NutritionStatus.success,
+          activePlan: active,
+          allPlans: [active, prev],
+          viewingPlanId: 2, // viendo plan anterior
+          optionFrequencies: prevFreqs,
+        ),
+      );
+
+      await tester.pumpWidget(_wrap(bloc));
+      await tester.pump();
+
+      // No debe haber tabs cuando se ve un plan anterior
+      expect(find.text('Adherencia'), findsNothing);
+      expect(find.text('Frecuencia'), findsNothing);
+      // Pero sí debe mostrar las frecuencias del plan anterior
+      expect(find.text('Pollo al horno'), findsOneWidget);
+      expect(find.text('12×'), findsOneWidget);
     });
   });
 }
