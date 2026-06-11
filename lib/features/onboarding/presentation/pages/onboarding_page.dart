@@ -220,47 +220,38 @@ class _OnboardingViewState extends State<_OnboardingView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildWelcomeStep(theme),
-                _buildModuleSelectionStep(theme),
-                _buildWaterStep(theme),
-                _buildNutritionStep(theme),
-                _buildExerciseStep(theme),
-                _buildInitialDataStep(theme),
-              ],
+            SizedBox(
+              height: 52,
+              child: _currentStep > 0
+                  ? Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new),
+                          onPressed: _prevStep,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
-            if (_currentStep > 0)
-              Positioned(
-                top: 8,
-                left: 4,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new),
-                  onPressed: _prevStep,
-                ),
-              ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildPillButton(theme),
-                    const SizedBox(height: 8),
-                    _buildDotsIndicator(colorScheme),
-                  ],
-                ),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildWelcomeStep(theme),
+                  _buildModuleSelectionStep(theme),
+                  _buildWaterStep(theme),
+                  _buildNutritionStep(theme),
+                  _buildExerciseStep(theme),
+                  _buildInitialDataStep(theme),
+                ],
               ),
             ),
           ],
@@ -315,6 +306,20 @@ class _OnboardingViewState extends State<_OnboardingView> {
     );
   }
 
+  Widget _buildNavFooter(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 24, 0, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildPillButton(theme),
+          const SizedBox(height: 8),
+          _buildDotsIndicator(theme.colorScheme),
+        ],
+      ),
+    );
+  }
+
   Widget _buildModuleSelectionStep(ThemeData theme) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -359,6 +364,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          _buildNavFooter(theme),
         ],
       ),
     );
@@ -432,13 +438,18 @@ class _OnboardingViewState extends State<_OnboardingView> {
             children: [
               Icon(icon, size: 20, color: colorScheme.primary),
               const SizedBox(width: 12),
-              Text(label, style: theme.textTheme.bodyMedium),
+              Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                ),
+              ),
             ],
           ),
         );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 56, 24, 120),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -467,6 +478,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
             'Bienvenido a Kiolog',
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -501,6 +513,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
               ],
             ),
           ),
+          _buildNavFooter(theme),
         ],
       ),
     );
@@ -560,6 +573,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
           ),
+          _buildNavFooter(theme),
         ],
       ),
     );
@@ -694,6 +708,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          _buildNavFooter(theme),
         ],
       ),
     );
@@ -781,6 +796,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
             icon: const Icon(Icons.add),
             label: const Text('Agregar día de rutina'),
           ),
+          _buildNavFooter(theme),
         ],
       ),
     );
@@ -834,6 +850,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
           ),
+          _buildNavFooter(theme),
         ],
       ),
     );
