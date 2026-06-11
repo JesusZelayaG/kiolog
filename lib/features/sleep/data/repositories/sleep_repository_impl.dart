@@ -13,7 +13,7 @@ class SleepRepositoryImpl implements SleepRepository {
 
   @override
   Future<SleepLog?> getSleepLogForDate(DateTime date) =>
-      _waterSleepDao.getSleepLog(_dateOnly(date));
+      _waterSleepDao.getSleepLogsForDate(_dateOnly(date)).then((l) => l.firstOrNull);
 
   @override
   Future<List<SleepLog>> getSleepLogsInRange(DateTime start, DateTime end) =>

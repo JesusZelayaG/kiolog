@@ -27,7 +27,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
         d.isBefore(end);
         d = d.add(const Duration(days: 1))) {
       final waterLogs = await _waterSleepDao.getDailyWaterLogs(d);
-      final sleepLog = await _waterSleepDao.getSleepLog(d);
+      final sleepLogs = await _waterSleepDao.getSleepLogsForDate(d);
       final mealLogs = await _nutritionDao.getDailyMealLogs(d);
       final exerciseLog = await _exerciseDao.getDailyExerciseLog(d);
       final sessions = await _exerciseDao.getSessionsForDate(d);
@@ -35,7 +35,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
       days.add(DaySummary(
         date: d,
         hasWater: waterLogs.isNotEmpty,
-        hasSleep: sleepLog != null,
+        hasSleep: sleepLogs.isNotEmpty,
         hasMeals: mealLogs.isNotEmpty,
         hasExercise: (exerciseLog?.completed ?? false) || sessions.isNotEmpty,
       ));

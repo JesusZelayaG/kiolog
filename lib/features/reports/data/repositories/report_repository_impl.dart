@@ -58,9 +58,9 @@ class ReportRepositoryImpl implements ReportRepository {
       // Count only weekdays (Mon-Fri) as potential exercise days for simplicity
       if (current.weekday <= 5) exerciseTotalDays++;
 
-      final sleep = await _waterSleepDao.getSleepLog(current);
-      if (sleep != null) {
-        sleepTotal += sleep.hoursCalculated;
+      final sleepLogs = await _waterSleepDao.getSleepLogsForDate(current);
+      if (sleepLogs.isNotEmpty) {
+        sleepTotal += sleepLogs.fold(0.0, (s, l) => s + l.hoursCalculated);
         sleepDays++;
       }
 
