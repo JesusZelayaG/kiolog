@@ -233,7 +233,15 @@ class _WideModuleCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               Image.asset(bgImage, fit: BoxFit.cover),
-              Container(color: Colors.black.withValues(alpha: 0.50)),
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [Color(0x1A000000), Color(0xCC000000)],
+                    stops: [0.0, 1.0],
+                    radius: 1.1,
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -323,7 +331,15 @@ class _CompactModuleCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               Image.asset(bgImage, fit: BoxFit.cover),
-              Container(color: Colors.black.withValues(alpha: 0.55)),
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [Color(0x1A000000), Color(0xCC000000)],
+                    stops: [0.0, 1.0],
+                    radius: 1.1,
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
