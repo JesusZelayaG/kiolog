@@ -30,15 +30,19 @@ class WaterSleepDao extends DatabaseAccessor<AppDatabase>
   Future<void> insertSleepLog(SleepLogsCompanion log) =>
       into(sleepLogs).insert(log);
 
-  Future<SleepLog?> getSleepLog(DateTime date) {
+  Future<List<SleepLog>> getSleepLogsForDate(DateTime date) {
     final start = DateTime.utc(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     return (select(sleepLogs)
           ..where((t) =>
               t.date.isBiggerOrEqualValue(start) &
-              t.date.isSmallerThanValue(end)))
-        .getSingleOrNull();
+              t.date.isSmallerThanValue(end))
+          ..orderBy([(t) => OrderingTerm.asc(t.sleepTime)]))
+        .get();
   }
+
+  Future<void> deleteSleepLog(int id) =>
+      (delete(sleepLogs)..where((t) => t.id.equals(id))).go();
 
   Future<List<SleepLog>> getWeeklySleepLogs(
       DateTime startDate, DateTime endDate) {
