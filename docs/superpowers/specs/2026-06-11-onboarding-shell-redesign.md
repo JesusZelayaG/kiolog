@@ -114,7 +114,7 @@ SingleChildScrollView
       Text("Vamos a configurar tu bitácora de salud personal.
             Este proceso solo toma unos minutos.", bodyLarge, onSurfaceVariant)
       SizedBox(32)
-      Container(decoration: rounded(12), color: colorScheme.surface/surfaceContainerHigh)
+      Container(decoration: rounded(12), color: colorScheme.surfaceContainerHigh)
         Padding(all: 16)
           Column
             Text("NECESITAMOS QUE NOS CUENTES:", labelSmall, color: primary)
@@ -125,7 +125,7 @@ SingleChildScrollView
             _infoRow(Icons.monitor_weight_outlined, "Tu peso de inicio")
 ```
 
-### `_infoRow` helper (privado al step)
+### `_infoRow` helper (función local dentro de `_buildWelcomeStep`)
 ```dart
 Widget _infoRow(IconData icon, String label) => Padding(
   padding: const EdgeInsets.only(bottom: 10),
