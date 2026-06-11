@@ -49,6 +49,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
   // Step 4: Exercise — días de rutina numerados (Día 1, Día 2, ...)
   final _exercisePlanNameController = TextEditingController(text: 'Mi Rutina');
   final List<_RoutineDay> _routineDays = [];
+  String _weightUnit = 'kg';
 
   // Step 5: Initial data
   final _weightController = TextEditingController();
@@ -327,7 +328,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('¿Qué quieres registrar?',
-              style: theme.textTheme.headlineSmall),
+              style: theme.textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
             'Puedes cambiar esto más adelante en Ajustes.',
@@ -525,7 +526,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Configuración de Agua', style: theme.textTheme.headlineSmall),
+          Text('Configuración de Agua', style: theme.textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
             '¿Cómo vas a medir tu ingesta de agua?',
@@ -585,7 +586,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Plan de Alimentación', style: theme.textTheme.headlineSmall),
+          Text('Plan de Alimentación', style: theme.textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
             'Define tus tiempos de comida y las opciones para cada uno.',
@@ -731,6 +732,16 @@ class _OnboardingViewState extends State<_OnboardingView> {
             controller: _exercisePlanNameController,
             decoration: const InputDecoration(labelText: 'Nombre del plan'),
           ),
+          const SizedBox(height: 16),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'kg', label: Text('kg')),
+              ButtonSegment(value: 'lbs', label: Text('lbs')),
+            ],
+            selected: {_weightUnit},
+            onSelectionChanged: (set) =>
+                setState(() => _weightUnit = set.first),
+          ),
           const SizedBox(height: 24),
           ..._routineDays.asMap().entries.map((dayEntry) {
             final index = dayEntry.key;
@@ -773,6 +784,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
                   ...day.exercises.asMap().entries.map((e) {
                     return _ExerciseRow(
                       entry: e.value,
+                      weightUnit: _weightUnit,
                       onDelete: () {
                         setState(() => day.exercises.removeAt(e.key));
                       },
@@ -876,54 +888,79 @@ class _ExerciseEntry {
 
 class _ExerciseRow extends StatelessWidget {
   final _ExerciseEntry entry;
+  final String weightUnit;
   final VoidCallback onDelete;
 
-  const _ExerciseRow({required this.entry, required this.onDelete});
+  const _ExerciseRow({
+    required this.entry,
+    required this.weightUnit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      child: Column(
         children: [
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: entry.name,
-              decoration: const InputDecoration(labelText: 'Ejercicio'),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: entry.sets,
-              decoration: const InputDecoration(labelText: 'Sets'),
-              keyboardType: TextInputType.number,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: entry.reps,
-              decoration: const InputDecoration(labelText: 'Reps'),
-              keyboardType: TextInputType.number,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: entry.weight,
-              decoration: const InputDecoration(
-                labelText: 'Peso',
-                suffixText: 'kg',
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: entry.name,
+                  decoration: const InputDecoration(
+                    labelText: 'Ejercicio',
+                    isDense: true,
+                  ),
+                ),
               ),
-              keyboardType: TextInputType.number,
-            ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: onDelete,
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: onDelete,
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: entry.sets,
+                  decoration: const InputDecoration(
+                    labelText: 'Series',
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: entry.reps,
+                  decoration: const InputDecoration(
+                    labelText: 'Reps',
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: entry.weight,
+                  decoration: InputDecoration(
+                    labelText: 'Peso',
+                    suffixText: weightUnit,
+                    isDense: true,
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
+              ),
+            ],
           ),
+          const Divider(height: 24),
         ],
       ),
     );
