@@ -232,7 +232,10 @@ class _WaterView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Agregar agua'),
+        title: Text(
+          'Agregar agua',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
