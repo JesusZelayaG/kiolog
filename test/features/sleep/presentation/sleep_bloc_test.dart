@@ -29,10 +29,13 @@ void main() {
         const SleepState(status: SleepStatus.loading),
         const SleepState(status: SleepStatus.success, todayLogs: []),
       ],
+      verify: (_) {
+        verify(() => repository.getSleepLogsForDate(DateTime(2026, 6, 8))).called(1);
+      },
     );
 
     blocTest<SleepBloc, SleepState>(
-      'adds sleep log and refreshes state with list',
+      'adds sleep log and refreshes state with correct date',
       build: () {
         when(() => repository.addSleepLog(
               date: any(named: 'date'),
@@ -74,6 +77,7 @@ void main() {
         type: 'main',
       )),
       expect: () => [
+        const SleepState(status: SleepStatus.loading),
         SleepState(
           status: SleepStatus.success,
           todayLogs: [
@@ -98,17 +102,30 @@ void main() {
           ],
         ),
       ],
+      verify: (_) {
+        verify(() => repository.getSleepLogsForDate(DateTime(2026, 6, 8))).called(1);
+      },
     );
 
     blocTest<SleepBloc, SleepState>(
-      'deletes sleep log and refreshes state',
+      'deletes sleep log and refreshes state with correct date',
       build: () {
         when(() => repository.deleteSleepLog(any()))
             .thenAnswer((_) async {});
         when(() => repository.getSleepLogsForDate(any()))
             .thenAnswer((_) async => []);
-        when(() => repository.getSleepLogsInRange(any(), any()))
-            .thenAnswer((_) async => []);
+        when(() => repository.getSleepLogsInRange(any(), any())).thenAnswer(
+          (_) async => [
+            SleepLog(
+              id: 2,
+              date: DateTime(2026, 6, 8),
+              sleepTime: DateTime(2026, 6, 8, 14, 0),
+              wakeTime: DateTime(2026, 6, 8, 14, 30),
+              hoursCalculated: 0.5,
+              type: 'nap',
+            ),
+          ],
+        );
         return SleepBloc(repository)
           ..emit(SleepState(
             status: SleepStatus.success,
@@ -122,16 +139,61 @@ void main() {
                 type: 'main',
               ),
             ],
+            weeklyLogs: [
+              SleepLog(
+                id: 1,
+                date: DateTime(2026, 6, 8),
+                sleepTime: DateTime(2026, 6, 7, 22, 0),
+                wakeTime: DateTime(2026, 6, 8, 6, 0),
+                hoursCalculated: 8.0,
+                type: 'main',
+              ),
+            ],
           ));
       },
-      act: (bloc) => bloc.add(const SleepLogDeleted(1)),
+      act: (bloc) => bloc.add(SleepLogDeleted(id: 1, date: DateTime(2026, 6, 8))),
       expect: () => [
-        const SleepState(
+        SleepState(
+          status: SleepStatus.loading,
+          todayLogs: [
+            SleepLog(
+              id: 1,
+              date: DateTime(2026, 6, 8),
+              sleepTime: DateTime(2026, 6, 7, 22, 0),
+              wakeTime: DateTime(2026, 6, 8, 6, 0),
+              hoursCalculated: 8.0,
+              type: 'main',
+            ),
+          ],
+          weeklyLogs: [
+            SleepLog(
+              id: 1,
+              date: DateTime(2026, 6, 8),
+              sleepTime: DateTime(2026, 6, 7, 22, 0),
+              wakeTime: DateTime(2026, 6, 8, 6, 0),
+              hoursCalculated: 8.0,
+              type: 'main',
+            ),
+          ],
+        ),
+        SleepState(
           status: SleepStatus.success,
           todayLogs: [],
-          weeklyLogs: [],
+          weeklyLogs: [
+            SleepLog(
+              id: 2,
+              date: DateTime(2026, 6, 8),
+              sleepTime: DateTime(2026, 6, 8, 14, 0),
+              wakeTime: DateTime(2026, 6, 8, 14, 30),
+              hoursCalculated: 0.5,
+              type: 'nap',
+            ),
+          ],
         ),
       ],
+      verify: (_) {
+        verify(() => repository.getSleepLogsForDate(DateTime(2026, 6, 8))).called(1);
+      },
     );
   });
 }
