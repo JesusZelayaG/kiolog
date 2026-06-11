@@ -36,7 +36,7 @@ void main() {
   });
 
   group('WaterSleepDao - Sleep', () {
-    test('registra sueño y recupera por fecha', () async {
+    test('registra sueño y recupera lista por fecha', () async {
       final sleepTime = DateTime.utc(2026, 5, 27, 22, 30);
       final wakeTime = DateTime.utc(2026, 5, 28, 6, 30);
       final hours = wakeTime.difference(sleepTime).inMinutes / 60;
@@ -48,9 +48,59 @@ void main() {
         hoursCalculated: Value(hours),
       ));
 
-      final log =
-          await db.waterSleepDao.getSleepLog(DateTime.utc(2026, 5, 28));
-      expect(log?.hoursCalculated, 8.0);
+      final logs =
+          await db.waterSleepDao.getSleepLogsForDate(DateTime.utc(2026, 5, 28));
+      expect(logs.length, 1);
+      expect(logs.first.hoursCalculated, 8.0);
+    });
+
+    test('recupera múltiples logs del mismo día ordenados por sleepTime', () async {
+      final date = DateTime.utc(2026, 5, 28);
+      await db.waterSleepDao.insertSleepLog(SleepLogsCompanion(
+        date: Value(date),
+        sleepTime: Value(DateTime.utc(2026, 5, 27, 23, 0)),
+        wakeTime: Value(DateTime.utc(2026, 5, 28, 7, 0)),
+        hoursCalculated: const Value(8.0),
+        type: const Value('main'),
+      ));
+      await db.waterSleepDao.insertSleepLog(SleepLogsCompanion(
+        date: Value(date),
+        sleepTime: Value(DateTime.utc(2026, 5, 28, 14, 0)),
+        wakeTime: Value(DateTime.utc(2026, 5, 28, 15, 0)),
+        hoursCalculated: const Value(1.0),
+        type: const Value('nap'),
+      ));
+
+      final logs = await db.waterSleepDao.getSleepLogsForDate(date);
+      expect(logs.length, 2);
+      expect(logs[0].type, 'main');
+      expect(logs[1].type, 'nap');
+    });
+
+    test('deleteSleepLog elimina solo el log con ese id', () async {
+      final date = DateTime.utc(2026, 5, 28);
+      await db.waterSleepDao.insertSleepLog(SleepLogsCompanion(
+        date: Value(date),
+        sleepTime: Value(DateTime.utc(2026, 5, 27, 22, 0)),
+        wakeTime: Value(DateTime.utc(2026, 5, 28, 6, 0)),
+        hoursCalculated: const Value(8.0),
+      ));
+      await db.waterSleepDao.insertSleepLog(SleepLogsCompanion(
+        date: Value(date),
+        sleepTime: Value(DateTime.utc(2026, 5, 28, 14, 0)),
+        wakeTime: Value(DateTime.utc(2026, 5, 28, 14, 30)),
+        hoursCalculated: const Value(0.5),
+        type: const Value('nap'),
+      ));
+
+      final before = await db.waterSleepDao.getSleepLogsForDate(date);
+      expect(before.length, 2);
+
+      await db.waterSleepDao.deleteSleepLog(before.first.id);
+
+      final after = await db.waterSleepDao.getSleepLogsForDate(date);
+      expect(after.length, 1);
+      expect(after.first.type, 'nap');
     });
 
     test('getWeeklySleepLogs retorna logs del rango', () async {
