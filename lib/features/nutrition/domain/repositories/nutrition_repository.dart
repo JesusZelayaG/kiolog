@@ -1,5 +1,6 @@
 import 'package:kiolog/core/database/app_database.dart';
 import '../models/nutrition_weekly_stat.dart';
+import '../models/option_frequency_stat.dart';
 
 abstract class NutritionRepository {
   Future<MealPlan?> getActivePlan();
@@ -34,4 +35,6 @@ abstract class NutritionRepository {
   });
 
   Future<List<NutritionWeeklyStat>> getWeeklyAdherence({required int weeksBack});
+
+  Future<List<OptionFrequencyStat>> getOptionFrequency(int planId);
 }

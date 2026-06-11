@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:kiolog/core/dao/nutrition_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import '../../domain/models/nutrition_weekly_stat.dart';
+import '../../domain/models/option_frequency_stat.dart';
 import '../../domain/repositories/nutrition_repository.dart';
 
 class NutritionRepositoryImpl implements NutritionRepository {
@@ -135,10 +136,12 @@ class NutritionRepositoryImpl implements NutritionRepository {
           final start = plan.periodStart;
           final end = plan.periodEnd;
           if (start == null) continue;
-          final startDay = DateTime.utc(start.year, start.month, start.day);
+          final startUtc = start.toUtc();
+          final startDay = DateTime.utc(startUtc.year, startUtc.month, startUtc.day);
           if (startDay.isAfter(day)) continue;
           if (end != null) {
-            final endDay = DateTime.utc(end.year, end.month, end.day);
+            final endUtc = end.toUtc();
+            final endDay = DateTime.utc(endUtc.year, endUtc.month, endUtc.day);
             // On the day of a plan switch, the new plan claims the full day's goal.
             if (!endDay.isAfter(day)) continue;
           }
@@ -151,8 +154,9 @@ class NutritionRepositoryImpl implements NutritionRepository {
         mealsExpected += activePlan.dailyMealGoal;
 
         for (final log in allLogs) {
+          final logUtc = log.date.toUtc();
           final logDay =
-              DateTime.utc(log.date.year, log.date.month, log.date.day);
+              DateTime.utc(logUtc.year, logUtc.month, logUtc.day);
           if (logDay != day) continue;
           if (log.planOptionId != null) {
             mealsLogged++;
@@ -172,4 +176,8 @@ class NutritionRepositoryImpl implements NutritionRepository {
 
     return result;
   }
+
+  @override
+  Future<List<OptionFrequencyStat>> getOptionFrequency(int planId) =>
+      _nutritionDao.getOptionFrequenciesForPlan(planId);
 }

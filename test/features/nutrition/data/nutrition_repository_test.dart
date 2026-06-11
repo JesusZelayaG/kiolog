@@ -204,8 +204,10 @@ void main() {
       expect(logs2.any((l) => l.date.toUtc() == DateTime.utc(2026, 6, 3)), isTrue);
     });
 
-    test('getWeeklyAdherence returns correct adherence for current week', () async {
-      final planId = await repository.createPlan('Plan', dailyMealGoal: 2);
+    test('getWeeklyAdherence returns correct adherence for current week',
+        () async {
+      final planId =
+          await repository.createPlan('Plan', dailyMealGoal: 2);
       await repository.activatePlan(planId);
 
       final optId = await db.nutritionDao.insertMealPlanOption(
@@ -217,7 +219,9 @@ void main() {
         ),
       );
 
-      final today = DateTime.now().toUtc();
+      // Usar DateTime.now() local (no .toUtc()) para que _dateOnly produzca
+      // la misma fecha que getWeeklyAdherence usa internamente.
+      final today = DateTime.now();
       await repository.logMeal(
         date: today,
         mealType: 'breakfast',
@@ -233,21 +237,24 @@ void main() {
       expect(stats.length, 1);
       expect(stats.first.mealsLogged, 1);
       expect(stats.first.offPlanMeals, 1);
-      // The plan was activated just before this call. Drift stores DateTimes as milliseconds
-      // and retrieves them as local time, so periodStart comes back in local timezone.
-      // The implementation builds startDay from those local-time components via DateTime.utc(),
-      // meaning startDay = local date of plan activation as a UTC midnight value.
-      // Days counted = days from startDay up to todayMidnight (UTC) inclusive.
+
+      // Verificar mealsExpected: días desde inicio del plan activo hasta hoy
       final nowUtc = DateTime.now().toUtc();
-      final todayMidnightUtc = DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
-      // periodStart was stored as DateTime.now().toUtc() and comes back as local DateTime.
-      final planStartLocal = DateTime.now(); // approximation: plan was just activated
-      final startDayAsUtc = DateTime.utc(planStartLocal.year, planStartLocal.month, planStartLocal.day);
+      final todayMidnightUtc =
+          DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
       final daysToMonday = todayMidnightUtc.weekday - 1;
-      final weekStartUtc = todayMidnightUtc.subtract(Duration(days: daysToMonday));
-      // Effective start = max(weekStart, startDay)
-      final effectiveStart = startDayAsUtc.isAfter(weekStartUtc) ? startDayAsUtc : weekStartUtc;
-      final daysActive = todayMidnightUtc.difference(effectiveStart).inDays + 1;
+      final weekStartUtc =
+          todayMidnightUtc.subtract(Duration(days: daysToMonday));
+
+      // Obtener el plan para leer su periodStart
+      final activePlan = await repository.getActivePlan();
+      final ps = activePlan!.periodStart!.toUtc();
+      final planStartDay = DateTime.utc(ps.year, ps.month, ps.day);
+      final effectiveStart = planStartDay.isAfter(weekStartUtc)
+          ? planStartDay
+          : weekStartUtc;
+      final daysActive =
+          todayMidnightUtc.difference(effectiveStart).inDays + 1;
       expect(stats.first.mealsExpected, daysActive * 2);
     });
 
@@ -307,6 +314,39 @@ void main() {
       expect(stats.length, 8);
       // All zeros since no plans
       expect(stats.every((s) => s.mealsExpected == 0), isTrue);
+    });
+
+    test('getOptionFrequency returns frequency stats for plan', () async {
+      final planId = await repository.createPlan('Plan', dailyMealGoal: 2);
+      await repository.activatePlan(planId);
+
+      await repository.addPlanOption(
+        planId: planId,
+        mealType: 'Desayuno',
+        optionNumber: 1,
+        description: 'Avena',
+      );
+
+      // Obtener el id de la opción recién creada
+      final opts = await repository.getPlanOptions(planId, 'Desayuno');
+      final optId = opts.first.id;
+
+      final today = DateTime.now();
+      await repository.logMeal(
+        date: today,
+        mealType: 'Desayuno',
+        planOptionId: optId,
+      );
+      await repository.logMeal(
+        date: today,
+        mealType: 'Desayuno',
+        planOptionId: optId,
+      );
+
+      final result = await repository.getOptionFrequency(planId);
+      expect(result.length, 1);
+      expect(result.first.description, 'Avena');
+      expect(result.first.count, 2);
     });
   });
 }
