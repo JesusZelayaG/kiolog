@@ -279,6 +279,7 @@ class _SleepView extends StatelessWidget {
                         date: today,
                         sleepTime: sleepTime,
                         wakeTime: wakeTime,
+                        type: 'main',
                       ),
                     );
                 Navigator.pop(dialogContext);

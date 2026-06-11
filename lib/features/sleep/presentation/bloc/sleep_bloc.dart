@@ -15,8 +15,8 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
   Future<void> _onLoaded(SleepLoaded event, Emitter<SleepState> emit) async {
     emit(state.copyWith(status: SleepStatus.loading));
     try {
-      final log = await _repository.getSleepLogForDate(event.date);
-      emit(state.copyWith(status: SleepStatus.success, todayLog: log));
+      final logs = await _repository.getSleepLogsForDate(event.date);
+      emit(state.copyWith(status: SleepStatus.success, todayLog: logs.firstOrNull));
     } catch (e) {
       emit(state.copyWith(status: SleepStatus.failure, error: e.toString()));
     }
@@ -43,11 +43,12 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
         date: event.date,
         sleepTime: event.sleepTime,
         wakeTime: event.wakeTime,
+        type: event.type,
       );
-      final log = await _repository.getSleepLogForDate(event.date);
+      final logsForDate = await _repository.getSleepLogsForDate(event.date);
       final start = event.date.subtract(const Duration(days: 6));
       final logs = await _repository.getSleepLogsInRange(start, event.date);
-      emit(state.copyWith(todayLog: log, weeklyLogs: logs));
+      emit(state.copyWith(todayLog: logsForDate.firstOrNull, weeklyLogs: logs));
     } catch (e) {
       emit(state.copyWith(status: SleepStatus.failure, error: e.toString()));
     }

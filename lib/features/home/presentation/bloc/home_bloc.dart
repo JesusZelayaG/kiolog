@@ -31,7 +31,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final waterTotal = await _waterRepository.getDailyTotalMl(event.date);
       final waterConfig = await _waterRepository.getConfig();
 
-      final sleepLog = await _sleepRepository.getSleepLogForDate(event.date);
+      final sleepLogs = await _sleepRepository.getSleepLogsForDate(event.date);
+      final sleepLog = sleepLogs.firstOrNull;
 
       final mealLogs = await _nutritionRepository.getDailyLogs(event.date);
 

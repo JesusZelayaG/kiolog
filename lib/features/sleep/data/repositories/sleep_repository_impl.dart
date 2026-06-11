@@ -12,8 +12,8 @@ class SleepRepositoryImpl implements SleepRepository {
       DateTime.utc(date.year, date.month, date.day);
 
   @override
-  Future<SleepLog?> getSleepLogForDate(DateTime date) =>
-      _waterSleepDao.getSleepLogsForDate(_dateOnly(date)).then((l) => l.firstOrNull);
+  Future<List<SleepLog>> getSleepLogsForDate(DateTime date) =>
+      _waterSleepDao.getSleepLogsForDate(_dateOnly(date));
 
   @override
   Future<List<SleepLog>> getSleepLogsInRange(DateTime start, DateTime end) =>
@@ -24,16 +24,20 @@ class SleepRepositoryImpl implements SleepRepository {
     required DateTime date,
     required DateTime sleepTime,
     required DateTime wakeTime,
+    required String type,
   }) {
-    final diff = wakeTime.difference(sleepTime);
-    final hours = diff.inMinutes / 60.0;
+    final hours = wakeTime.difference(sleepTime).inMinutes / 60.0;
     return _waterSleepDao.insertSleepLog(
       SleepLogsCompanion(
         date: Value(_dateOnly(date)),
         sleepTime: Value(sleepTime),
         wakeTime: Value(wakeTime),
         hoursCalculated: Value(hours),
+        type: Value(type),
       ),
     );
   }
+
+  @override
+  Future<void> deleteSleepLog(int id) => _waterSleepDao.deleteSleepLog(id);
 }

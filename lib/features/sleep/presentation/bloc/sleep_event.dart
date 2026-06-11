@@ -29,13 +29,15 @@ class SleepLogAdded extends SleepEvent {
   final DateTime date;
   final DateTime sleepTime;
   final DateTime wakeTime;
+  final String type;
 
   const SleepLogAdded({
     required this.date,
     required this.sleepTime,
     required this.wakeTime,
+    required this.type,
   });
 
   @override
-  List<Object?> get props => [date, sleepTime, wakeTime];
+  List<Object?> get props => [date, sleepTime, wakeTime, type];
 }
