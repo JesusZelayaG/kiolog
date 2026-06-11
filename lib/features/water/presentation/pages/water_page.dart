@@ -280,7 +280,10 @@ class _WaterView extends StatelessWidget {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Configuración de agua'),
+          title: Text(
+            'Configuración de agua',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
