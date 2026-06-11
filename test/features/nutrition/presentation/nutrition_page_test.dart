@@ -277,7 +277,7 @@ void main() {
           status: NutritionStatus.success,
           activePlan: activePlan,
           allPlans: [activePlan, pendingPlan],
-          planOptions: {},
+          planOptions: const {},
         ),
       );
 
@@ -297,7 +297,7 @@ void main() {
           status: NutritionStatus.success,
           activePlan: _plan,
           allPlans: [_plan],
-          planOptions: {},
+          planOptions: const {},
         ),
       );
 
