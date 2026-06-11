@@ -263,10 +263,15 @@ class _SleepView extends StatelessWidget {
                     );
                     if (time != null) {
                       setDialogState(() {
+                        // Si la hora elegida es >= 12 (tarde/noche) se
+                        // asume que fue la noche anterior.
+                        final sleepDate = time.hour >= 12
+                            ? now.subtract(const Duration(days: 1))
+                            : now;
                         sleepTime = DateTime(
-                          now.year,
-                          now.month,
-                          now.day,
+                          sleepDate.year,
+                          sleepDate.month,
+                          sleepDate.day,
                           time.hour,
                           time.minute,
                         );
