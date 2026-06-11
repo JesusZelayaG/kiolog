@@ -424,29 +424,82 @@ class _OnboardingViewState extends State<_OnboardingView> {
   }
 
   Widget _buildWelcomeStep(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.favorite,
-            size: 96,
-            color: theme.colorScheme.primary,
+    final colorScheme = theme.colorScheme;
+
+    Widget infoRow(IconData icon, String label) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: colorScheme.primary),
+              const SizedBox(width: 12),
+              Text(label, style: theme.textTheme.bodyMedium),
+            ],
           ),
-          const SizedBox(height: 32),
+        );
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 56, 24, 120),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Bienvenida',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colorScheme.primary,
+            ),
+            child: Icon(
+              Icons.favorite,
+              size: 40,
+              color: colorScheme.onPrimary,
+            ),
+          ),
+          const SizedBox(height: 24),
           Text(
             'Bienvenido a Kiolog',
-            style: theme.textTheme.displayLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Tu bitácora de salud personal.\nRegistra agua, comidas, ejercicio y sueño en un solo lugar.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Vamos a configurar tu bitácora de salud personal. '
+            'Este proceso solo toma unos minutos.',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'NECESITAMOS QUE NOS CUENTES:',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                infoRow(Icons.water_drop_outlined, 'Cómo medirás tu agua'),
+                infoRow(Icons.restaurant_outlined, 'Tu plan de alimentación'),
+                infoRow(Icons.fitness_center_outlined, 'Tu rutina de ejercicio'),
+                infoRow(Icons.monitor_weight_outlined, 'Tu peso de inicio'),
+              ],
+            ),
           ),
         ],
       ),
