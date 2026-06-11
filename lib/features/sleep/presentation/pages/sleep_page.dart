@@ -227,115 +227,66 @@ class _SleepView extends StatelessWidget {
   }
 
   void _showAddSleepDialog(BuildContext context) {
-    DateTime? sleepTime;
-    DateTime? wakeTime;
+    final controller = TextEditingController();
     final theme = Theme.of(context);
+    final today = DateTime.now();
 
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text(
-              'Registrar sueño',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'Registrar sueño',
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Fecha: ${DateFormat('dd/MM/yyyy').format(today)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.bedtime_outlined),
-                  title: const Text('Hora de dormir'),
-                  subtitle: Text(
-                    sleepTime != null
-                        ? DateFormat('dd/MM HH:mm').format(sleepTime!)
-                        : 'Seleccionar',
-                  ),
-                  onTap: () async {
-                    final now = DateTime.now();
-                    final time = await showTimePicker(
-                      context: dialogContext,
-                      initialTime: TimeOfDay.fromDateTime(
-                        now.subtract(const Duration(hours: 8)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Horas dormidas',
+                suffixText: 'h',
+                hintText: 'Ej: 7.5',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final hours = double.tryParse(controller.text.replaceAll(',', '.'));
+              if (hours != null && hours > 0 && hours <= 24) {
+                final wakeTime = today;
+                final sleepTime = wakeTime.subtract(
+                  Duration(minutes: (hours * 60).round()),
+                );
+                context.read<SleepBloc>().add(
+                      SleepLogAdded(
+                        date: today,
+                        sleepTime: sleepTime,
+                        wakeTime: wakeTime,
                       ),
                     );
-                    if (time != null) {
-                      setDialogState(() {
-                        // Si la hora elegida es >= 12 (tarde/noche) se
-                        // asume que fue la noche anterior.
-                        final sleepDate = time.hour >= 12
-                            ? now.subtract(const Duration(days: 1))
-                            : now;
-                        sleepTime = DateTime(
-                          sleepDate.year,
-                          sleepDate.month,
-                          sleepDate.day,
-                          time.hour,
-                          time.minute,
-                        );
-                      });
-                    }
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.wb_sunny_outlined),
-                  title: const Text('Hora de despertar'),
-                  subtitle: Text(
-                    wakeTime != null
-                        ? DateFormat('dd/MM HH:mm').format(wakeTime!)
-                        : 'Seleccionar',
-                  ),
-                  onTap: () async {
-                    final now = DateTime.now();
-                    final time = await showTimePicker(
-                      context: dialogContext,
-                      initialTime: TimeOfDay.fromDateTime(now),
-                    );
-                    if (time != null) {
-                      setDialogState(() {
-                        wakeTime = DateTime(
-                          now.year,
-                          now.month,
-                          now.day,
-                          time.hour,
-                          time.minute,
-                        );
-                      });
-                    }
-                  },
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: (sleepTime != null && wakeTime != null)
-                    ? () {
-                        var adjustedWake = wakeTime!;
-                        if (adjustedWake.isBefore(sleepTime!)) {
-                          adjustedWake =
-                              adjustedWake.add(const Duration(days: 1));
-                        }
-                        context.read<SleepBloc>().add(
-                              SleepLogAdded(
-                                date: DateTime.now(),
-                                sleepTime: sleepTime!,
-                                wakeTime: adjustedWake,
-                              ),
-                            );
-                        Navigator.pop(dialogContext);
-                      }
-                    : null,
-                child: const Text('Guardar'),
-              ),
-            ],
-          );
-        },
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
       ),
     );
   }
