@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kiolog/core/dao/user_profile_dao.dart';
 import 'package:kiolog/core/di/injection.dart';
@@ -7,7 +6,6 @@ import 'package:kiolog/features/exercise/domain/repositories/exercise_repository
 import 'package:kiolog/features/nutrition/domain/repositories/nutrition_repository.dart';
 import 'package:kiolog/features/progress/domain/repositories/progress_repository.dart';
 import 'package:kiolog/features/water/domain/repositories/water_repository.dart';
-import 'package:kiolog/shared/widgets/vitality_progress_bar.dart';
 import '../../../../core/domain/app_module.dart';
 import '../../../../core/dao/user_modules_dao.dart';
 import '../../../../core/modules/cubit/modules_cubit.dart';
@@ -67,7 +65,9 @@ class _OnboardingViewState extends State<_OnboardingView> {
     _weightController.dispose();
     for (final mt in _mealTimes) {
       mt.nameController.dispose();
-      for (final c in mt.options) c.dispose();
+      for (final c in mt.options) {
+        c.dispose();
+      }
     }
     for (final day in _routineDays) {
       day.nameController.dispose();
@@ -109,7 +109,9 @@ class _OnboardingViewState extends State<_OnboardingView> {
 
   void _nextStep() {
     var next = _currentStep + 1;
-    while (next < _totalSteps && !_isStepEnabled(next)) next++;
+    while (next < _totalSteps && !_isStepEnabled(next)) {
+      next++;
+    }
     if (next < _totalSteps) {
       setState(() => _currentStep = next);
       _pageController.jumpToPage(next);
@@ -118,7 +120,9 @@ class _OnboardingViewState extends State<_OnboardingView> {
 
   void _prevStep() {
     var prev = _currentStep - 1;
-    while (prev >= 0 && !_isStepEnabled(prev)) prev--;
+    while (prev >= 0 && !_isStepEnabled(prev)) {
+      prev--;
+    }
     if (prev >= 0) {
       setState(() => _currentStep = prev);
       _pageController.jumpToPage(prev);
@@ -216,52 +220,98 @@ class _OnboardingViewState extends State<_OnboardingView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            VitalityProgressBar(value: _currentActiveStep / _totalActiveSteps),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildWelcomeStep(theme),
-                  _buildModuleSelectionStep(theme),
-                  _buildWaterStep(theme),
-                  _buildNutritionStep(theme),
-                  _buildExerciseStep(theme),
-                  _buildInitialDataStep(theme),
-                ],
-              ),
+            PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _buildWelcomeStep(theme),
+                _buildModuleSelectionStep(theme),
+                _buildWaterStep(theme),
+                _buildNutritionStep(theme),
+                _buildExerciseStep(theme),
+                _buildInitialDataStep(theme),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  if (_currentStep > 0)
-                    TextButton(
-                      onPressed: _prevStep,
-                      child: const Text('Atrás'),
-                    )
-                  else
-                    const SizedBox(width: 80),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: _canProceed
-                        ? (_currentStep == _totalSteps - 1 ? _finish : _nextStep)
-                        : null,
-                    child: Text(_currentStep == _totalSteps - 1
-                        ? 'Finalizar'
-                        : 'Siguiente'),
-                  ),
-                ],
+            if (_currentStep > 0)
+              Positioned(
+                top: 8,
+                left: 4,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new),
+                  onPressed: _prevStep,
+                ),
+              ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildPillButton(theme),
+                    const SizedBox(height: 8),
+                    _buildDotsIndicator(colorScheme),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPillButton(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          shape: const StadiumBorder(),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+        ),
+        onPressed: _canProceed
+            ? (_currentStep == _totalSteps - 1 ? _finish : _nextStep)
+            : null,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_currentStep == _totalSteps - 1 ? 'Finalizar' : 'Siguiente'),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+  Widget _buildDotsIndicator(ColorScheme colorScheme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_totalActiveSteps, (i) {
+        final isActive = i == _currentActiveStep - 1;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: isActive ? 20 : 6,
+          height: 6,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3),
+            color: isActive
+                ? colorScheme.primary
+                : colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
+        );
+      }),
     );
   }
 
@@ -515,7 +565,9 @@ class _OnboardingViewState extends State<_OnboardingView> {
                             onPressed: () {
                               setState(() {
                                 mt.nameController.dispose();
-                                for (final c in mt.options) c.dispose();
+                                for (final c in mt.options) {
+                                  c.dispose();
+                                }
                                 _mealTimes.removeAt(index);
                               });
                             },
