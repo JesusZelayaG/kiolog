@@ -27,12 +27,12 @@ void main() {
       act: (bloc) => bloc.add(SleepLoaded(date: DateTime(2026, 6, 8))),
       expect: () => [
         const SleepState(status: SleepStatus.loading),
-        const SleepState(status: SleepStatus.success),
+        const SleepState(status: SleepStatus.success, todayLogs: []),
       ],
     );
 
     blocTest<SleepBloc, SleepState>(
-      'adds sleep log and refreshes state',
+      'adds sleep log and refreshes state with list',
       build: () {
         when(() => repository.addSleepLog(
               date: any(named: 'date'),
@@ -76,14 +76,16 @@ void main() {
       expect: () => [
         SleepState(
           status: SleepStatus.success,
-          todayLog: SleepLog(
-            id: 1,
-            date: DateTime(2026, 6, 8),
-            sleepTime: DateTime(2026, 6, 7, 22, 0),
-            wakeTime: DateTime(2026, 6, 8, 6, 0),
-            hoursCalculated: 8.0,
-            type: 'main',
-          ),
+          todayLogs: [
+            SleepLog(
+              id: 1,
+              date: DateTime(2026, 6, 8),
+              sleepTime: DateTime(2026, 6, 7, 22, 0),
+              wakeTime: DateTime(2026, 6, 8, 6, 0),
+              hoursCalculated: 8.0,
+              type: 'main',
+            ),
+          ],
           weeklyLogs: [
             SleepLog(
               id: 1,
@@ -94,6 +96,40 @@ void main() {
               type: 'main',
             ),
           ],
+        ),
+      ],
+    );
+
+    blocTest<SleepBloc, SleepState>(
+      'deletes sleep log and refreshes state',
+      build: () {
+        when(() => repository.deleteSleepLog(any()))
+            .thenAnswer((_) async {});
+        when(() => repository.getSleepLogsForDate(any()))
+            .thenAnswer((_) async => []);
+        when(() => repository.getSleepLogsInRange(any(), any()))
+            .thenAnswer((_) async => []);
+        return SleepBloc(repository)
+          ..emit(SleepState(
+            status: SleepStatus.success,
+            todayLogs: [
+              SleepLog(
+                id: 1,
+                date: DateTime(2026, 6, 8),
+                sleepTime: DateTime(2026, 6, 7, 22, 0),
+                wakeTime: DateTime(2026, 6, 8, 6, 0),
+                hoursCalculated: 8.0,
+                type: 'main',
+              ),
+            ],
+          ));
+      },
+      act: (bloc) => bloc.add(const SleepLogDeleted(1)),
+      expect: () => [
+        const SleepState(
+          status: SleepStatus.success,
+          todayLogs: [],
+          weeklyLogs: [],
         ),
       ],
     );

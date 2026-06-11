@@ -41,3 +41,11 @@ class SleepLogAdded extends SleepEvent {
   @override
   List<Object?> get props => [date, sleepTime, wakeTime, type];
 }
+
+class SleepLogDeleted extends SleepEvent {
+  final int id;
+  const SleepLogDeleted(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
