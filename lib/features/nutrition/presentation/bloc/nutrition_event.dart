@@ -98,3 +98,10 @@ class NutritionOptionAdded extends NutritionEvent {
   @override
   List<Object?> get props => [planId, mealType, optionNumber, description];
 }
+
+class NutritionProgressPlanSelected extends NutritionEvent {
+  final int planId;
+  const NutritionProgressPlanSelected({required this.planId});
+  @override
+  List<Object?> get props => [planId];
+}
