@@ -17,7 +17,7 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
     emit(state.copyWith(status: SleepStatus.loading));
     try {
       final logs = await _repository.getSleepLogsForDate(event.date);
-      emit(state.copyWith(status: SleepStatus.success, todayLogs: logs));
+      emit(state.copyWith(status: SleepStatus.success, todayLogs: logs, error: null));
     } catch (e) {
       emit(state.copyWith(status: SleepStatus.failure, error: e.toString()));
     }
@@ -31,7 +31,7 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
     try {
       final start = event.endDate.subtract(const Duration(days: 6));
       final logs = await _repository.getSleepLogsInRange(start, event.endDate);
-      emit(state.copyWith(status: SleepStatus.success, weeklyLogs: logs));
+      emit(state.copyWith(status: SleepStatus.success, weeklyLogs: logs, error: null));
     } catch (e) {
       emit(state.copyWith(status: SleepStatus.failure, error: e.toString()));
     }
@@ -49,7 +49,7 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
       final todayLogs = await _repository.getSleepLogsForDate(event.date);
       final start = event.date.subtract(const Duration(days: 6));
       final weeklyLogs = await _repository.getSleepLogsInRange(start, event.date);
-      emit(state.copyWith(status: SleepStatus.success, todayLogs: todayLogs, weeklyLogs: weeklyLogs));
+      emit(state.copyWith(status: SleepStatus.success, todayLogs: todayLogs, weeklyLogs: weeklyLogs, error: null));
     } catch (e) {
       emit(state.copyWith(status: SleepStatus.failure, error: e.toString()));
     }
@@ -62,7 +62,7 @@ class SleepBloc extends Bloc<SleepEvent, SleepState> {
       final todayLogs = await _repository.getSleepLogsForDate(event.date);
       final start = event.date.subtract(const Duration(days: 6));
       final weeklyLogs = await _repository.getSleepLogsInRange(start, event.date);
-      emit(state.copyWith(status: SleepStatus.success, todayLogs: todayLogs, weeklyLogs: weeklyLogs));
+      emit(state.copyWith(status: SleepStatus.success, todayLogs: todayLogs, weeklyLogs: weeklyLogs, error: null));
     } catch (e) {
       emit(state.copyWith(status: SleepStatus.failure, error: e.toString()));
     }
