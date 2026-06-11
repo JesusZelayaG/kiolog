@@ -14,9 +14,6 @@ class HistoryRepositoryImpl implements HistoryRepository {
     this._exerciseDao,
   );
 
-  DateTime _dateOnly(DateTime date) =>
-      DateTime.utc(date.year, date.month, date.day);
-
   @override
   Future<List<DaySummary>> getMonthSummary(DateTime month) async {
     final start = DateTime.utc(month.year, month.month, 1);

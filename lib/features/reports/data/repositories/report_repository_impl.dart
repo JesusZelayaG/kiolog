@@ -1,4 +1,3 @@
-import 'package:kiolog/core/dao/achievements_dao.dart';
 import 'package:kiolog/core/dao/config_dao.dart';
 import 'package:kiolog/core/dao/exercise_dao.dart';
 import 'package:kiolog/core/dao/measurements_dao.dart';
