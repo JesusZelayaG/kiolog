@@ -12,6 +12,7 @@ import '../../domain/repositories/nutrition_repository.dart';
 import '../bloc/nutrition_bloc.dart';
 import '../bloc/nutrition_event.dart';
 import '../bloc/nutrition_state.dart';
+import 'nutrition_config_page.dart';
 import 'nutrition_progress_page.dart';
 
 class NutritionPage extends StatelessWidget {
@@ -77,32 +78,42 @@ class _NutritionView extends StatelessWidget {
             return _buildNoPlanView(context);
           }
 
-          return SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              children: [
-                Text(
-                  state.activePlan!.name,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Plan activo',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+          return Column(
+            children: [
+              if (state.hasPendingPlan)
+                _PendingPlanBanner(plan: state.pendingPlan!),
+              Expanded(
+                child: ListView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  children: [
+                    Text(
+                      state.activePlan!.name,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Plan activo',
+                      style:
+                          Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...state.planOptions.keys.map(
+                      (type) => _MealSection(
+                        mealType: type,
+                        label: type,
+                        options: state.planOptions[type] ?? [],
+                        log: state.getLogForMeal(type),
                       ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                ...state.planOptions.keys.map(
-                  (type) => _MealSection(
-                    mealType: type,
-                    label: type,
-                    options: state.planOptions[type] ?? [],
-                    log: state.getLogForMeal(type),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
@@ -116,7 +127,9 @@ class _NutritionView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.restaurant_menu, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(Icons.restaurant_menu,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Sin plan activo',
@@ -129,7 +142,7 @@ class _NutritionView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => _showCreatePlanDialog(context),
+              onPressed: () => _navigateToConfigPage(context),
               icon: const Icon(Icons.add),
               label: const Text('Crear plan'),
             ),
@@ -139,9 +152,20 @@ class _NutritionView extends StatelessWidget {
     );
   }
 
+  void _navigateToConfigPage(BuildContext context) {
+    final bloc = context.read<NutritionBloc>();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => NutritionConfigPage(
+          onComplete: () => bloc.add(NutritionLoaded(date: DateTime.now())),
+        ),
+      ),
+    );
+  }
+
   void _showPlansDialog(BuildContext context) {
     context.read<NutritionBloc>().add(const NutritionPlanLoaded());
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<NutritionBloc>(),
@@ -149,71 +173,130 @@ class _NutritionView extends StatelessWidget {
       ),
     );
   }
+}
 
-  void _showCreatePlanDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    int goalValue = 4;
+// ── Banner plan pendiente ────────────────────────────────────────────────────
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (ctx, setLocalState) => AlertDialog(
-          title: const Text('Nuevo plan alimenticio'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration:
-                    const InputDecoration(labelText: 'Nombre del plan'),
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-              Row(children: [
-                const Expanded(child: Text('Comidas por día')),
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  onPressed: goalValue > 1
-                      ? () => setLocalState(() => goalValue--)
-                      : null,
+class _PendingPlanBanner extends StatelessWidget {
+  final MealPlan plan;
+  const _PendingPlanBanner({required this.plan});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      color: cs.primaryContainer.withValues(alpha: 0.5),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Icon(Icons.new_releases_outlined, color: cs.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(plan.name,
+                    style: Theme.of(context).textTheme.labelLarge),
+                Text(
+                  'Listo para activar',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                 ),
-                Text('$goalValue',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: goalValue < 10
-                      ? () => setLocalState(() => goalValue++)
-                      : null,
-                ),
-              ]),
-            ],
+              ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  context.read<NutritionBloc>().add(
-                        NutritionPlanCreated(
-                          name: nameController.text,
-                          dailyMealGoal: goalValue,
-                        ),
-                      );
-                }
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Crear'),
-            ),
-          ],
-        ),
+          TextButton(
+            onPressed: () => context
+                .read<NutritionBloc>()
+                .add(NutritionPlanActivated(planId: plan.id)),
+            child: const Text('Activar'),
+          ),
+        ],
       ),
-    ).then((_) => nameController.dispose());
+    );
   }
 }
+
+// ── Diálogo de planes ────────────────────────────────────────────────────────
+
+class _PlansDialog extends StatelessWidget {
+  const _PlansDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Planes alimenticios'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: BlocBuilder<NutritionBloc, NutritionState>(
+          builder: (context, state) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (state.allPlans.isEmpty)
+                  const Text('No hay planes registrados.')
+                else
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: state.allPlans.length,
+                      itemBuilder: (context, index) {
+                        final plan = state.allPlans[index];
+                        final isActive = plan.id == state.activePlan?.id;
+                        return ListTile(
+                          title: Text(plan.name),
+                          subtitle: Text(plan.isActive ? 'Activo' : 'Inactivo'),
+                          trailing: isActive
+                              ? Icon(Icons.check_circle,
+                                  color: Theme.of(context).colorScheme.primary)
+                              : TextButton(
+                                  onPressed: () {
+                                    context.read<NutritionBloc>().add(
+                                          NutritionPlanActivated(
+                                              planId: plan.id),
+                                        );
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Activar'),
+                                ),
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () {
+                    final bloc = context.read<NutritionBloc>();
+                    Navigator.pop(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => NutritionConfigPage(
+                          onComplete: () =>
+                              bloc.add(NutritionLoaded(date: DateTime.now())),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Nueva consulta'),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cerrar'),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Sección de comida ────────────────────────────────────────────────────────
 
 class _MealSection extends StatelessWidget {
   final String mealType;
@@ -255,7 +338,8 @@ class _MealSection extends StatelessWidget {
                       chipColor = theme.colorScheme.primaryContainer;
                     } else if (l.freeDescription != null) {
                       chipLabel = 'Fuera de plan';
-                      chipColor = theme.colorScheme.surfaceContainerHighest;
+                      chipColor =
+                          theme.colorScheme.surfaceContainerHighest;
                     } else {
                       chipLabel = 'No seguido';
                       chipColor = theme.colorScheme.errorContainer;
@@ -350,7 +434,10 @@ class _MealSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
+        color: Theme.of(context)
+            .colorScheme
+            .primaryContainer
+            .withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -358,7 +445,9 @@ class _MealSection extends StatelessWidget {
           Icon(Icons.check_circle,
               color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
-          Expanded(child: Text('Opción ${opt.optionNumber}: ${opt.description}')),
+          Expanded(
+              child: Text(
+                  'Opción ${opt.optionNumber}: ${opt.description}')),
         ],
       ),
     );
@@ -377,10 +466,8 @@ class _MealSection extends StatelessWidget {
           Icon(Icons.edit_note, color: cs.error),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(color: cs.onErrorContainer),
-            ),
+            child: Text(text,
+                style: TextStyle(color: cs.onErrorContainer)),
           ),
         ],
       ),
@@ -391,16 +478,21 @@ class _MealSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+        color: Theme.of(context)
+            .colorScheme
+            .errorContainer
+            .withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(Icons.close, color: Theme.of(context).colorScheme.error),
+          Icon(Icons.close,
+              color: Theme.of(context).colorScheme.error),
           const SizedBox(width: 8),
           Text(
             'No seguí el plan',
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.error),
           ),
         ],
       ),
@@ -409,7 +501,7 @@ class _MealSection extends StatelessWidget {
 
   void _showOffPlanDialog(BuildContext context) {
     final controller = TextEditingController();
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Comida fuera de plan'),
@@ -476,59 +568,6 @@ class _OptionTile extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary)
           : const Icon(Icons.radio_button_unchecked),
       onTap: onTap,
-    );
-  }
-}
-
-class _PlansDialog extends StatelessWidget {
-  const _PlansDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Planes alimenticios'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: BlocBuilder<NutritionBloc, NutritionState>(
-          builder: (context, state) {
-            if (state.allPlans.isEmpty) {
-              return const Text('No hay planes registrados.');
-            }
-            return ListView.builder(
-              shrinkWrap: true,
-              itemCount: state.allPlans.length,
-              itemBuilder: (context, index) {
-                final plan = state.allPlans[index];
-                final isActive = plan.id == state.activePlan?.id;
-                return ListTile(
-                  title: Text(plan.name),
-                  subtitle: Text(
-                    plan.isActive ? 'Activo' : 'Inactivo',
-                  ),
-                  trailing: isActive
-                      ? Icon(Icons.check_circle,
-                          color: Theme.of(context).colorScheme.primary)
-                      : TextButton(
-                          onPressed: () {
-                            context.read<NutritionBloc>().add(
-                                  NutritionPlanActivated(planId: plan.id),
-                                );
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Activar'),
-                        ),
-                );
-              },
-            );
-          },
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cerrar'),
-        ),
-      ],
     );
   }
 }
