@@ -28,7 +28,7 @@ void main() {
       periodStart: DateTime(2026, 6, 1),
       periodEnd: null,
     );
-    final options = [
+    const options = [
       MealPlanOption(
           id: 1,
           planId: 1,
@@ -75,7 +75,7 @@ void main() {
           status: NutritionStatus.success,
           activePlan: plan,
           allPlans: [plan],
-          planOptions: {'breakfast': options},
+          planOptions: const {'breakfast': options},
           weeklyAdherence: adherence,
           optionFrequencies: frequencies,
         ),
@@ -223,7 +223,7 @@ void main() {
         NutritionState(
           activePlan: plan,
           allPlans: [plan],
-          planOptions: {'breakfast': options},
+          planOptions: const {'breakfast': options},
           optionFrequencies: frequencies,
         ),
       ],
