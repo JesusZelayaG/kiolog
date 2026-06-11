@@ -238,6 +238,7 @@ class _SleepView extends StatelessWidget {
       builder: (_) => _SleepLogDialog(
         firstDate: firstDate,
         onSave: (date, sleepTime, wakeTime, type) {
+          if (!context.mounted) return;
           context.read<SleepBloc>().add(SleepLogAdded(
                 date: date,
                 sleepTime: sleepTime,
@@ -464,6 +465,7 @@ class _SleepLogDialogState extends State<_SleepLogDialog> {
                   final wakeDt = rawWake.isBefore(sleepDt)
                       ? rawWake.add(const Duration(days: 1))
                       : rawWake;
+                  if (!wakeDt.isAfter(sleepDt)) return;
                   widget.onSave(_date!, sleepDt, wakeDt, _type);
                   Navigator.pop(context);
                 }
