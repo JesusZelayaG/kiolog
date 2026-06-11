@@ -13,4 +13,5 @@ class SleepLogs extends Table {
   DateTimeColumn get sleepTime => dateTime()();
   DateTimeColumn get wakeTime => dateTime()();
   RealColumn get hoursCalculated => real()();
+  TextColumn get type => text().withDefault(const Constant('main'))();
 }
