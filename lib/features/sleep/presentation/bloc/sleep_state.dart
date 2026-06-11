@@ -46,7 +46,7 @@ class SleepState extends Equatable {
         status: status ?? this.status,
         todayLogs: todayLogs ?? this.todayLogs,
         weeklyLogs: weeklyLogs ?? this.weeklyLogs,
-        error: error,
+        error: error ?? this.error,
       );
 
   @override
