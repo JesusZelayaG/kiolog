@@ -129,4 +129,111 @@ void main() {
       expect(logs.first.freeDescription, 'Pizza con amigos');
     });
   });
+
+  group('NutritionDao - getOptionFrequenciesForPlan', () {
+    test('returns empty when plan has no options', () async {
+      final planId = await db.nutritionDao.insertMealPlan(
+        MealPlansCompanion(
+          name: const Value('Plan'),
+          createdAt: Value(DateTime.utc(2026, 6, 1)),
+          periodStart: Value(DateTime.utc(2026, 6, 1)),
+        ),
+      );
+      final result =
+          await db.nutritionDao.getOptionFrequenciesForPlan(planId);
+      expect(result, isEmpty);
+    });
+
+    test('returns count 0 for option with no logs', () async {
+      final planId = await db.nutritionDao.insertMealPlan(
+        MealPlansCompanion(
+          name: const Value('Plan'),
+          createdAt: Value(DateTime.utc(2026, 6, 1)),
+          periodStart: Value(DateTime.utc(2026, 6, 1)),
+        ),
+      );
+      await db.nutritionDao.insertMealPlanOption(
+        MealPlanOptionsCompanion(
+          planId: Value(planId),
+          mealType: const Value('Desayuno'),
+          optionNumber: const Value(1),
+          description: const Value('Avena'),
+        ),
+      );
+      final result =
+          await db.nutritionDao.getOptionFrequenciesForPlan(planId);
+      expect(result.length, 1);
+      expect(result.first.count, 0);
+      expect(result.first.description, 'Avena');
+    });
+
+    test('counts logs correctly within plan period', () async {
+      final planId = await db.nutritionDao.insertMealPlan(
+        MealPlansCompanion(
+          name: const Value('Plan'),
+          createdAt: Value(DateTime.utc(2026, 6, 1)),
+          periodStart: Value(DateTime.utc(2026, 6, 1)),
+        ),
+      );
+      final optId = await db.nutritionDao.insertMealPlanOption(
+        MealPlanOptionsCompanion(
+          planId: Value(planId),
+          mealType: const Value('Desayuno'),
+          optionNumber: const Value(1),
+          description: const Value('Avena'),
+        ),
+      );
+      // Log 3 veces la misma opción
+      for (var i = 0; i < 3; i++) {
+        await db.nutritionDao.insertDailyMealLog(
+          DailyMealLogsCompanion(
+            date: Value(DateTime.utc(2026, 6, i + 1)),
+            mealType: const Value('Desayuno'),
+            planOptionId: Value(optId),
+          ),
+        );
+      }
+      final result =
+          await db.nutritionDao.getOptionFrequenciesForPlan(planId);
+      expect(result.first.count, 3);
+    });
+
+    test('does not count logs outside plan period', () async {
+      final planId = await db.nutritionDao.insertMealPlan(
+        MealPlansCompanion(
+          name: const Value('Plan'),
+          createdAt: Value(DateTime.utc(2026, 6, 1)),
+          periodStart: Value(DateTime.utc(2026, 6, 1)),
+          periodEnd: Value(DateTime.utc(2026, 6, 10)), // terminó el 10
+        ),
+      );
+      final optId = await db.nutritionDao.insertMealPlanOption(
+        MealPlanOptionsCompanion(
+          planId: Value(planId),
+          mealType: const Value('Desayuno'),
+          optionNumber: const Value(1),
+          description: const Value('Avena'),
+        ),
+      );
+      // Dentro del período
+      await db.nutritionDao.insertDailyMealLog(
+        DailyMealLogsCompanion(
+          date: Value(DateTime.utc(2026, 6, 5)),
+          mealType: const Value('Desayuno'),
+          planOptionId: Value(optId),
+        ),
+      );
+      // Fuera del período (después del 10)
+      await db.nutritionDao.insertDailyMealLog(
+        DailyMealLogsCompanion(
+          date: Value(DateTime.utc(2026, 6, 15)),
+          mealType: const Value('Desayuno'),
+          planOptionId: Value(optId),
+        ),
+      );
+      final result =
+          await db.nutritionDao.getOptionFrequenciesForPlan(planId);
+      expect(result.first.count, 1); // solo el log del día 5
+    });
+  });
 }

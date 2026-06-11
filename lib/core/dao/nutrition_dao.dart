@@ -1,5 +1,6 @@
 // lib/core/dao/nutrition_dao.dart
 import 'package:drift/drift.dart';
+import 'package:kiolog/features/nutrition/domain/models/option_frequency_stat.dart';
 import '../database/app_database.dart';
 import '../database/tables/nutrition_tables.dart';
 
@@ -20,7 +21,9 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
       return into(mealPlans).insert(plan.copyWith(
         createdAt: plan.createdAt.present ? plan.createdAt : Value(now),
         isActive: Value(!hasActivePlan),
-        periodStart: hasActivePlan ? const Value(null) : Value(now),
+        periodStart: hasActivePlan
+            ? const Value(null)
+            : (plan.periodStart.present ? plan.periodStart : Value(now)),
       ));
     });
   }
@@ -113,5 +116,67 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
               r.date.isBiggerOrEqualValue(f) &
               r.date.isSmallerThanValue(tDay)))
         .get();
+  }
+
+  Future<List<OptionFrequencyStat>> getOptionFrequenciesForPlan(
+      int planId) async {
+    final plan = await (select(mealPlans)
+          ..where((t) => t.id.equals(planId)))
+        .getSingleOrNull();
+    if (plan == null) return [];
+
+    final start = plan.periodStart;
+    if (start == null) return [];
+
+    // Usar .toUtc() para evitar desfase de zona horaria al reconstruir la fecha
+    final startUtc = start.toUtc();
+    final startDay = DateTime.utc(startUtc.year, startUtc.month, startUtc.day);
+
+    final DateTime endDay;
+    if (plan.periodEnd != null) {
+      final endUtc = plan.periodEnd!.toUtc();
+      // periodEnd es el último día incluido, por eso +1 día para el límite exclusivo
+      endDay = DateTime.utc(endUtc.year, endUtc.month, endUtc.day)
+          .add(const Duration(days: 1));
+    } else {
+      final now = DateTime.now().toUtc();
+      endDay = DateTime.utc(now.year, now.month, now.day)
+          .add(const Duration(days: 1));
+    }
+
+    final opts = await (select(mealPlanOptions)
+          ..where((t) => t.planId.equals(planId))
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.mealType),
+            (t) => OrderingTerm.asc(t.optionNumber),
+          ]))
+        .get();
+    if (opts.isEmpty) return [];
+
+    final optionIds = opts.map((o) => o.id).toList();
+    final logs = await (select(dailyMealLogs)
+          ..where((t) =>
+              t.planOptionId.isIn(optionIds) &
+              t.date.isBiggerOrEqualValue(startDay) &
+              t.date.isSmallerThanValue(endDay)))
+        .get();
+
+    final countMap = <int, int>{};
+    for (final log in logs) {
+      if (log.planOptionId != null) {
+        countMap[log.planOptionId!] =
+            (countMap[log.planOptionId!] ?? 0) + 1;
+      }
+    }
+
+    return opts
+        .map((o) => OptionFrequencyStat(
+              planOptionId: o.id,
+              mealType: o.mealType,
+              optionNumber: o.optionNumber,
+              description: o.description,
+              count: countMap[o.id] ?? 0,
+            ))
+        .toList();
   }
 }
