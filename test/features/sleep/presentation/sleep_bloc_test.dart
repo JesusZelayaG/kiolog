@@ -18,9 +18,10 @@ void main() {
 
   group('SleepBloc', () {
     blocTest<SleepBloc, SleepState>(
-      'emits [loading, success] when SleepLoaded succeeds',
+      'emits [loading, success] when SleepLoaded succeeds with no logs',
       build: () {
-        when(() => repository.getSleepLogForDate(any())).thenAnswer((_) async => null);
+        when(() => repository.getSleepLogsForDate(any()))
+            .thenAnswer((_) async => []);
         return SleepBloc(repository);
       },
       act: (bloc) => bloc.add(SleepLoaded(date: DateTime(2026, 6, 8))),
@@ -34,18 +35,22 @@ void main() {
       'adds sleep log and refreshes state',
       build: () {
         when(() => repository.addSleepLog(
-          date: any(named: 'date'),
-          sleepTime: any(named: 'sleepTime'),
-          wakeTime: any(named: 'wakeTime'),
-        )).thenAnswer((_) async {});
-        when(() => repository.getSleepLogForDate(any())).thenAnswer(
-          (_) async => SleepLog(
-            id: 1,
-            date: DateTime(2026, 6, 8),
-            sleepTime: DateTime(2026, 6, 7, 22, 0),
-            wakeTime: DateTime(2026, 6, 8, 6, 0),
-            hoursCalculated: 8.0,
-          ),
+              date: any(named: 'date'),
+              sleepTime: any(named: 'sleepTime'),
+              wakeTime: any(named: 'wakeTime'),
+              type: any(named: 'type'),
+            )).thenAnswer((_) async {});
+        when(() => repository.getSleepLogsForDate(any())).thenAnswer(
+          (_) async => [
+            SleepLog(
+              id: 1,
+              date: DateTime(2026, 6, 8),
+              sleepTime: DateTime(2026, 6, 7, 22, 0),
+              wakeTime: DateTime(2026, 6, 8, 6, 0),
+              hoursCalculated: 8.0,
+              type: 'main',
+            ),
+          ],
         );
         when(() => repository.getSleepLogsInRange(any(), any())).thenAnswer(
           (_) async => [
@@ -55,6 +60,7 @@ void main() {
               sleepTime: DateTime(2026, 6, 7, 22, 0),
               wakeTime: DateTime(2026, 6, 8, 6, 0),
               hoursCalculated: 8.0,
+              type: 'main',
             ),
           ],
         );
@@ -65,6 +71,7 @@ void main() {
         date: DateTime(2026, 6, 8),
         sleepTime: DateTime(2026, 6, 7, 22, 0),
         wakeTime: DateTime(2026, 6, 8, 6, 0),
+        type: 'main',
       )),
       expect: () => [
         SleepState(
@@ -75,6 +82,7 @@ void main() {
             sleepTime: DateTime(2026, 6, 7, 22, 0),
             wakeTime: DateTime(2026, 6, 8, 6, 0),
             hoursCalculated: 8.0,
+            type: 'main',
           ),
           weeklyLogs: [
             SleepLog(
@@ -83,6 +91,7 @@ void main() {
               sleepTime: DateTime(2026, 6, 7, 22, 0),
               wakeTime: DateTime(2026, 6, 8, 6, 0),
               hoursCalculated: 8.0,
+              type: 'main',
             ),
           ],
         ),

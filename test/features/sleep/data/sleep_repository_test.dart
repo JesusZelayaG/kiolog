@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kiolog/core/dao/water_sleep_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/sleep/data/repositories/sleep_repository_impl.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
@@ -18,9 +17,9 @@ void main() {
   tearDown(() async => db.close());
 
   group('SleepRepositoryImpl', () {
-    test('getSleepLogForDate returns null when empty', () async {
-      final log = await repository.getSleepLogForDate(DateTime(2026, 6, 8));
-      expect(log, isNull);
+    test('getSleepLogsForDate returns empty when no logs', () async {
+      final logs = await repository.getSleepLogsForDate(DateTime(2026, 6, 8));
+      expect(logs, isEmpty);
     });
 
     test('addSleepLog and retrieve it', () async {
@@ -32,11 +31,13 @@ void main() {
         date: date,
         sleepTime: sleepTime,
         wakeTime: wakeTime,
+        type: 'main',
       );
 
-      final log = await repository.getSleepLogForDate(date);
-      expect(log, isNotNull);
-      expect(log!.hoursCalculated, 8.0);
+      final logs = await repository.getSleepLogsForDate(date);
+      expect(logs.length, 1);
+      expect(logs.first.hoursCalculated, 8.0);
+      expect(logs.first.type, 'main');
     });
 
     test('getSleepLogsInRange returns logs in range', () async {
