@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
@@ -44,11 +43,9 @@ class AppScaffold extends StatelessWidget {
     final location = GoRouterState.of(context).uri.toString();
     final currentIndex = _locationToIndex(location);
 
-    return BlocProvider<ModulesCubit>.value(
-      value: getIt<ModulesCubit>(),
-      child: BlocBuilder<ModulesCubit, ModulesState>(
-        builder: (context, modulesState) {
-          return Scaffold(
+    return BlocBuilder<ModulesCubit, ModulesState>(
+      builder: (context, modulesState) {
+        return Scaffold(
             body: child,
             bottomNavigationBar: NavigationBar(
               selectedIndex: currentIndex,
@@ -112,7 +109,6 @@ class AppScaffold extends StatelessWidget {
             ),
           );
         },
-      ),
-    );
+      );
   }
 }

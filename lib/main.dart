@@ -1,8 +1,10 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/dao/user_profile_dao.dart';
 import 'core/di/injection.dart';
+import 'core/modules/cubit/modules_cubit.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -26,15 +28,18 @@ class KiologApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Kiolog',
-      theme: AppTheme.dark,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.dark,
-      routerConfig: createRouter(
-        initialLocation: onboardingComplete ? '/' : '/onboarding',
+    return BlocProvider<ModulesCubit>.value(
+      value: getIt<ModulesCubit>(),
+      child: MaterialApp.router(
+        title: 'Kiolog',
+        theme: AppTheme.dark,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.dark,
+        routerConfig: createRouter(
+          initialLocation: onboardingComplete ? '/' : '/onboarding',
+        ),
+        debugShowCheckedModeBanner: false,
       ),
-      debugShowCheckedModeBanner: false,
     );
   }
 }
