@@ -27,6 +27,9 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
             ? plan.createdAt
             : Value(DateTime.now().toUtc()),
         isActive: const Value(true),
+        periodStart: plan.periodStart.present
+            ? plan.periodStart
+            : Value(DateTime.now().toUtc()),
       ));
 
   Future<List<ExercisePlan>> getExercisePlans() =>
@@ -44,10 +47,21 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
             ..where((t) => t.id.equals(planId)))
           .getSingleOrNull();
       if (plan == null) throw ArgumentError('Exercise plan $planId not found');
-      await (update(exercisePlans))
-          .write(const ExercisePlansCompanion(isActive: Value(false)));
+      final now = DateTime.now().toUtc();
+      // Close the currently active plan (set periodEnd)
+      await (update(exercisePlans)
+            ..where((t) => t.isActive.equals(true)))
+          .write(ExercisePlansCompanion(
+            isActive: const Value(false),
+            periodEnd: Value(now),
+          ));
+      // Activate the selected plan with a new periodStart
       await (update(exercisePlans)..where((t) => t.id.equals(planId)))
-          .write(const ExercisePlansCompanion(isActive: Value(true)));
+          .write(ExercisePlansCompanion(
+            isActive: const Value(true),
+            periodStart: Value(now),
+            periodEnd: const Value(null),
+          ));
     });
   }
 
@@ -169,6 +183,23 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
               t.routineId.isNull() &
               t.gymLeftAt.isNotNull())
           ..orderBy([(t) => OrderingTerm.desc(t.gymArrivedAt)]))
+        .get();
+  }
+
+  /// Returns completed routine sessions (gymLeftAt != null) whose routineId
+  /// is in [routineIds] and whose date falls in [start, end).
+  Future<List<ExerciseSessionLog>> getCompletedSessionsInPeriod(
+    List<int> routineIds,
+    DateTime start,
+    DateTime end,
+  ) {
+    if (routineIds.isEmpty) return Future.value([]);
+    return (select(exerciseSessionLogs)
+          ..where((t) =>
+              t.routineId.isIn(routineIds) &
+              t.gymLeftAt.isNotNull() &
+              t.date.isBiggerOrEqualValue(start) &
+              t.date.isSmallerThanValue(end)))
         .get();
   }
 
