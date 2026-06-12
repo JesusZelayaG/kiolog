@@ -1,6 +1,7 @@
+import 'package:equatable/equatable.dart';
 import 'package:kiolog/core/database/app_database.dart';
 
-class MealFrequencyEntry {
+class MealFrequencyEntry extends Equatable {
   final String mealType;
   final String description;
   final int count;
@@ -10,9 +11,12 @@ class MealFrequencyEntry {
     required this.description,
     required this.count,
   });
+
+  @override
+  List<Object?> get props => [mealType, description, count];
 }
 
-class WeeklyComplianceEntry {
+class WeeklyComplianceEntry extends Equatable {
   final String weekLabel;
   final int daysDone;
   final int daysGoal;
@@ -22,19 +26,25 @@ class WeeklyComplianceEntry {
     required this.daysDone,
     required this.daysGoal,
   });
+
+  @override
+  List<Object?> get props => [weekLabel, daysDone, daysGoal];
 }
 
-class NutritionReportData {
+class NutritionReportData extends Equatable {
   final String? planName;
   final List<MealFrequencyEntry> mealFrequencies;
 
   const NutritionReportData({
-    required this.planName,
+    this.planName,
     required this.mealFrequencies,
   });
+
+  @override
+  List<Object?> get props => [planName, mealFrequencies];
 }
 
-class ExerciseReportData {
+class ExerciseReportData extends Equatable {
   final String? planName;
   final List<WeeklyComplianceEntry> weeklyCompliance;
   final int totalRoutineSessions;
@@ -42,12 +52,16 @@ class ExerciseReportData {
   final int freeExerciseCount;
 
   const ExerciseReportData({
-    required this.planName,
+    this.planName,
     required this.weeklyCompliance,
     required this.totalRoutineSessions,
     required this.cardioSessionsCount,
     required this.freeExerciseCount,
   });
+
+  @override
+  List<Object?> get props =>
+      [planName, weeklyCompliance, totalRoutineSessions, cardioSessionsCount, freeExerciseCount];
 }
 
 class ReportData {
