@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import '../../features/achievements/presentation/pages/achievements_page.dart';
 import '../../features/exercise/presentation/pages/exercise_config_page.dart';
+import '../../features/history/presentation/pages/day_detail_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/nutrition/presentation/pages/nutrition_config_page.dart';
@@ -54,6 +55,21 @@ GoRouter createRouter({String initialLocation = '/'}) => GoRouter(
         GoRoute(
           path: '/history',
           builder: (context, state) => const HistoryPage(),
+          routes: [
+            GoRoute(
+              path: 'day/:date',
+              builder: (context, state) {
+                final parts =
+                    state.pathParameters['date']!.split('-');
+                final date = DateTime.utc(
+                  int.parse(parts[0]),
+                  int.parse(parts[1]),
+                  int.parse(parts[2]),
+                );
+                return DayDetailPage(date: date);
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/achievements',
