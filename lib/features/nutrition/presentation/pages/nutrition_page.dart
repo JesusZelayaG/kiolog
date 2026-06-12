@@ -231,7 +231,13 @@ class _PlansDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AlertDialog(
+      backgroundColor: cs.surface,
+      titleTextStyle: Theme.of(context)
+          .textTheme
+          .titleLarge
+          ?.copyWith(color: cs.onSurface),
       title: const Text('Planes alimenticios'),
       content: SizedBox(
         width: double.maxFinite,
@@ -241,7 +247,8 @@ class _PlansDialog extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (state.allPlans.isEmpty)
-                  const Text('No hay planes registrados.')
+                  Text('No hay planes registrados.',
+                      style: TextStyle(color: cs.onSurface))
                 else
                   Flexible(
                     child: ListView.builder(
@@ -251,8 +258,12 @@ class _PlansDialog extends StatelessWidget {
                         final plan = state.allPlans[index];
                         final isActive = plan.id == state.activePlan?.id;
                         return ListTile(
-                          title: Text(plan.name),
-                          subtitle: Text(plan.isActive ? 'Activo' : 'Inactivo'),
+                          title: Text(plan.name,
+                              style: TextStyle(color: cs.onSurface)),
+                          subtitle: Text(
+                              plan.isActive ? 'Activo' : 'Inactivo',
+                              style:
+                                  TextStyle(color: cs.onSurfaceVariant)),
                           trailing: isActive
                               ? Icon(Icons.check_circle,
                                   color: Theme.of(context).colorScheme.primary)
@@ -514,14 +525,24 @@ class _MealSection extends StatelessWidget {
     final controller = TextEditingController();
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Comida fuera de plan'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: '¿Qué comiste?',
-            hintText: 'Ej: Pizza con amigos',
-          ),
+      builder: (dialogContext) {
+        final cs = Theme.of(dialogContext).colorScheme;
+        return AlertDialog(
+          backgroundColor: cs.surface,
+          titleTextStyle: Theme.of(dialogContext)
+              .textTheme
+              .titleLarge
+              ?.copyWith(color: cs.onSurface),
+          title: const Text('Comida fuera de plan'),
+          content: TextField(
+            controller: controller,
+            style: TextStyle(color: cs.onSurface),
+            decoration: InputDecoration(
+              labelText: '¿Qué comiste?',
+              hintText: 'Ej: Pizza con amigos',
+              labelStyle: TextStyle(color: cs.onSurfaceVariant),
+              hintStyle: TextStyle(color: cs.onSurfaceVariant),
+            ),
           maxLines: 2,
           autofocus: true,
         ),
@@ -546,7 +567,8 @@ class _MealSection extends StatelessWidget {
             child: const Text('Guardar'),
           ),
         ],
-      ),
+        );
+      },
     );
   }
 }
