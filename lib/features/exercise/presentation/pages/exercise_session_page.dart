@@ -150,8 +150,12 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
                     ? const TextStyle(decoration: TextDecoration.lineThrough)
                     : null,
               ),
-              subtitle: Text('${item.sets} series × ${item.reps} reps'
-                  '${item.weightKg != null ? ' @ ${item.weightKg}${context.read<ExerciseWeightUnitCubit>().state}' : ''}'),
+              subtitle: BlocBuilder<ExerciseWeightUnitCubit, String>(
+                builder: (ctx, unit) => Text(
+                  '${item.sets} series × ${item.reps} reps'
+                  '${item.weightKg != null ? ' @ ${item.weightKg}$unit' : ''}',
+                ),
+              ),
               onTap: isCompleted
                   ? null
                   : () {
@@ -486,60 +490,67 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Referencia histórica ──────────────────────────────────────
-          if (historical.isNotEmpty) ...[
-            const Divider(),
-            Text('Última sesión', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 4),
-            ...historical.map(
-              (s) => Text(
-                '  Serie ${s.setNumber}: ${s.reps} reps'
-                '${s.weightKg != null ? ' @ ${s.weightKg}${context.read<ExerciseWeightUnitCubit>().state}' : ''}',
-                style: theme.textTheme.bodySmall,
-              ),
-            ),
-          ] else ...[
-            const Divider(),
-            Text(
-              'Primera vez con este ejercicio',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-
-          // ── Tabla de series ──────────────────────────────────────────
-          const SizedBox(height: 8),
-          if (rows.isEmpty)
-            Text('Sin series configuradas', style: theme.textTheme.bodySmall)
-          else
-            Table(
-              columnWidths: const {
-                0: FixedColumnWidth(28),
-                1: FixedColumnWidth(90),
-                2: FlexColumnWidth(),
-                3: FlexColumnWidth(),
-                4: FixedColumnWidth(72),
-              },
+          BlocBuilder<ExerciseWeightUnitCubit, String>(
+            builder: (ctx, unit) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TableRow(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom:
-                          BorderSide(color: theme.colorScheme.outlineVariant),
+                if (historical.isNotEmpty) ...[
+                  const Divider(),
+                  Text('Última sesión', style: theme.textTheme.labelLarge),
+                  const SizedBox(height: 4),
+                  ...historical.map(
+                    (s) => Text(
+                      '  Serie ${s.setNumber}: ${s.reps} reps'
+                      '${s.weightKg != null ? ' @ ${s.weightKg}$unit' : ''}',
+                      style: theme.textTheme.bodySmall,
                     ),
                   ),
-                  children: [
-                    const _TableHeader('#'),
-                    const _TableHeader('Tipo'),
-                    const _TableHeader('Reps'),
-                    _TableHeader('Peso ${context.read<ExerciseWeightUnitCubit>().state}'),
-                    const _TableHeader(''),
-                  ],
-                ),
-                ...rows.map(
-                    (row) => _buildSetRow(context, state, item, row, rows)),
+                ] else ...[
+                  const Divider(),
+                  Text(
+                    'Primera vez con este ejercicio',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                // ── Tabla de series ──────────────────────────────────────────
+                const SizedBox(height: 8),
+                if (rows.isEmpty)
+                  Text('Sin series configuradas',
+                      style: theme.textTheme.bodySmall)
+                else
+                  Table(
+                    columnWidths: const {
+                      0: FixedColumnWidth(28),
+                      1: FixedColumnWidth(90),
+                      2: FlexColumnWidth(),
+                      3: FlexColumnWidth(),
+                      4: FixedColumnWidth(72),
+                    },
+                    children: [
+                      TableRow(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                                color: theme.colorScheme.outlineVariant),
+                          ),
+                        ),
+                        children: [
+                          const _TableHeader('#'),
+                          const _TableHeader('Tipo'),
+                          const _TableHeader('Reps'),
+                          _TableHeader('Peso $unit'),
+                          const _TableHeader(''),
+                        ],
+                      ),
+                      ...rows.map(
+                          (row) => _buildSetRow(context, state, item, row, rows)),
+                    ],
+                  ),
               ],
             ),
+          ),
 
           // ── Botones de acción ─────────────────────────────────────────
           const SizedBox(height: 12),

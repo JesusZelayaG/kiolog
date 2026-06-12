@@ -412,8 +412,13 @@ class _ExerciseViewState extends State<_ExerciseView> {
           ),
           if (isExpanded) ...[
             const Divider(height: 1),
-            ...items.map((item) =>
-                _buildItemRow(context, item, routine.id, context.read<ExerciseWeightUnitCubit>().state)),
+            BlocBuilder<ExerciseWeightUnitCubit, String>(
+              builder: (ctx, unit) => Column(
+                children: items
+                    .map((item) => _buildItemRow(context, item, routine.id, unit))
+                    .toList(),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
               child: Align(
@@ -796,9 +801,13 @@ class _ExerciseViewState extends State<_ExerciseView> {
           ],
         ),
         const SizedBox(height: 10),
-        ...state.weeklyIndependentLogs
-            .map((log) =>
-                _buildIndependentItem(context, log, context.read<ExerciseWeightUnitCubit>().state)),
+        BlocBuilder<ExerciseWeightUnitCubit, String>(
+          builder: (ctx, unit) => Column(
+            children: state.weeklyIndependentLogs
+                .map((log) => _buildIndependentItem(context, log, unit))
+                .toList(),
+          ),
+        ),
         _buildDashedAddButton(
           context: context,
           label: '＋ Registrar ejercicio libre',
