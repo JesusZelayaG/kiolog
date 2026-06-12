@@ -617,4 +617,97 @@ void main() {
       expect(session, isNull);
     });
   });
+
+  group('getCardioLogsInRange', () {
+    test('returns only logs within inclusive date range', () async {
+      await db.exerciseDao.insertCardioLog(CardioLogsCompanion(
+        date: Value(DateTime.utc(2026, 6, 3)),
+        cardioType: const Value('Correr'),
+        durationMinutes: const Value(30),
+      ));
+      await db.exerciseDao.insertCardioLog(CardioLogsCompanion(
+        date: Value(DateTime.utc(2026, 6, 10)),
+        cardioType: const Value('Bici'),
+        durationMinutes: const Value(45),
+      ));
+      final logs = await db.exerciseDao.getCardioLogsInRange(
+        DateTime.utc(2026, 6, 1),
+        DateTime.utc(2026, 6, 7),
+      );
+      expect(logs.length, 1);
+      expect(logs.first.cardioType, 'Correr');
+    });
+
+    test('includes logs on start and end boundary dates', () async {
+      await db.exerciseDao.insertCardioLog(CardioLogsCompanion(
+        date: Value(DateTime.utc(2026, 6, 1)),
+        cardioType: const Value('Correr'),
+        durationMinutes: const Value(20),
+      ));
+      await db.exerciseDao.insertCardioLog(CardioLogsCompanion(
+        date: Value(DateTime.utc(2026, 6, 7)),
+        cardioType: const Value('Nadar'),
+        durationMinutes: const Value(30),
+      ));
+      final logs = await db.exerciseDao.getCardioLogsInRange(
+        DateTime.utc(2026, 6, 1),
+        DateTime.utc(2026, 6, 7),
+      );
+      expect(logs.length, 2);
+    });
+  });
+
+  group('getSessionsInRange', () {
+    test('returns only completed sessions in range, excludes incomplete', () async {
+      final planId = await db.exerciseDao.insertExercisePlan(
+        ExercisePlansCompanion(name: const Value('Plan')),
+      );
+      final routineId = await db.exerciseDao.insertExerciseRoutine(
+        ExerciseRoutinesCompanion(
+          planId: Value(planId),
+          dayNumber: const Value(1),
+          routineName: const Value('Pecho'),
+        ),
+      );
+      // Completed session inside range
+      await db.exerciseDao.insertExerciseSession(ExerciseSessionLogsCompanion(
+        date: Value(DateTime.utc(2026, 6, 3)),
+        routineId: Value(routineId),
+        gymArrivedAt: Value(DateTime.utc(2026, 6, 3, 9)),
+        gymLeftAt: Value(DateTime.utc(2026, 6, 3, 10)),
+      ));
+      // Incomplete session inside range — must be excluded
+      await db.exerciseDao.insertExerciseSession(ExerciseSessionLogsCompanion(
+        date: Value(DateTime.utc(2026, 6, 4)),
+        routineId: Value(routineId),
+        gymArrivedAt: Value(DateTime.utc(2026, 6, 4, 9)),
+      ));
+      // Completed session outside range — must be excluded
+      await db.exerciseDao.insertExerciseSession(ExerciseSessionLogsCompanion(
+        date: Value(DateTime.utc(2026, 6, 15)),
+        routineId: Value(routineId),
+        gymArrivedAt: Value(DateTime.utc(2026, 6, 15, 9)),
+        gymLeftAt: Value(DateTime.utc(2026, 6, 15, 10)),
+      ));
+      final sessions = await db.exerciseDao.getSessionsInRange(
+        DateTime.utc(2026, 6, 1),
+        DateTime.utc(2026, 6, 7),
+      );
+      expect(sessions.length, 1);
+      expect(sessions.first.date.toUtc(), DateTime.utc(2026, 6, 3));
+    });
+
+    test('returns free exercise sessions (routineId null) in range', () async {
+      await db.exerciseDao.insertExerciseSession(ExerciseSessionLogsCompanion(
+        date: Value(DateTime.utc(2026, 6, 5)),
+        gymArrivedAt: Value(DateTime.utc(2026, 6, 5, 8)),
+        gymLeftAt: Value(DateTime.utc(2026, 6, 5, 9)),
+      ));
+      final sessions = await db.exerciseDao.getSessionsInRange(
+        DateTime.utc(2026, 6, 1),
+        DateTime.utc(2026, 6, 7),
+      );
+      expect(sessions.any((s) => s.routineId == null), isTrue);
+    });
+  });
 }

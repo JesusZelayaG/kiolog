@@ -271,6 +271,30 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Returns all cardio logs where start ≤ date ≤ end (both dates inclusive).
+  Future<List<CardioLog>> getCardioLogsInRange(DateTime start, DateTime end) {
+    final s = DateTime.utc(start.year, start.month, start.day);
+    final e =
+        DateTime.utc(end.year, end.month, end.day).add(const Duration(days: 1));
+    return (select(cardioLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(s) & t.date.isSmallerThanValue(e)))
+        .get();
+  }
+
+  /// Returns all completed sessions (gymLeftAt != null) where start ≤ date ≤ end (both inclusive).
+  Future<List<ExerciseSessionLog>> getSessionsInRange(DateTime start, DateTime end) {
+    final s = DateTime.utc(start.year, start.month, start.day);
+    final e =
+        DateTime.utc(end.year, end.month, end.day).add(const Duration(days: 1));
+    return (select(exerciseSessionLogs)
+          ..where((t) =>
+              t.date.isBiggerOrEqualValue(s) &
+              t.date.isSmallerThanValue(e) &
+              t.gymLeftAt.isNotNull()))
+        .get();
+  }
+
   // ── Exercise Config ───────────────────────────────────────────────────────
 
   Future<ExerciseConfigData?> getExerciseConfig() =>
