@@ -467,7 +467,7 @@ void main() {
         const ExercisePlansCompanion(name: Value('Plan Único')),
       );
       final before = await db.exerciseDao.getExercisePlans();
-      final periodStartBefore = before.first.periodStart;
+      final periodStartBefore = before.firstWhere((p) => p.id == id).periodStart;
 
       // Re-activating the same plan should be a no-op
       await db.exerciseDao.setActiveExercisePlan(id);
