@@ -24,6 +24,7 @@ class HistoryBloc extends Bloc<HistoryEvent, HistoryState> {
         status: HistoryStatus.success,
         currentMonth: event.month,
         days: days,
+        compliance: computeMonthCompliance(days),
       ));
     } catch (e) {
       emit(state.copyWith(status: HistoryStatus.failure, error: e.toString()));
