@@ -73,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -121,6 +121,14 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 7) {
           await m.addColumn(sleepLogs, sleepLogs.type);
+        }
+        if (from < 8) {
+          await m.addColumn(exercisePlans, exercisePlans.periodStart);
+          await m.addColumn(exercisePlans, exercisePlans.periodEnd);
+          // Backfill periodStart from createdAt for existing rows
+          await customStatement(
+            'UPDATE exercise_plans SET period_start = created_at WHERE period_start IS NULL',
+          );
         }
       },
     );

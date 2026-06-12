@@ -5,6 +5,8 @@ class ExercisePlans extends Table {
   TextColumn get name => text()();
   DateTimeColumn get createdAt => dateTime()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get periodStart => dateTime().nullable()();
+  DateTimeColumn get periodEnd => dateTime().nullable()();
 }
 
 class ExerciseRoutines extends Table {

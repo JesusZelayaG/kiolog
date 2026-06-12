@@ -35,6 +35,35 @@ void main() {
       expect(plans.firstWhere((p) => p.id == id1).isActive, false);
       expect(plans.firstWhere((p) => p.id == id2).isActive, true);
     });
+
+    test('plan recién insertado tiene periodStart no nulo', () async {
+      final id = await db.exerciseDao.insertExercisePlan(
+        const ExercisePlansCompanion(name: Value('Plan A')),
+      );
+      final plans = await db.exerciseDao.getExercisePlans();
+      final plan = plans.firstWhere((p) => p.id == id);
+      expect(plan.periodStart, isNotNull);
+      expect(plan.periodEnd, isNull);
+    });
+
+    test('setActiveExercisePlan setea periodEnd en el plan anterior', () async {
+      final id1 = await db.exerciseDao.insertExercisePlan(
+        const ExercisePlansCompanion(name: Value('Plan A')),
+      );
+      final id2 = await db.exerciseDao.insertExercisePlan(
+        const ExercisePlansCompanion(name: Value('Plan B')),
+      );
+
+      await db.exerciseDao.setActiveExercisePlan(id1);
+      await db.exerciseDao.setActiveExercisePlan(id2);
+
+      final plans = await db.exerciseDao.getExercisePlans();
+      final planA = plans.firstWhere((p) => p.id == id1);
+      final planB = plans.firstWhere((p) => p.id == id2);
+      expect(planA.periodEnd, isNotNull);   // cerrado al activar Plan B
+      expect(planB.periodEnd, isNull);      // plan activo, sin cerrar
+      expect(planB.periodStart, isNotNull); // recibió periodStart al activarse
+    });
   });
 
   group('ExerciseDao - Routines & Items', () {
