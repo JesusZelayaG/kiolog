@@ -47,6 +47,7 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
             ..where((t) => t.id.equals(planId)))
           .getSingleOrNull();
       if (plan == null) throw ArgumentError('Exercise plan $planId not found');
+      if (plan.isActive) return; // already active — nothing to do
       final now = DateTime.now().toUtc();
       // Close the currently active plan (set periodEnd)
       await (update(exercisePlans)

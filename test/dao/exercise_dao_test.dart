@@ -28,6 +28,11 @@ void main() {
       final id2 = await db.exerciseDao.insertExercisePlan(
         const ExercisePlansCompanion(name: Value('Plan B')),
       );
+      // insertExercisePlan always sets isActive=true, leaving both active.
+      // Manually deactivate Plan B so Plan A is the sole active plan,
+      // then test the switch.
+      await (db.update(db.exercisePlans)..where((t) => t.id.equals(id2)))
+          .write(const ExercisePlansCompanion(isActive: Value(false)));
 
       await db.exerciseDao.setActiveExercisePlan(id2);
 
@@ -53,6 +58,10 @@ void main() {
       final id2 = await db.exerciseDao.insertExercisePlan(
         const ExercisePlansCompanion(name: Value('Plan B')),
       );
+      // Both inserts set isActive=true; manually deactivate Plan B so Plan A
+      // is the sole active plan before the two switch calls.
+      await (db.update(db.exercisePlans)..where((t) => t.id.equals(id2)))
+          .write(const ExercisePlansCompanion(isActive: Value(false)));
 
       await db.exerciseDao.setActiveExercisePlan(id1);
       await db.exerciseDao.setActiveExercisePlan(id2);
@@ -449,6 +458,101 @@ void main() {
       final sets = await db.exerciseDao
           .getLastSessionSetsForExercise('Ejercicio nuevo');
       expect(sets, isEmpty);
+    });
+  });
+
+  group('ExerciseDao - Plans (guard)', () {
+    test('setActiveExercisePlan con plan ya activo no destruye su periodStart', () async {
+      final id = await db.exerciseDao.insertExercisePlan(
+        const ExercisePlansCompanion(name: Value('Plan Único')),
+      );
+      final before = await db.exerciseDao.getExercisePlans();
+      final periodStartBefore = before.first.periodStart;
+
+      // Re-activating the same plan should be a no-op
+      await db.exerciseDao.setActiveExercisePlan(id);
+
+      final after = await db.exerciseDao.getExercisePlans();
+      final plan = after.firstWhere((p) => p.id == id);
+      expect(plan.isActive, true);
+      expect(plan.periodStart, periodStartBefore); // unchanged
+      expect(plan.periodEnd, isNull);              // still open
+    });
+  });
+
+  group('ExerciseDao - getCompletedSessionsInPeriod', () {
+    test('retorna lista vacía cuando routineIds está vacío', () async {
+      final result = await db.exerciseDao.getCompletedSessionsInPeriod(
+        [],
+        DateTime.utc(2026, 1, 1),
+        DateTime.utc(2026, 12, 31),
+      );
+      expect(result, isEmpty);
+    });
+
+    test('excluye sesiones con gymLeftAt nulo (incompletas)', () async {
+      final planId = await db.exerciseDao.insertExercisePlan(
+        const ExercisePlansCompanion(name: Value('Test Plan')),
+      );
+      final routineId = await db.exerciseDao.insertExerciseRoutine(
+        ExerciseRoutinesCompanion(
+          planId: Value(planId),
+          dayNumber: const Value(1),
+          routineName: const Value('Día 1'),
+        ),
+      );
+
+      final date = DateTime.utc(2026, 6, 10);
+      // Incomplete session: gymLeftAt is absent (null)
+      await db.exerciseDao.insertExerciseSession(
+        ExerciseSessionLogsCompanion(
+          date: Value(date),
+          routineId: Value(routineId),
+          gymArrivedAt: Value(date),
+        ),
+      );
+
+      final result = await db.exerciseDao.getCompletedSessionsInPeriod(
+        [routineId],
+        DateTime.utc(2026, 6, 1),
+        DateTime.utc(2026, 7, 1),
+      );
+      expect(result, isEmpty);
+    });
+
+    test('excluye sesiones fuera del rango de fechas', () async {
+      final planId = await db.exerciseDao.insertExercisePlan(
+        const ExercisePlansCompanion(name: Value('Test Plan')),
+      );
+      final routineId = await db.exerciseDao.insertExerciseRoutine(
+        ExerciseRoutinesCompanion(
+          planId: Value(planId),
+          dayNumber: const Value(1),
+          routineName: const Value('Día 1'),
+        ),
+      );
+
+      final insideDate = DateTime.utc(2026, 6, 15);
+      final outsideDate = DateTime.utc(2026, 7, 15); // after end boundary
+
+      for (final d in [insideDate, outsideDate]) {
+        await db.exerciseDao.insertExerciseSession(
+          ExerciseSessionLogsCompanion(
+            date: Value(d),
+            routineId: Value(routineId),
+            gymArrivedAt: Value(d),
+            gymLeftAt: Value(d.add(const Duration(hours: 1))),
+          ),
+        );
+      }
+
+      final result = await db.exerciseDao.getCompletedSessionsInPeriod(
+        [routineId],
+        DateTime.utc(2026, 6, 1),
+        DateTime.utc(2026, 7, 1), // end is exclusive
+      );
+      expect(result, hasLength(1));
+      expect(result.first.date.toUtc().month, 6); // the June session
     });
   });
 
