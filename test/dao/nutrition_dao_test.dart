@@ -236,4 +236,48 @@ void main() {
       expect(result.first.count, 1); // solo el log del día 5
     });
   });
+
+  group('NutritionDao - getMealPlanOptionsByIds', () {
+    test('returns empty list when ids is empty', () async {
+      final result = await db.nutritionDao.getMealPlanOptionsByIds([]);
+      expect(result, isEmpty);
+    });
+
+    test('returns only options matching the given ids', () async {
+      final planId = await db.nutritionDao.insertMealPlan(
+        MealPlansCompanion(
+          name: const Value('Plan Test'),
+          createdAt: Value(DateTime(2026, 1, 1)),
+        ),
+      );
+      final opt1 = await db.nutritionDao.insertMealPlanOption(
+        MealPlanOptionsCompanion(
+          planId: Value(planId),
+          mealType: const Value('breakfast'),
+          optionNumber: const Value(1),
+          description: const Value('Avena'),
+        ),
+      );
+      final opt2 = await db.nutritionDao.insertMealPlanOption(
+        MealPlanOptionsCompanion(
+          planId: Value(planId),
+          mealType: const Value('lunch'),
+          optionNumber: const Value(1),
+          description: const Value('Arroz con pollo'),
+        ),
+      );
+      await db.nutritionDao.insertMealPlanOption(
+        MealPlanOptionsCompanion(
+          planId: Value(planId),
+          mealType: const Value('dinner'),
+          optionNumber: const Value(1),
+          description: const Value('Ensalada'),
+        ),
+      );
+
+      final result = await db.nutritionDao.getMealPlanOptionsByIds([opt1, opt2]);
+      expect(result.length, 2);
+      expect(result.map((o) => o.id), containsAll([opt1, opt2]));
+    });
+  });
 }
