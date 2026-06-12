@@ -61,11 +61,12 @@ GoRouter createRouter({String initialLocation = '/'}) => GoRouter(
               builder: (context, state) {
                 final parts =
                     state.pathParameters['date']!.split('-');
-                final date = DateTime.utc(
-                  int.parse(parts[0]),
-                  int.parse(parts[1]),
-                  int.parse(parts[2]),
-                );
+                final y = parts.length == 3 ? int.tryParse(parts[0]) : null;
+                final m = parts.length == 3 ? int.tryParse(parts[1]) : null;
+                final d = parts.length == 3 ? int.tryParse(parts[2]) : null;
+                final date = (y != null && m != null && d != null)
+                    ? DateTime.utc(y, m, d)
+                    : DateTime.now().toUtc();
                 return DayDetailPage(date: date);
               },
             ),
