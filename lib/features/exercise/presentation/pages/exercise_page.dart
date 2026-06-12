@@ -45,6 +45,7 @@ class _ExerciseView extends StatefulWidget {
 
 class _ExerciseViewState extends State<_ExerciseView> {
   int? _expandedRoutineId;
+  int? _selectedRoutineId; // null = auto (first uncompleted routine)
 
   @override
   Widget build(BuildContext context) {
@@ -107,22 +108,22 @@ class _ExerciseViewState extends State<_ExerciseView> {
               children: [
                 if (state.hasActiveSession)
                   _buildResumeSessionBanner(context, state),
+                if (!state.hasActiveSession && state.routines.isNotEmpty) ...[
+                  _buildDaySelectionCard(context, state),
+                  const SizedBox(height: 12),
+                  _buildWeekMiniCalendar(context, state),
+                  const SizedBox(height: 16),
+                ],
                 const SizedBox(height: 12),
                 _buildRutinaSection(context, state),
                 const SizedBox(height: 16),
                 _buildCardioSection(context, state),
                 const SizedBox(height: 16),
                 _buildIndependentSection(context, state),
-                const SizedBox(height: 80),
+                const SizedBox(height: 24),
               ],
             ),
           );
-        },
-      ),
-      bottomNavigationBar: BlocBuilder<ExerciseBloc, ExerciseState>(
-        builder: (context, state) {
-          if (state.activePlan == null) return const SizedBox.shrink();
-          return _buildStartRoutineBar(context, state);
         },
       ),
     );
@@ -987,46 +988,171 @@ class _ExerciseViewState extends State<_ExerciseView> {
     );
   }
 
-  // ── Sticky start-routine button ───────────────────────────────────────────
+  // ── Day selection card ────────────────────────────────────────────────────
 
-  Widget _buildStartRoutineBar(BuildContext context, ExerciseState state) {
+  Widget _buildDaySelectionCard(BuildContext context, ExerciseState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     final completedIds = state.completedRoutineSessionsThisWeek
         .map((s) => s.routineId)
         .whereType<int>()
         .toSet();
+    final defaultRoutine = state.routines.firstWhere(
+      (r) => !completedIds.contains(r.id),
+      orElse: () => state.routines.first,
+    );
+    final selectedId = _selectedRoutineId ?? defaultRoutine.id;
+    final selectedRoutine = state.routines.firstWhere(
+      (r) => r.id == selectedId,
+      orElse: () => state.routines.first,
+    );
 
-    final nextRoutine = state.routines.isEmpty
-        ? null
-        : state.routines.firstWhere(
-            (r) => !completedIds.contains(r.id),
-            orElse: () => state.routines.first,
-          );
-
-    final enabled = nextRoutine != null && !state.hasActiveSession;
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: ElevatedButton.icon(
-          onPressed: enabled
-              ? () => context.read<ExerciseBloc>().add(
-                    ExerciseSessionStarted(
-                      date: DateTime.now(),
-                      routineId: nextRoutine.id,
-                    ),
-                  )
-              : null,
-          icon: const Icon(Icons.play_arrow),
-          label: Text(state.hasActiveSession
-              ? 'Sesión en curso'
-              : state.routines.isEmpty
-                  ? 'Sin rutinas configuradas'
-                  : 'Iniciar rutina del día'),
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size.fromHeight(48),
-          ),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
       ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '¿Qué harás hoy?',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: state.routines.map((routine) {
+              final isSelected = routine.id == selectedId;
+              return GestureDetector(
+                onTap: () =>
+                    setState(() => _selectedRoutineId = routine.id),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? cs.primaryContainer
+                        : cs.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(20),
+                    border: isSelected
+                        ? Border.all(color: cs.primary, width: 1.5)
+                        : null,
+                  ),
+                  child: Text(
+                    'Día ${routine.dayNumber} · ${routine.routineName}',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: isSelected
+                          ? cs.onPrimaryContainer
+                          : cs.onSurfaceVariant,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            onPressed: () => context.read<ExerciseBloc>().add(
+                  ExerciseSessionStarted(
+                    date: DateTime.now(),
+                    routineId: selectedRoutine.id,
+                  ),
+                ),
+            icon: const Icon(Icons.play_arrow),
+            label: Text('Iniciar — ${selectedRoutine.routineName}'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size.fromHeight(46),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeekMiniCalendar(BuildContext context, ExerciseState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    const weekDays = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+    final completedDates = state.completedRoutineSessionsThisWeek
+        .where((s) => s.gymLeftAt != null)
+        .map((s) {
+          final d = s.date.toLocal();
+          return DateTime(d.year, d.month, d.day);
+        })
+        .toSet();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: List.generate(7, (i) {
+        final day = monday.add(Duration(days: i));
+        final dayNorm = DateTime(day.year, day.month, day.day);
+        final todayNorm = DateTime(now.year, now.month, now.day);
+        final isToday = dayNorm == todayNorm;
+        final isDone = completedDates.contains(dayNorm);
+        final isFuture = dayNorm.isAfter(todayNorm);
+
+        Color bgColor;
+        Color fgColor;
+        Border? border;
+
+        if (isDone) {
+          bgColor = cs.tertiaryContainer;
+          fgColor = cs.onTertiaryContainer;
+          border = null;
+        } else if (isToday) {
+          bgColor = cs.primaryContainer;
+          fgColor = cs.onPrimaryContainer;
+          border = null;
+        } else if (isFuture) {
+          bgColor = Colors.transparent;
+          fgColor = cs.onSurfaceVariant.withValues(alpha: 0.4);
+          border = Border.all(
+            color: cs.outline.withValues(alpha: 0.3),
+            width: 1,
+          );
+        } else {
+          bgColor = cs.surfaceContainerHighest;
+          fgColor = cs.onSurfaceVariant;
+          border = null;
+        }
+
+        return Column(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: bgColor,
+                shape: BoxShape.circle,
+                border: border,
+              ),
+              child: Center(
+                child: isDone
+                    ? Icon(Icons.check, size: 14, color: fgColor)
+                    : Text(
+                        weekDays[i],
+                        style: theme.textTheme.labelSmall?.copyWith(
+                            color: fgColor, fontWeight: FontWeight.w600),
+                      ),
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 
