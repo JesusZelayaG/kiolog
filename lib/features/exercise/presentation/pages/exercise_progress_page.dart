@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/shared/widgets/stat_chip.dart';
 
+import '../../domain/models/plan_compliance_stat.dart';
 import '../bloc/exercise_bloc.dart';
+import '../bloc/exercise_event.dart';
 import '../bloc/exercise_state.dart';
 
-enum _Periodo { semana, mes }
+enum _Periodo { semana, mes, historial }
 
 enum _Chart { rutina, cardio }
 
@@ -30,30 +32,55 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Progreso')),
       body: BlocBuilder<ExerciseBloc, ExerciseState>(
-        builder: (context, state) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _buildPeriodToggle(context),
-            const SizedBox(height: 16),
-            if (_periodo == _Periodo.semana) ...[
-              _buildWeekNavigator(context, state),
-              const SizedBox(height: 12),
-              _buildSemanaChips(context, state),
+        builder: (context, state) {
+          if (_periodo == _Periodo.historial) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: _buildPeriodToggle(context),
+                ),
+                Expanded(
+                  child: _HistorialTab(
+                    history: state.planHistory,
+                    onLoadRequest: () {
+                      if (state.planHistory.isEmpty) {
+                        context
+                            .read<ExerciseBloc>()
+                            .add(const ExercisePlanHistoryLoaded());
+                      }
+                    },
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildPeriodToggle(context),
               const SizedBox(height: 16),
-              _buildChartToggle(context),
-              const SizedBox(height: 8),
-              _buildWeekBarChartWidget(state),
-            ] else ...[
-              _buildMonthNavigator(context),
-              const SizedBox(height: 12),
-              _buildMesChips(context, state),
-              const SizedBox(height: 16),
-              _buildChartToggle(context),
-              const SizedBox(height: 8),
-              _buildMonthBarChartWidget(state),
+              if (_periodo == _Periodo.semana) ...[
+                _buildWeekNavigator(context, state),
+                const SizedBox(height: 12),
+                _buildSemanaChips(context, state),
+                const SizedBox(height: 16),
+                _buildChartToggle(context),
+                const SizedBox(height: 8),
+                _buildWeekBarChartWidget(state),
+              ] else ...[
+                _buildMonthNavigator(context),
+                const SizedBox(height: 12),
+                _buildMesChips(context, state),
+                const SizedBox(height: 16),
+                _buildChartToggle(context),
+                const SizedBox(height: 8),
+                _buildMonthBarChartWidget(state),
+              ],
             ],
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -72,6 +99,9 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
               () => setState(() => _periodo = _Periodo.semana)),
           _pillTab(context, 'Mes', _periodo == _Periodo.mes,
               () => setState(() => _periodo = _Periodo.mes)),
+          _pillTab(context, 'Historial', _periodo == _Periodo.historial, () {
+            setState(() => _periodo = _Periodo.historial);
+          }),
         ],
       ),
     );
@@ -536,4 +566,223 @@ class _BarChartPainter extends CustomPainter {
       !listEquals(old.bars, bars) ||
       old.barColor != barColor ||
       old.lastBarIsPartial != lastBarIsPartial;
+}
+
+// ── Historial tab ─────────────────────────────────────────────────────────────
+
+class _HistorialTab extends StatefulWidget {
+  final List<PlanComplianceStat> history;
+  final VoidCallback onLoadRequest;
+
+  const _HistorialTab({required this.history, required this.onLoadRequest});
+
+  @override
+  State<_HistorialTab> createState() => _HistorialTabState();
+}
+
+class _HistorialTabState extends State<_HistorialTab> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onLoadRequest();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    if (widget.history.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.history, size: 48, color: cs.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(
+              'Sin historial de planes',
+              style: theme.textTheme.bodyLarge?.copyWith(color: cs.onSurface),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: widget.history.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final stat = widget.history[index];
+        final isActive = stat.periodEnd == null;
+        return _PlanHistoryCard(stat: stat, isActive: isActive);
+      },
+    );
+  }
+}
+
+class _PlanHistoryCard extends StatelessWidget {
+  final PlanComplianceStat stat;
+  final bool isActive;
+
+  const _PlanHistoryCard({required this.stat, required this.isActive});
+
+  String _monthAbbr(int m) => const [
+        '',
+        'ene',
+        'feb',
+        'mar',
+        'abr',
+        'may',
+        'jun',
+        'jul',
+        'ago',
+        'sep',
+        'oct',
+        'nov',
+        'dic'
+      ][m];
+
+  String _fmtDate(DateTime d) => '${d.day} ${_monthAbbr(d.month)} ${d.year}';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final subtitle = isActive
+        ? 'Desde ${_fmtDate(stat.periodStart)} · En curso'
+        : '${_fmtDate(stat.periodStart)} — ${_fmtDate(stat.periodEnd!)} · ${stat.weeksActive} semanas';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isActive ? cs.primary : cs.outline.withValues(alpha: 0.4),
+          width: isActive ? 1.5 : 1,
+        ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  stat.planName,
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(color: cs.onSurface),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? cs.tertiaryContainer
+                      : cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  isActive ? 'Activo' : 'Finalizado',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: isActive
+                        ? cs.onTertiaryContainer
+                        : cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style:
+                theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _StatBox(
+                value: '${stat.compliancePercent}%',
+                label: 'Cumplimiento',
+                valueColor: isActive ? cs.primary : cs.secondary,
+                theme: theme,
+              ),
+              const SizedBox(width: 8),
+              _StatBox(
+                value: '${stat.totalSessions}',
+                label: 'Sesiones',
+                theme: theme,
+              ),
+              const SizedBox(width: 8),
+              _StatBox(
+                value: '${stat.weeksActive}',
+                label: 'Semanas',
+                theme: theme,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: stat.compliancePercent / 100,
+              minHeight: 6,
+              backgroundColor: cs.surfaceContainerHighest,
+              color: isActive ? cs.primary : cs.secondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  final String value;
+  final String label;
+  final Color? valueColor;
+  final ThemeData theme;
+
+  const _StatBox({
+    required this.value,
+    required this.label,
+    required this.theme,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: valueColor ?? cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
