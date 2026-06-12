@@ -1,5 +1,7 @@
 // lib/core/di/injection.dart
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/exercise/data/services/exercise_weight_unit_service.dart';
 import '../../features/exercise/data/repositories/exercise_repository_impl.dart';
 import '../../features/exercise/domain/repositories/exercise_repository.dart';
 import '../../features/history/data/repositories/history_repository_impl.dart';
@@ -27,6 +29,13 @@ import '../modules/cubit/modules_cubit.dart';
 final getIt = GetIt.instance;
 
 Future<void> setupDependencies() async {
+  // Preferences (singleton)
+  final prefs = await SharedPreferences.getInstance();
+  getIt.registerSingleton<SharedPreferences>(prefs);
+  getIt.registerLazySingleton<ExerciseWeightUnitService>(
+    () => ExerciseWeightUnitService(getIt<SharedPreferences>()),
+  );
+
   // Database (singleton)
   getIt.registerSingleton<AppDatabase>(AppDatabase());
 
