@@ -4,6 +4,8 @@ class PlanComplianceStat extends Equatable {
   final int planId;
   final String planName;
   final DateTime periodStart;
+  /// Null means the plan is still active. The compliance stats were computed
+  /// using DateTime.now() as the effective end boundary — not this field.
   final DateTime? periodEnd;
   final int totalSessions;
   final int weeksActive;

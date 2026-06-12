@@ -270,11 +270,21 @@ void main() {
 
         final history = await repository.getPlanHistory();
 
+        // Compute the expected compliance to verify the formula is applied
+        final durationDays = DateTime.now()
+            .toUtc()
+            .difference(DateTime.utc(2026, 3, 1))
+            .inDays;
+        final weeksActive = (durationDays / 7).ceil().clamp(1, 9999);
+        final expectedCompliance =
+            ((3 / (4 * weeksActive)) * 100).round().clamp(0, 100);
+
         expect(history, hasLength(1));
         expect(history.first.planId, planId);
         expect(history.first.planName, 'Plan A');
         expect(history.first.totalSessions, 3);
-        expect(history.first.compliancePercent, inInclusiveRange(0, 100));
+        expect(history.first.weeksActive, weeksActive);
+        expect(history.first.compliancePercent, expectedCompliance);
       });
     });
 
