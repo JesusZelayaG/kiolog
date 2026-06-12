@@ -19,6 +19,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
   final _planNameController = TextEditingController(text: 'Mi Rutina');
   final List<_RoutineDayLocal> _routineDays = [];
   bool _saving = false;
+  bool _applyingTemplate = false;
   List<ExercisePlan> _allPlans = [];
 
   @override
@@ -76,6 +77,8 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
   }
 
   Future<void> _applyTemplate(int planId) async {
+    if (_applyingTemplate) return;
+    setState(() => _applyingTemplate = true);
     final repo = getIt<ExerciseRepository>();
     final routines = await repo.getRoutinesForPlan(planId);
 
@@ -112,6 +115,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
           ..clear()
           ..addAll(newDays);
         _planNameController.clear(); // user types the new name
+        _applyingTemplate = false;
       });
     }
   }
@@ -229,7 +233,13 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
                         return _ExerciseRowLocal(
                           entry: e.value,
                           onDelete: () {
-                            setState(() => day.exercises.removeAt(e.key));
+                            setState(() {
+                              final removed = day.exercises.removeAt(e.key);
+                              removed.name.dispose();
+                              removed.sets.dispose();
+                              removed.reps.dispose();
+                              removed.weight.dispose();
+                            });
                           },
                         );
                       }),
