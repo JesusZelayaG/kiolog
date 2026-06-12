@@ -179,4 +179,9 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
             ))
         .toList();
   }
+
+  Future<List<MealPlanOption>> getMealPlanOptionsByIds(List<int> ids) {
+    if (ids.isEmpty) return Future.value([]);
+    return (select(mealPlanOptions)..where((t) => t.id.isIn(ids))).get();
+  }
 }
