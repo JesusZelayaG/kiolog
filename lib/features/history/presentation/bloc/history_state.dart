@@ -17,11 +17,8 @@ class MonthCompliance extends Equatable {
 }
 
 MonthCompliance computeMonthCompliance(List<DaySummary> days) {
-  final todayUtc = DateTime.utc(
-    DateTime.now().year,
-    DateTime.now().month,
-    DateTime.now().day,
-  );
+  final now = DateTime.now();
+  final todayUtc = DateTime.utc(now.year, now.month, now.day);
   final counted = days.where((d) => !d.date.isAfter(todayUtc)).toList();
   if (counted.isEmpty) {
     return const MonthCompliance(water: 0, meals: 0, exercise: 0);
@@ -63,7 +60,7 @@ class HistoryState extends Equatable {
         currentMonth: currentMonth ?? this.currentMonth,
         days: days ?? this.days,
         compliance: compliance ?? this.compliance,
-        error: error,
+        error: error ?? this.error,
       );
 
   @override
