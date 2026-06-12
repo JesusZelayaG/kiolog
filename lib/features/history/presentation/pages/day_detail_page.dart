@@ -68,7 +68,6 @@ class _DayDetailView extends StatelessWidget {
                 icon: '💧',
                 iconBackground: const Color(0xFF1E3A5F),
                 title: 'Agua',
-                accentColor: const Color(0xFF60A5FA),
                 hasData: state.hasWater,
                 child: _WaterContent(state: state),
               ),
@@ -77,7 +76,6 @@ class _DayDetailView extends StatelessWidget {
                 icon: '🍽️',
                 iconBackground: const Color(0xFF3D2000),
                 title: 'Nutrición',
-                accentColor: const Color(0xFFFB923C),
                 hasData: state.hasMeals,
                 child: _NutritionContent(state: state),
               ),
@@ -86,7 +84,6 @@ class _DayDetailView extends StatelessWidget {
                 icon: '🏋️',
                 iconBackground: const Color(0xFF3D0A0A),
                 title: 'Ejercicio',
-                accentColor: const Color(0xFFF87171),
                 hasData: state.hasExercise,
                 child: _ExerciseContent(state: state),
               ),
@@ -102,7 +99,6 @@ class _SegmentCard extends StatelessWidget {
   final String icon;
   final Color iconBackground;
   final String title;
-  final Color accentColor;
   final bool hasData;
   final Widget child;
 
@@ -110,7 +106,6 @@ class _SegmentCard extends StatelessWidget {
     required this.icon,
     required this.iconBackground,
     required this.title,
-    required this.accentColor,
     required this.hasData,
     required this.child,
   });
