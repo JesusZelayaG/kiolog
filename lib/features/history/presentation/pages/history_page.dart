@@ -106,7 +106,6 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final count = day.completedCount;
 
     return GestureDetector(
       onTap: () {
@@ -115,7 +114,7 @@ class _DayCell extends StatelessWidget {
       },
       child: Card(
         margin: const EdgeInsets.all(2),
-        color: count >= 3
+        color: day.shownCompletedCount == 3
             ? theme.colorScheme.primaryContainer
             : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         child: Padding(

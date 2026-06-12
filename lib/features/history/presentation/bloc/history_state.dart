@@ -53,15 +53,17 @@ class HistoryState extends Equatable {
     DateTime? currentMonth,
     List<DaySummary>? days,
     MonthCompliance? compliance,
-    String? error,
+    Object? error = _sentinel,
   }) =>
       HistoryState(
         status: status ?? this.status,
         currentMonth: currentMonth ?? this.currentMonth,
         days: days ?? this.days,
         compliance: compliance ?? this.compliance,
-        error: error ?? this.error,
+        error: error == _sentinel ? this.error : error as String?,
       );
+
+  static const Object _sentinel = Object();
 
   @override
   List<Object?> get props => [status, currentMonth, days, compliance, error];

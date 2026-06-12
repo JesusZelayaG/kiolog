@@ -1,5 +1,3 @@
-import 'package:kiolog/core/database/app_database.dart';
-
 class DaySummary {
   final DateTime date;
   final bool hasWater;
@@ -20,6 +18,9 @@ class DaySummary {
       (hasSleep ? 1 : 0) +
       (hasMeals ? 1 : 0) +
       (hasExercise ? 1 : 0);
+
+  int get shownCompletedCount =>
+      (hasWater ? 1 : 0) + (hasMeals ? 1 : 0) + (hasExercise ? 1 : 0);
 }
 
 abstract class HistoryRepository {

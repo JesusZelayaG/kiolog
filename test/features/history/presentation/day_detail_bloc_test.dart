@@ -104,6 +104,48 @@ void main() {
     );
 
     blocTest<DayDetailBloc, DayDetailState>(
+      'emits success with mealOptions populated from planOptionId',
+      build: buildBloc,
+      setUp: () async {
+        final planId = await db.nutritionDao.insertMealPlan(
+          MealPlansCompanion(
+            name: const Value('Plan Test'),
+            createdAt: Value(DateTime.utc(2026, 1, 1)),
+          ),
+        );
+        final optionId = await db.nutritionDao.insertMealPlanOption(
+          MealPlanOptionsCompanion(
+            planId: Value(planId),
+            mealType: const Value('breakfast'),
+            optionNumber: const Value(2),
+            description: const Value('Avena con fruta'),
+          ),
+        );
+        await db.nutritionDao.insertDailyMealLog(
+          DailyMealLogsCompanion(
+            date: Value(testDate),
+            mealType: const Value('breakfast'),
+            planOptionId: Value(optionId),
+          ),
+        );
+      },
+      act: (bloc) => bloc.add(DayDetailLoaded(date: testDate)),
+      expect: () => [
+        isA<DayDetailState>()
+            .having((s) => s.status, 'status', DayDetailStatus.loading),
+        isA<DayDetailState>()
+            .having((s) => s.status, 'status', DayDetailStatus.success)
+            .having((s) => s.mealLogs.length, 'mealLogs.length', 1)
+            .having(
+              (s) => s.mealOptions.values.first.optionNumber,
+              'optionNumber',
+              2,
+            )
+            .having((s) => s.hasMeals, 'hasMeals', true),
+      ],
+    );
+
+    blocTest<DayDetailBloc, DayDetailState>(
       'emits [loading, failure] when DAO throws',
       build: () {
         final waterDao = MockWaterSleepDao();
