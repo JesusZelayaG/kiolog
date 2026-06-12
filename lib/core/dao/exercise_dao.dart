@@ -278,12 +278,16 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
         DateTime.utc(end.year, end.month, end.day).add(const Duration(days: 1));
     return (select(cardioLogs)
           ..where((t) =>
-              t.date.isBiggerOrEqualValue(s) & t.date.isSmallerThanValue(e)))
+              t.date.isBiggerOrEqualValue(s) & t.date.isSmallerThanValue(e))
+          ..orderBy([(t) => OrderingTerm.asc(t.date)]))
         .get();
   }
 
   /// Returns all completed sessions (gymLeftAt != null) where start ≤ date ≤ end (both inclusive).
-  Future<List<ExerciseSessionLog>> getSessionsInRange(DateTime start, DateTime end) {
+  Future<List<ExerciseSessionLog>> getSessionsInRange(
+    DateTime start,
+    DateTime end,
+  ) {
     final s = DateTime.utc(start.year, start.month, start.day);
     final e =
         DateTime.utc(end.year, end.month, end.day).add(const Duration(days: 1));
@@ -291,7 +295,8 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
           ..where((t) =>
               t.date.isBiggerOrEqualValue(s) &
               t.date.isSmallerThanValue(e) &
-              t.gymLeftAt.isNotNull()))
+              t.gymLeftAt.isNotNull())
+          ..orderBy([(t) => OrderingTerm.asc(t.date)]))
         .get();
   }
 
