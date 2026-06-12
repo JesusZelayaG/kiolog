@@ -584,13 +584,22 @@ class _HistorialTabState extends State<_HistorialTab> {
   @override
   void initState() {
     super.initState();
-    widget.onLoadRequest();
+    // Fire onLoadRequest only if history is empty (belt-and-suspenders guard
+    // in addition to the parent lambda's own check).
+    if (widget.history.isEmpty) widget.onLoadRequest();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+
+    // Show spinner while the async fetch is in flight.
+    final bloc = context.read<ExerciseBloc>();
+    if (widget.history.isEmpty &&
+        bloc.state.status == ExerciseStatus.loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     if (widget.history.isEmpty) {
       return Center(
@@ -730,7 +739,7 @@ class _PlanHistoryCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value: stat.compliancePercent / 100,
+              value: (stat.compliancePercent / 100).clamp(0.0, 1.0),
               minHeight: 6,
               backgroundColor: cs.surfaceContainerHighest,
               color: isActive ? cs.primary : cs.secondary,
