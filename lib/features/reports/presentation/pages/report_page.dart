@@ -1,15 +1,13 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
+import 'package:kiolog/shared/widgets/vitality_progress_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/repositories/report_repository.dart';
+import '../../data/pdf_report_service.dart';
 import '../bloc/report_bloc.dart';
 import '../bloc/report_event.dart';
 import '../bloc/report_state.dart';
@@ -38,6 +36,8 @@ class _ReportViewState extends State<_ReportView> {
     start: DateTime.now().subtract(const Duration(days: 7)),
     end: DateTime.now(),
   );
+
+  bool _exporting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -117,6 +117,7 @@ class _ReportViewState extends State<_ReportView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Resumen ─────────────────────────────────────────────────────────
         Text('Resumen', style: theme.textTheme.headlineSmall),
         const SizedBox(height: 12),
         _MetricCard(
@@ -140,78 +141,156 @@ class _ReportViewState extends State<_ReportView> {
             value: '${data.sleepAverage!.toStringAsFixed(1)} h',
             subtitle: 'Por noche',
           ),
+
+        // ── Nutrición detalle ────────────────────────────────────────────────
+        if (data.nutritionDetail != null &&
+            data.nutritionDetail!.mealFrequencies.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Text('Nutrición', style: theme.textTheme.headlineSmall),
+          if (data.nutritionDetail!.planName != null)
+            Text(
+              'Plan: ${data.nutritionDetail!.planName}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          const SizedBox(height: 12),
+          ..._buildFrequencySection(context, data.nutritionDetail!),
+        ],
+
+        // ── Ejercicio detalle ────────────────────────────────────────────────
+        if (data.exerciseDetail != null) ...[
+          const SizedBox(height: 24),
+          Text('Ejercicio', style: theme.textTheme.headlineSmall),
+          if (data.exerciseDetail!.planName != null)
+            Text(
+              'Plan: ${data.exerciseDetail!.planName}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          const SizedBox(height: 12),
+          ..._buildExerciseSection(context, data.exerciseDetail!),
+        ],
+
+        // ── Export button ────────────────────────────────────────────────────
         const SizedBox(height: 24),
         ElevatedButton.icon(
-          onPressed: () => _exportPdf(data),
-          icon: const Icon(Icons.picture_as_pdf),
-          label: const Text('Exportar PDF'),
+          onPressed: _exporting ? null : () => _exportPdf(context, data),
+          icon: _exporting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.picture_as_pdf),
+          label:
+              Text(_exporting ? 'Generando PDF...' : 'Exportar y compartir'),
         ),
       ],
     );
   }
 
-  Future<void> _exportPdf(ReportData data) async {
-    final pdf = pw.Document();
-
-    pdf.addPage(
-      pw.Page(
-        build: (context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text('Kiolog — Reporte de Salud',
-                style:
-                    pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 8),
-            pw.Text(
-              '${DateFormat.yMMMd('es').format(data.start)} – ${DateFormat.yMMMd('es').format(data.end)}',
-            ),
-            pw.Divider(),
-            pw.SizedBox(height: 16),
-            _pdfMetric('Cumplimiento de agua',
-                '${(data.waterCompliance * 100).toStringAsFixed(0)}%'),
-            _pdfMetric('Cumplimiento de nutrición',
-                '${(data.nutritionCompliance * 100).toStringAsFixed(0)}%'),
-            _pdfMetric('Cumplimiento de ejercicio',
-                '${(data.exerciseCompliance * 100).toStringAsFixed(0)}%'),
-            if (data.sleepAverage != null)
-              _pdfMetric('Sueño promedio',
-                  '${data.sleepAverage!.toStringAsFixed(1)} h'),
-            if (data.weightLogs.isNotEmpty) ...[
-              pw.SizedBox(height: 16),
-              pw.Text('Evolución de peso:',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-              ...data.weightLogs.map((log) => pw.Text(
-                  '  ${DateFormat.yMMMd('es').format(log.date)}: ${log.weightKg} kg')),
-            ],
-          ],
-        ),
-      ),
-    );
-
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/kiolog_reporte.pdf');
-    await file.writeAsBytes(await pdf.save());
-
-    if (mounted) {
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: 'Reporte Kiolog',
-      );
+  List<Widget> _buildFrequencySection(
+      BuildContext context, NutritionReportData detail) {
+    final theme = Theme.of(context);
+    final grouped = <String, List<MealFrequencyEntry>>{};
+    for (final e in detail.mealFrequencies) {
+      grouped.putIfAbsent(e.mealType, () => []).add(e);
     }
+    const order = ['desayuno', 'almuerzo', 'cena', 'snack'];
+    final types = order.where(grouped.containsKey).toList()
+      ..addAll(grouped.keys.where((t) => !order.contains(t)));
+
+    final widgets = <Widget>[];
+    for (final type in types) {
+      final entries = grouped[type]!;
+      final maxCount =
+          entries.map((e) => e.count).reduce((a, b) => a > b ? a : b);
+      widgets.add(Padding(
+        padding: const EdgeInsets.only(top: 12, bottom: 4),
+        child: Text(
+          type.toUpperCase(),
+          style: theme.textTheme.labelSmall,
+        ),
+      ));
+      for (final entry in entries) {
+        widgets.add(_FrequencyBar(
+          entry: entry,
+          maxCount: maxCount,
+          color: theme.colorScheme.secondary,
+        ));
+      }
+    }
+    return widgets;
   }
 
-  pw.Widget _pdfMetric(String label, String value) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 4),
-      child: pw.Row(
+  List<Widget> _buildExerciseSection(
+      BuildContext context, ExerciseReportData detail) {
+    final theme = Theme.of(context);
+    final widgets = <Widget>[];
+
+    if (detail.weeklyCompliance.isEmpty) {
+      widgets.add(Text(
+        'Sin datos de ejercicio en este período',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ));
+    } else {
+      widgets.add(Text(
+        'Cumplimiento semanal',
+        style: theme.textTheme.titleSmall,
+      ));
+      widgets.add(const SizedBox(height: 8));
+      for (final week in detail.weeklyCompliance) {
+        widgets.add(_WeekComplianceBar(
+          entry: week,
+          color: theme.colorScheme.tertiary,
+        ));
+      }
+    }
+
+    widgets.add(const SizedBox(height: 12));
+    widgets.add(VitalityCard(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          pw.Expanded(child: pw.Text(label)),
-          pw.Text(value, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+          _StatChip(label: 'Rutina', value: '${detail.totalRoutineSessions}'),
+          _StatChip(label: 'Cardio', value: '${detail.cardioSessionsCount}'),
+          _StatChip(label: 'Libre', value: '${detail.freeExerciseCount}'),
         ],
       ),
-    );
+    ));
+
+    return widgets;
+  }
+
+  Future<void> _exportPdf(BuildContext context, ReportData data) async {
+    setState(() => _exporting = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final file = await PdfReportService.generate(data);
+      if (!mounted) return;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: 'Reporte Kiolog',
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Error al generar PDF: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
   }
 }
+
+// ── Reusable widgets ─────────────────────────────────────────────────────────
 
 class _MetricCard extends StatelessWidget {
   final String label;
@@ -241,6 +320,126 @@ class _MetricCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FrequencyBar extends StatelessWidget {
+  final MealFrequencyEntry entry;
+  final int maxCount;
+  final Color color;
+
+  const _FrequencyBar({
+    required this.entry,
+    required this.maxCount,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fraction = maxCount > 0 ? entry.count / maxCount : 0.0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              entry.description,
+              style: theme.textTheme.bodySmall,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: VitalityProgressBar(
+              value: fraction,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 32,
+            child: Text(
+              '${entry.count}×',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeekComplianceBar extends StatelessWidget {
+  final WeeklyComplianceEntry entry;
+  final Color color;
+
+  const _WeekComplianceBar({required this.entry, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fraction =
+        entry.daysGoal > 0 ? entry.daysDone / entry.daysGoal : 0.0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 48,
+            child: Text(entry.weekLabel, style: theme.textTheme.bodySmall),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: VitalityProgressBar(
+              value: fraction.clamp(0.0, 1.0),
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 56,
+            child: Text(
+              '${entry.daysDone}/${entry.daysGoal} días',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatChip({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Text(
+          value,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(label, style: theme.textTheme.labelSmall),
+      ],
     );
   }
 }
