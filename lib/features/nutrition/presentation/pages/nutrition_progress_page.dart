@@ -145,7 +145,9 @@ class _PlanSelectorSheet extends StatelessWidget {
                 ),
               ),
               Text('Planes alimenticios',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                   textAlign: TextAlign.center),
               const SizedBox(height: 12),
               if (state.activePlan != null)
@@ -285,7 +287,9 @@ class _PlanTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(plan.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSurface)),
                     if (dateLabel.isNotEmpty)
                       Text(
                         dateLabel,
@@ -628,7 +632,12 @@ class _FrecuenciaTab extends StatelessWidget {
                                       opt.description,
                                       style: Theme.of(context)
                                           .textTheme
-                                          .bodySmall,
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -636,9 +645,12 @@ class _FrecuenciaTab extends StatelessWidget {
                               const SizedBox(width: 8),
                               Text(
                                 '${opt.count}×',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 13),
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface),
                               ),
                             ],
                           ),
@@ -737,7 +749,9 @@ class _Navigator extends StatelessWidget {
       Expanded(
         child: Column(children: [
           Text(label,
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
               textAlign: TextAlign.center),
           Text(subtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(

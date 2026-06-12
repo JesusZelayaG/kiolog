@@ -89,7 +89,9 @@ class _NutritionView extends StatelessWidget {
                   children: [
                     Text(
                       state.activePlan!.name,
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -133,12 +135,16 @@ class _NutritionView extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Sin plan activo',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Crea un plan alimenticio para empezar a registrar tus comidas.',
               textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -326,7 +332,9 @@ class _MealSection extends StatelessWidget {
               children: [
                 const Icon(Icons.restaurant_menu),
                 const SizedBox(width: 8),
-                Text(label, style: theme.textTheme.titleMedium),
+                Text(label,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(color: theme.colorScheme.onSurface)),
                 const Spacer(),
                 if (isLogged)
                   Builder(builder: (_) {
@@ -447,7 +455,10 @@ class _MealSection extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
               child: Text(
-                  'Opción ${opt.optionNumber}: ${opt.description}')),
+                'Opción ${opt.optionNumber}: ${opt.description}',
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface),
+              )),
         ],
       ),
     );
@@ -560,9 +571,11 @@ class _OptionTile extends StatelessWidget {
         backgroundColor: isSelected
             ? Theme.of(context).colorScheme.primaryContainer
             : Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: Text('${option.optionNumber}'),
+        child: Text('${option.optionNumber}',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
       ),
-      title: Text(option.description),
+      title: Text(option.description,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
       trailing: isSelected
           ? Icon(Icons.check_circle,
               color: Theme.of(context).colorScheme.primary)
