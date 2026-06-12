@@ -66,12 +66,13 @@ class ReportRepositoryImpl implements ReportRepository {
       current = current.add(const Duration(days: 1));
     }
 
-    final results = await Future.wait([
-      _measurementsDao.getWeightLogs(start, end),
-      _measurementsDao.getLatestMeasurement(),
-      _buildNutritionDetail(start, end),
-      _buildExerciseDetail(start, end),
-    ]);
+    final (weightLogs, latestMeasurement, nutritionDetail, exerciseDetail) =
+        await (
+          _measurementsDao.getWeightLogs(start, end),
+          _measurementsDao.getLatestMeasurement(),
+          _buildNutritionDetail(start, end),
+          _buildExerciseDetail(start, end),
+        ).wait;
 
     return ReportData(
       start: start,
@@ -83,10 +84,10 @@ class ReportRepositoryImpl implements ReportRepository {
       exerciseDays: exerciseDays,
       exerciseTotalDays: exerciseTotalDays,
       sleepAverage: sleepDays > 0 ? sleepTotal / sleepDays : null,
-      weightLogs: results[0] as List<WeightLog>,
-      latestMeasurement: results[1] as Measurement?,
-      nutritionDetail: results[2] as NutritionReportData?,
-      exerciseDetail: results[3] as ExerciseReportData?,
+      weightLogs: weightLogs,
+      latestMeasurement: latestMeasurement,
+      nutritionDetail: nutritionDetail,
+      exerciseDetail: exerciseDetail,
     );
   }
 
@@ -161,7 +162,10 @@ class ReportRepositoryImpl implements ReportRepository {
     );
 
     final uniqueRoutineDays = routineSessions
-        .map((s) => DateTime.utc(s.date.year, s.date.month, s.date.day))
+        .map((s) {
+          final u = s.date.toUtc();
+          return DateTime.utc(u.year, u.month, u.day);
+        })
         .toSet();
 
     final allSessions =
@@ -199,10 +203,14 @@ class ReportRepositoryImpl implements ReportRepository {
       final weekEnd = weekStart.add(const Duration(days: 7));
       final uniqueDays = sessions
           .where((s) {
-            final d = DateTime.utc(s.date.year, s.date.month, s.date.day);
+            final u = s.date.toUtc();
+            final d = DateTime.utc(u.year, u.month, u.day);
             return !d.isBefore(weekStart) && d.isBefore(weekEnd);
           })
-          .map((s) => DateTime.utc(s.date.year, s.date.month, s.date.day))
+          .map((s) {
+            final u = s.date.toUtc();
+            return DateTime.utc(u.year, u.month, u.day);
+          })
           .toSet();
 
       weeks.add(WeeklyComplianceEntry(

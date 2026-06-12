@@ -182,5 +182,47 @@ void main() {
       expect(data.exerciseDetail!.weeklyCompliance.first.daysDone, 2);
       expect(data.exerciseDetail!.weeklyCompliance.first.weekLabel, 'Sem 1');
     });
+
+    test('weeklyCompliance has 2 entries for a range spanning 2 weeks', () async {
+      final planId = await db.exerciseDao.insertExercisePlan(
+        const ExercisePlansCompanion(name: Value('Plan')),
+      );
+      final routineId = await db.exerciseDao.insertExerciseRoutine(
+        ExerciseRoutinesCompanion(
+          planId: Value(planId),
+          dayNumber: const Value(1),
+          routineName: const Value('Espalda'),
+        ),
+      );
+      // Week 1 (Sem 1): Thu Jun 4 and Fri Jun 5
+      for (final day in [4, 5]) {
+        await db.exerciseDao.insertExerciseSession(ExerciseSessionLogsCompanion(
+          date: Value(DateTime.utc(2026, 6, day)),
+          routineId: Value(routineId),
+          gymArrivedAt: Value(DateTime.utc(2026, 6, day, 9)),
+          gymLeftAt: Value(DateTime.utc(2026, 6, day, 10)),
+        ));
+      }
+      // Week 2 (Sem 2): Mon Jun 8
+      await db.exerciseDao.insertExerciseSession(ExerciseSessionLogsCompanion(
+        date: Value(DateTime.utc(2026, 6, 8)),
+        routineId: Value(routineId),
+        gymArrivedAt: Value(DateTime.utc(2026, 6, 8, 9)),
+        gymLeftAt: Value(DateTime.utc(2026, 6, 8, 10)),
+      ));
+
+      // Range starts on Wednesday Jun 3 (mid-week), ends Jun 10
+      final data = await repository.generateReport(
+        DateTime.utc(2026, 6, 3),
+        DateTime.utc(2026, 6, 10),
+      );
+
+      expect(data.exerciseDetail, isNotNull);
+      expect(data.exerciseDetail!.weeklyCompliance.length, 2);
+      expect(data.exerciseDetail!.weeklyCompliance[0].weekLabel, 'Sem 1');
+      expect(data.exerciseDetail!.weeklyCompliance[0].daysDone, 2);
+      expect(data.exerciseDetail!.weeklyCompliance[1].weekLabel, 'Sem 2');
+      expect(data.exerciseDetail!.weeklyCompliance[1].daysDone, 1);
+    });
   });
 }
