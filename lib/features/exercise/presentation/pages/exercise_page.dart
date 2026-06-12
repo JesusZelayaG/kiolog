@@ -13,6 +13,7 @@ import '../../domain/repositories/exercise_repository.dart';
 import '../bloc/exercise_bloc.dart';
 import '../bloc/exercise_event.dart';
 import '../bloc/exercise_state.dart';
+import 'exercise_config_page.dart';
 import 'exercise_session_page.dart';
 import 'exercise_progress_page.dart';
 
@@ -243,20 +244,10 @@ class _ExerciseViewState extends State<_ExerciseView> {
         ),
         const SizedBox(height: 10),
         if (state.routines.isEmpty)
-          VitalityCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const Text('Sin días de rutina configurados.',
-                    textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddRoutineDialog(context, state),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Agregar día de rutina'),
-                ),
-              ],
-            ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('Sin días de rutina configurados.',
+                textAlign: TextAlign.center),
           )
         else
           ...state.routines.map((routine) {
@@ -273,6 +264,13 @@ class _ExerciseViewState extends State<_ExerciseView> {
               isExpanded: isExpanded,
             );
           }),
+        const SizedBox(height: 6),
+        _buildDashedAddButton(
+          context: context,
+          label: '＋ Agregar día de rutina',
+          color: Theme.of(context).colorScheme.tertiary,
+          onTap: () => _showAddRoutineDialog(context, state),
+        ),
       ],
     );
   }
@@ -1334,6 +1332,22 @@ class _PlansDialog extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cerrar'),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text('Nuevo plan'),
+          onPressed: () {
+            Navigator.pop(context);
+            final bloc = context.read<ExerciseBloc>();
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ExerciseConfigPage(
+                  onComplete: () =>
+                      bloc.add(ExerciseLoaded(date: DateTime.now())),
+                ),
+              ),
+            );
+          },
         ),
       ],
     );

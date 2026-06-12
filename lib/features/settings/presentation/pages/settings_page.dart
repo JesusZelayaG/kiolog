@@ -140,25 +140,6 @@ class SettingsPage extends StatelessWidget {
                 ),
                 const Divider(),
                 ListTile(
-                  leading: const Icon(Icons.water_drop),
-                  title: const Text('Configuración de agua'),
-                  subtitle: const Text('Meta, unidad, tamaño'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/water'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.fitness_center),
-                  title: const Text('Configuración de gym'),
-                  subtitle: const Text('Próximamente'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Próximamente')),
-                    );
-                  },
-                ),
-                const Divider(),
-                ListTile(
                   leading: const Icon(Icons.notifications_outlined),
                   title: const Text('Notificaciones'),
                   subtitle: const Text('Próximamente'),

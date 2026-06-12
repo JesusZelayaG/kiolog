@@ -42,7 +42,7 @@ class AppTheme {
   );
 
   static TextTheme _buildTextTheme() {
-    final base = GoogleFonts.hankenGroteskTextTheme();
+    final base = GoogleFonts.hankenGroteskTextTheme(ThemeData.dark().textTheme);
     return base.copyWith(
       displayLarge: GoogleFonts.hankenGrotesk(
         fontSize: 40,
