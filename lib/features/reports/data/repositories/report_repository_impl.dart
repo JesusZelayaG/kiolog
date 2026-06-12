@@ -102,7 +102,7 @@ class ReportRepositoryImpl implements ReportRepository {
     final options = await _nutritionDao.getAllPlanOptions(plan.id);
 
     if (options.isEmpty) {
-      return NutritionReportData(planName: plan.name, mealFrequencies: []);
+      return NutritionReportData(planName: plan.name, mealFrequencies: const []);
     }
 
     final countMap = <int, int>{};

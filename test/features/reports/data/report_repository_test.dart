@@ -137,7 +137,7 @@ void main() {
 
     test('contains planName, weeklyCompliance, and session counts', () async {
       final planId = await db.exerciseDao.insertExercisePlan(
-        ExercisePlansCompanion(name: const Value('Mi Rutina')),
+        const ExercisePlansCompanion(name: Value('Mi Rutina')),
       );
       final routineId = await db.exerciseDao.insertExerciseRoutine(
         ExerciseRoutinesCompanion(
