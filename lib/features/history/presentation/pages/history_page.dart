@@ -115,7 +115,7 @@ class _DayCell extends StatelessWidget {
       },
       child: Card(
         margin: const EdgeInsets.all(2),
-        color: count == 4
+        color: count >= 3
             ? theme.colorScheme.primaryContainer
             : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         child: Padding(
