@@ -21,6 +21,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
   bool _saving = false;
   bool _applyingTemplate = false;
   List<ExercisePlan> _allPlans = [];
+  String _weightUnit = 'kg';
 
   @override
   void initState() {
@@ -126,8 +127,10 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
   Future<void> _save() async {
     setState(() => _saving = true);
     final exerciseRepo = getIt<ExerciseRepository>();
-    final exercisePlanId =
-        await exerciseRepo.createPlan(_planNameController.text);
+    final exercisePlanId = await exerciseRepo.createPlan(
+      _planNameController.text,
+      weightUnit: _weightUnit,
+    );
     for (int i = 0; i < _routineDays.length; i++) {
       final day = _routineDays[i];
       final routineName = day.nameController.text.trim().isEmpty
@@ -179,6 +182,16 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
             TextField(
               controller: _planNameController,
               decoration: const InputDecoration(labelText: 'Nombre del plan'),
+            ),
+            const SizedBox(height: 16),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'kg', label: Text('kg')),
+                ButtonSegment(value: 'lbs', label: Text('lbs')),
+              ],
+              selected: {_weightUnit},
+              onSelectionChanged: (set) =>
+                  setState(() => _weightUnit = set.first),
             ),
             if (_allPlans.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -235,6 +248,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
                       ...day.exercises.asMap().entries.map((e) {
                         return _ExerciseRowLocal(
                           entry: e.value,
+                          weightUnit: _weightUnit,
                           onDelete: () {
                             setState(() {
                               final removed = day.exercises.removeAt(e.key);
@@ -295,54 +309,79 @@ class _ExerciseEntryLocal {
 
 class _ExerciseRowLocal extends StatelessWidget {
   final _ExerciseEntryLocal entry;
+  final String weightUnit;
   final VoidCallback onDelete;
 
-  const _ExerciseRowLocal({required this.entry, required this.onDelete});
+  const _ExerciseRowLocal({
+    required this.entry,
+    required this.weightUnit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      child: Column(
         children: [
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: entry.name,
-              decoration: const InputDecoration(labelText: 'Ejercicio'),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: entry.sets,
-              decoration: const InputDecoration(labelText: 'Sets'),
-              keyboardType: TextInputType.number,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: entry.reps,
-              decoration: const InputDecoration(labelText: 'Reps'),
-              keyboardType: TextInputType.number,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: entry.weight,
-              decoration: const InputDecoration(
-                labelText: 'Peso',
-                suffixText: 'kg',
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: entry.name,
+                  decoration: const InputDecoration(
+                    labelText: 'Ejercicio',
+                    isDense: true,
+                  ),
+                ),
               ),
-              keyboardType: TextInputType.number,
-            ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: onDelete,
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: onDelete,
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: entry.sets,
+                  decoration: const InputDecoration(
+                    labelText: 'Series',
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: entry.reps,
+                  decoration: const InputDecoration(
+                    labelText: 'Reps',
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: entry.weight,
+                  decoration: InputDecoration(
+                    labelText: 'Peso',
+                    suffixText: weightUnit,
+                    isDense: true,
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
+              ),
+            ],
           ),
+          const Divider(height: 24),
         ],
       ),
     );

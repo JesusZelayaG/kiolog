@@ -30,8 +30,12 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
   Future<void> activatePlan(int planId) => _dao.setActiveExercisePlan(planId);
 
   @override
-  Future<int> createPlan(String name) => _dao.insertExercisePlan(
-        ExercisePlansCompanion(name: Value(name)),
+  Future<int> createPlan(String name, {String weightUnit = 'kg'}) =>
+      _dao.insertExercisePlan(
+        ExercisePlansCompanion(
+          name: Value(name),
+          weightUnit: Value(weightUnit),
+        ),
       );
 
   @override

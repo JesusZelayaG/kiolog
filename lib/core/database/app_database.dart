@@ -73,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -129,6 +129,9 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
             'UPDATE exercise_plans SET period_start = created_at WHERE period_start IS NULL',
           );
+        }
+        if (from < 9) {
+          await m.addColumn(exercisePlans, exercisePlans.weightUnit);
         }
       },
     );

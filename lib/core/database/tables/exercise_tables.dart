@@ -7,6 +7,8 @@ class ExercisePlans extends Table {
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get periodStart => dateTime().nullable()();
   DateTimeColumn get periodEnd => dateTime().nullable()();
+  TextColumn get weightUnit =>
+      text().withDefault(const Constant('kg'))();
 }
 
 class ExerciseRoutines extends Table {

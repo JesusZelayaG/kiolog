@@ -19,7 +19,7 @@ void main() {
   });
 
   group('ExerciseBloc', () {
-    final plan = ExercisePlan(id: 1, name: 'Gym', createdAt: DateTime.now(), isActive: true);
+    final plan = ExercisePlan(id: 1, name: 'Gym', createdAt: DateTime.now(), isActive: true, weightUnit: 'kg');
     const routine = ExerciseRoutine(id: 1, planId: 1, dayNumber: 1, routineName: 'Pecho', notes: null);
     final items = [
       const ExerciseRoutineItem(id: 1, routineId: 1, exerciseName: 'Press', sets: 4, reps: 10, weightKg: 60, setType: 'normal', orderIndex: 0),
@@ -342,6 +342,7 @@ void main() {
           name: 'Gym',
           createdAt: DateTime(2026, 1, 1),
           isActive: true,
+          weightUnit: 'kg',
         );
         when(() => repository.activatePlan(any())).thenAnswer((_) async {});
         when(() => repository.getActivePlan()).thenAnswer((_) async => plan);

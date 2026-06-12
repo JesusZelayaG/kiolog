@@ -8,7 +8,7 @@ abstract class ExerciseRepository {
   Future<ExercisePlan?> getActivePlan();
   Future<List<ExercisePlan>> getAllPlans();
   Future<void> activatePlan(int planId);
-  Future<int> createPlan(String name);
+  Future<int> createPlan(String name, {String weightUnit = 'kg'});
 
   // ── Routines ───────────────────────────────────────────────────────────
   Future<List<ExerciseRoutine>> getRoutinesForPlan(int planId);

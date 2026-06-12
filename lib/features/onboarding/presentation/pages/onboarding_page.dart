@@ -167,8 +167,10 @@ class _OnboardingViewState extends State<_OnboardingView> {
     // Save exercise plan (only if active)
     if (_activeModules.contains(AppModule.exercise)) {
       final exerciseRepo = getIt<ExerciseRepository>();
-      final exercisePlanId =
-          await exerciseRepo.createPlan(_exercisePlanNameController.text);
+      final exercisePlanId = await exerciseRepo.createPlan(
+        _exercisePlanNameController.text,
+        weightUnit: _weightUnit,
+      );
       for (int i = 0; i < _routineDays.length; i++) {
         final day = _routineDays[i];
         final routineName = day.nameController.text.trim().isEmpty
