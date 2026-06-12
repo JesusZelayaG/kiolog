@@ -39,6 +39,10 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
+    tearDown(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
     blocTest<ExerciseWeightUnitCubit, String>(
       'emits lbs on init when no stored value',
       build: () {
