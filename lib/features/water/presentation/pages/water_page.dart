@@ -5,6 +5,7 @@ import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
 import 'package:kiolog/shared/widgets/inactive_module_page.dart';
+import 'package:kiolog/shared/widgets/gradient_icon_button.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/repositories/water_repository.dart';
 import '../bloc/water_bloc.dart';
@@ -51,8 +52,8 @@ class _WaterView extends StatelessWidget {
           onPressed: () => context.go('/'),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
+          GradientIconButton(
+            icon: Icons.settings_outlined,
             onPressed: () => _showConfigDialog(context),
           ),
         ],

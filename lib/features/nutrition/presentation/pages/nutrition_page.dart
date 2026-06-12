@@ -6,6 +6,7 @@ import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
 import 'package:kiolog/shared/widgets/inactive_module_page.dart';
+import 'package:kiolog/shared/widgets/gradient_icon_button.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/repositories/nutrition_repository.dart';
@@ -44,8 +45,8 @@ class _NutritionView extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Nutrición'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
+          GradientIconButton(
+            icon: Icons.bar_chart,
             onPressed: () {
               final bloc = context.read<NutritionBloc>();
               Navigator.of(context).push(
@@ -58,8 +59,8 @@ class _NutritionView extends StatelessWidget {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.history),
+          GradientIconButton(
+            icon: Icons.history,
             onPressed: () => _showPlansDialog(context),
           ),
         ],
