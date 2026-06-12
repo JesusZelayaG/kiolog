@@ -75,21 +75,28 @@ class _ExerciseViewState extends State<_ExerciseView> {
       ),
       body: BlocConsumer<ExerciseBloc, ExerciseState>(
         listenWhen: (prev, curr) =>
-            prev.status == ExerciseStatus.success &&
-            !prev.hasActiveSession &&
-            curr.hasActiveSession,
+            (prev.status == ExerciseStatus.success &&
+                !prev.hasActiveSession &&
+                curr.hasActiveSession) ||
+            prev.activePlan?.id != curr.activePlan?.id,
         listener: (context, state) {
-          final bloc = context.read<ExerciseBloc>();
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => BlocProvider.value(
-                value: bloc,
-                child: ExerciseSessionPage(
-                  sessionId: state.activeSession!.id,
+          // Reset day selection whenever the active plan changes.
+          setState(() => _selectedRoutineId = null);
+
+          // Navigate to the session page when a new session becomes active.
+          if (state.hasActiveSession) {
+            final bloc = context.read<ExerciseBloc>();
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => BlocProvider.value(
+                  value: bloc,
+                  child: ExerciseSessionPage(
+                    sessionId: state.activeSession!.id,
+                  ),
                 ),
               ),
-            ),
-          );
+            );
+          }
         },
         builder: (context, state) {
           if (state.status == ExerciseStatus.loading &&
@@ -1030,34 +1037,31 @@ class _ExerciseViewState extends State<_ExerciseView> {
             runSpacing: 8,
             children: state.routines.map((routine) {
               final isSelected = routine.id == selectedId;
-              return GestureDetector(
-                onTap: () =>
-                    setState(() => _selectedRoutineId = routine.id),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
+              return FilterChip(
+                label: Text(
+                  'Día ${routine.dayNumber} · ${routine.routineName}',
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
                     color: isSelected
-                        ? cs.primaryContainer
-                        : cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(20),
-                    border: isSelected
-                        ? Border.all(color: cs.primary, width: 1.5)
-                        : null,
-                  ),
-                  child: Text(
-                    'Día ${routine.dayNumber} · ${routine.routineName}',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: isSelected
-                          ? cs.onPrimaryContainer
-                          : cs.onSurfaceVariant,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                    ),
+                        ? cs.onPrimaryContainer
+                        : cs.onSurfaceVariant,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
+                selected: isSelected,
+                onSelected: (_) =>
+                    setState(() => _selectedRoutineId = routine.id),
+                backgroundColor: cs.surfaceContainerHighest,
+                selectedColor: cs.primaryContainer,
+                checkmarkColor: cs.primary,
+                side: BorderSide(
+                  color: isSelected ? cs.primary : Colors.transparent,
+                  width: 1.5,
+                ),
+                showCheckmark: false,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               );
             }).toList(),
           ),
