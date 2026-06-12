@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
@@ -18,6 +19,18 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
   final _planNameController = TextEditingController(text: 'Mi Rutina');
   final List<_RoutineDayLocal> _routineDays = [];
   bool _saving = false;
+  List<ExercisePlan> _allPlans = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlans();
+  }
+
+  Future<void> _loadPlans() async {
+    final plans = await getIt<ExerciseRepository>().getAllPlans();
+    if (mounted) setState(() => _allPlans = plans);
+  }
 
   @override
   void dispose() {
@@ -32,6 +45,75 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
       }
     }
     super.dispose();
+  }
+
+  void _showTemplatePicker(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const ListTile(
+            title: Text('Selecciona un plan base'),
+            subtitle: Text(
+                'Los días y ejercicios se copian como punto de partida editable.'),
+          ),
+          const Divider(height: 1),
+          ..._allPlans.map((plan) => ListTile(
+                leading: const Icon(Icons.fitness_center),
+                title: Text(plan.name),
+                subtitle: Text(plan.isActive ? 'Plan activo' : 'Finalizado'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _applyTemplate(plan.id);
+                },
+              )),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _applyTemplate(int planId) async {
+    final repo = getIt<ExerciseRepository>();
+    final routines = await repo.getRoutinesForPlan(planId);
+
+    final newDays = <_RoutineDayLocal>[];
+    for (final routine in routines) {
+      final items = await repo.getRoutineItemsOrdered(routine.id);
+      final day = _RoutineDayLocal();
+      day.nameController.text = routine.routineName;
+      for (final item in items) {
+        final entry = _ExerciseEntryLocal();
+        entry.name.text = item.exerciseName;
+        entry.sets.text = '${item.sets}';
+        entry.reps.text = '${item.reps}';
+        if (item.weightKg != null) entry.weight.text = '${item.weightKg}';
+        day.exercises.add(entry);
+      }
+      newDays.add(day);
+    }
+
+    // Dispose old day controllers before replacing
+    for (final day in _routineDays) {
+      day.nameController.dispose();
+      for (final e in day.exercises) {
+        e.name.dispose();
+        e.sets.dispose();
+        e.reps.dispose();
+        e.weight.dispose();
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _routineDays
+          ..clear()
+          ..addAll(newDays);
+        _planNameController.clear(); // user types the new name
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -91,6 +173,17 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
               controller: _planNameController,
               decoration: const InputDecoration(labelText: 'Nombre del plan'),
             ),
+            if (_allPlans.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => _showTemplatePicker(context),
+                icon: const Icon(Icons.copy_outlined),
+                label: const Text('Partir de plan anterior'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             ..._routineDays.asMap().entries.map((dayEntry) {
               final index = dayEntry.key;
