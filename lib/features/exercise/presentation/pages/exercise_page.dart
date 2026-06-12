@@ -413,7 +413,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
           if (isExpanded) ...[
             const Divider(height: 1),
             ...items.map((item) =>
-                _buildItemRow(context, item, routine.id, state.planWeightUnit)),
+                _buildItemRow(context, item, routine.id, context.read<ExerciseWeightUnitCubit>().state)),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
               child: Align(
@@ -476,7 +476,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
     ExerciseRoutineItem? item,
     required int routineId,
   }) {
-    final weightUnit = state.planWeightUnit;
+    final weightUnit = context.read<ExerciseWeightUnitCubit>().state;
     final nameCtrl = TextEditingController(text: item?.exerciseName ?? '');
     final setsCtrl =
         TextEditingController(text: item != null ? '${item.sets}' : '');
@@ -798,13 +798,13 @@ class _ExerciseViewState extends State<_ExerciseView> {
         const SizedBox(height: 10),
         ...state.weeklyIndependentLogs
             .map((log) =>
-                _buildIndependentItem(context, log, state.planWeightUnit)),
+                _buildIndependentItem(context, log, context.read<ExerciseWeightUnitCubit>().state)),
         _buildDashedAddButton(
           context: context,
           label: '＋ Registrar ejercicio libre',
           color: theme.colorScheme.secondary,
           onTap: () =>
-              _showIndependentExerciseDialog(context, state.planWeightUnit),
+              _showIndependentExerciseDialog(context, context.read<ExerciseWeightUnitCubit>().state),
         ),
       ],
     );

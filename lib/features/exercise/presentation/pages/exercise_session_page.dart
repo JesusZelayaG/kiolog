@@ -6,6 +6,7 @@ import 'package:kiolog/shared/widgets/vitality_progress_bar.dart';
 import '../bloc/exercise_bloc.dart';
 import '../bloc/exercise_event.dart';
 import '../bloc/exercise_state.dart';
+import '../cubit/exercise_weight_unit_cubit.dart';
 
 class ExerciseSessionPage extends StatefulWidget {
   final int sessionId;
@@ -150,7 +151,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
                     : null,
               ),
               subtitle: Text('${item.sets} series × ${item.reps} reps'
-                  '${item.weightKg != null ? ' @ ${item.weightKg}kg' : ''}'),
+                  '${item.weightKg != null ? ' @ ${item.weightKg}${context.read<ExerciseWeightUnitCubit>().state}' : ''}'),
               onTap: isCompleted
                   ? null
                   : () {
@@ -413,30 +414,10 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
       ),
 
       // Tipo
-      isReadonly
-          ? Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(typeLabel, style: theme.textTheme.bodySmall),
-            )
-          : DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: row.setType == 'drop' ? 'drop' : row.setType,
-                isDense: true,
-                items: [
-                  const DropdownMenuItem(
-                      value: 'normal', child: Text('Normal')),
-                  const DropdownMenuItem(
-                      value: 'pyramid', child: Text('Pirámide')),
-                  if (row.setType == 'drop')
-                    const DropdownMenuItem(value: 'drop', child: Text('Drop')),
-                ],
-                onChanged: row.setType == 'drop'
-                    ? null
-                    : (v) {
-                        if (v != null) setState(() => row.setType = v);
-                      },
-              ),
-            ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(typeLabel, style: theme.textTheme.bodySmall),
+      ),
 
       // Reps
       Padding(
@@ -445,10 +426,12 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
           controller: row.repsCtrl,
           keyboardType: TextInputType.number,
           readOnly: isReadonly,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
           decoration: const InputDecoration(
             isDense: true,
             contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            border: OutlineInputBorder(),
           ),
           onChanged: (_) => setState(() {}),
         ),
@@ -461,10 +444,12 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
           controller: row.weightCtrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           readOnly: isReadonly,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
           decoration: const InputDecoration(
             isDense: true,
             contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            border: OutlineInputBorder(),
           ),
           onChanged: (_) => setState(() {}),
         ),
@@ -508,7 +493,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
             ...historical.map(
               (s) => Text(
                 '  Serie ${s.setNumber}: ${s.reps} reps'
-                '${s.weightKg != null ? ' @ ${s.weightKg}kg' : ''}',
+                '${s.weightKg != null ? ' @ ${s.weightKg}${context.read<ExerciseWeightUnitCubit>().state}' : ''}',
                 style: theme.textTheme.bodySmall,
               ),
             ),
@@ -543,12 +528,12 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
                           BorderSide(color: theme.colorScheme.outlineVariant),
                     ),
                   ),
-                  children: const [
-                    _TableHeader('#'),
-                    _TableHeader('Tipo'),
-                    _TableHeader('Reps'),
-                    _TableHeader('Peso kg'),
-                    _TableHeader(''),
+                  children: [
+                    const _TableHeader('#'),
+                    const _TableHeader('Tipo'),
+                    const _TableHeader('Reps'),
+                    _TableHeader('Peso ${context.read<ExerciseWeightUnitCubit>().state}'),
+                    const _TableHeader(''),
                   ],
                 ),
                 ...rows.map(
