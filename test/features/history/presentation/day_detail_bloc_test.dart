@@ -1,12 +1,22 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kiolog/core/dao/exercise_dao.dart';
+import 'package:kiolog/core/dao/nutrition_dao.dart';
+import 'package:kiolog/core/dao/water_sleep_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/history/presentation/bloc/day_detail_bloc.dart';
 import 'package:kiolog/features/history/presentation/bloc/day_detail_event.dart';
 import 'package:kiolog/features/history/presentation/bloc/day_detail_state.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/database_helper.dart';
+
+class MockWaterSleepDao extends Mock implements WaterSleepDao {}
+
+class MockNutritionDao extends Mock implements NutritionDao {}
+
+class MockExerciseDao extends Mock implements ExerciseDao {}
 
 void main() {
   late AppDatabase db;
@@ -90,6 +100,26 @@ void main() {
             .having((s) => s.status, 'status', DayDetailStatus.success)
             .having((s) => s.exerciseSessions.length, 'sessions', 1)
             .having((s) => s.hasExercise, 'hasExercise', true),
+      ],
+    );
+
+    blocTest<DayDetailBloc, DayDetailState>(
+      'emits [loading, failure] when DAO throws',
+      build: () {
+        final waterDao = MockWaterSleepDao();
+        final nutritionDao = MockNutritionDao();
+        final exerciseDao = MockExerciseDao();
+        when(() => waterDao.getDailyWaterLogs(any()))
+            .thenThrow(Exception('DB error'));
+        return DayDetailBloc(waterDao, nutritionDao, exerciseDao);
+      },
+      act: (bloc) => bloc.add(DayDetailLoaded(date: testDate)),
+      expect: () => [
+        isA<DayDetailState>()
+            .having((s) => s.status, 'status', DayDetailStatus.loading),
+        isA<DayDetailState>()
+            .having((s) => s.status, 'status', DayDetailStatus.failure)
+            .having((s) => s.error, 'error', isNotNull),
       ],
     );
   });

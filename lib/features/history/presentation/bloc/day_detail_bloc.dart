@@ -11,7 +11,7 @@ class DayDetailBloc extends Bloc<DayDetailEvent, DayDetailState> {
   final ExerciseDao _exerciseDao;
 
   DayDetailBloc(this._waterSleepDao, this._nutritionDao, this._exerciseDao)
-      : super(DayDetailState(date: DateTime.now())) {
+      : super(DayDetailState(date: DateTime.utc(0))) {
     on<DayDetailLoaded>(_onLoaded);
   }
 
@@ -42,6 +42,7 @@ class DayDetailBloc extends Bloc<DayDetailEvent, DayDetailState> {
         exerciseSessions: sessions,
         exerciseLog: exerciseLog,
         clearExerciseLog: exerciseLog == null,
+        error: null,
       ));
     } catch (e) {
       emit(state.copyWith(
