@@ -208,10 +208,15 @@ class _ExerciseViewState extends State<_ExerciseView> {
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
           final bloc = context.read<ExerciseBloc>();
+          final weightCubit =
+              context.read<ExerciseWeightUnitCubit>();
           Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => BlocProvider.value(
-                value: bloc,
+              builder: (_) => MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(value: bloc),
+                  BlocProvider.value(value: weightCubit),
+                ],
                 child: ExerciseSessionPage(sessionId: session.id),
               ),
             ),
