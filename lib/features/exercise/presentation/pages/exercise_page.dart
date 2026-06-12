@@ -270,6 +270,25 @@ class _ExerciseViewState extends State<_ExerciseView> {
           color: theme.colorScheme.tertiary,
         ),
         const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerRight,
+          child: BlocBuilder<ExerciseWeightUnitCubit, String>(
+            builder: (ctx, unit) => SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'lbs', label: Text('lbs')),
+                ButtonSegment(value: 'kg', label: Text('kg')),
+              ],
+              selected: {unit},
+              onSelectionChanged: (s) =>
+                  ctx.read<ExerciseWeightUnitCubit>().setUnit(s.first),
+              style: SegmentedButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         if (state.routines.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
