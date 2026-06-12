@@ -306,18 +306,19 @@ void main() {
       },
     );
 
+    final compliance = PlanComplianceStat(
+      planId: 1,
+      planName: 'Plan A',
+      periodStart: DateTime(2026, 3, 1),
+      totalSessions: 10,
+      weeksActive: 4,
+      weeklyAvg: 2.5,
+      compliancePercent: 63,
+    );
+
     blocTest<ExerciseBloc, ExerciseState>(
       'ExercisePlanHistoryLoaded emite estado con planHistory poblado',
       build: () {
-        final compliance = PlanComplianceStat(
-          planId: 1,
-          planName: 'Plan A',
-          periodStart: DateTime(2026, 3, 1),
-          totalSessions: 10,
-          weeksActive: 4,
-          weeklyAvg: 2.5,
-          compliancePercent: 63,
-        );
         when(() => repository.getPlanHistory())
             .thenAnswer((_) async => [compliance]);
         return ExerciseBloc(repository);
@@ -325,9 +326,9 @@ void main() {
       act: (bloc) => bloc.add(const ExercisePlanHistoryLoaded()),
       expect: () => [
         isA<ExerciseState>().having(
-          (s) => s.planHistory.length,
-          'planHistory length',
-          1,
+          (s) => s.planHistory,
+          'planHistory',
+          [compliance],
         ),
       ],
     );
@@ -341,15 +342,6 @@ void main() {
           createdAt: DateTime(2026, 1, 1),
           isActive: true,
         );
-        final compliance = PlanComplianceStat(
-          planId: 1,
-          planName: 'Plan A',
-          periodStart: DateTime(2026, 3, 1),
-          totalSessions: 10,
-          weeksActive: 4,
-          weeklyAvg: 2.5,
-          compliancePercent: 63,
-        );
         when(() => repository.activatePlan(any())).thenAnswer((_) async {});
         when(() => repository.getActivePlan()).thenAnswer((_) async => plan);
         when(() => repository.getAllPlans()).thenAnswer((_) async => [plan]);
@@ -360,9 +352,9 @@ void main() {
       act: (bloc) => bloc.add(const ExercisePlanActivated(planId: 1)),
       expect: () => [
         isA<ExerciseState>().having(
-          (s) => s.planHistory.length,
-          'planHistory length',
-          1,
+          (s) => s.planHistory,
+          'planHistory',
+          [compliance],
         ),
       ],
     );

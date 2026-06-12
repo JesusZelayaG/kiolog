@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/exercise/domain/models/independent_exercise_log.dart';
+import 'package:kiolog/features/exercise/domain/models/plan_compliance_stat.dart';
 import 'package:kiolog/features/exercise/domain/models/weekly_stat.dart';
 import '../../domain/repositories/exercise_repository.dart';
 import 'exercise_event.dart';
@@ -120,10 +121,16 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
       ExercisePlanActivated event, Emitter<ExerciseState> emit) async {
     try {
       await _repository.activatePlan(event.planId);
-      final plan = await _repository.getActivePlan();
-      final plans = await _repository.getAllPlans();
-      final history = await _repository.getPlanHistory();
-      emit(state.copyWith(activePlan: plan, allPlans: plans, planHistory: history));
+      final results = await Future.wait([
+        _repository.getActivePlan(),
+        _repository.getAllPlans(),
+        _repository.getPlanHistory(),
+      ]);
+      emit(state.copyWith(
+        activePlan: results[0] as ExercisePlan?,
+        allPlans: results[1] as List<ExercisePlan>,
+        planHistory: results[2] as List<PlanComplianceStat>,
+      ));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
     }
