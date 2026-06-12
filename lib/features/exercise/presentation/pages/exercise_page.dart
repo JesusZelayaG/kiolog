@@ -5,9 +5,12 @@ import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
 import 'package:kiolog/shared/widgets/inactive_module_page.dart';
+import 'package:kiolog/shared/widgets/gradient_icon_button.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 import 'package:kiolog/shared/widgets/vitality_progress_bar.dart';
 import '../../../../core/di/injection.dart';
+import '../../data/services/exercise_weight_unit_service.dart';
+import '../cubit/exercise_weight_unit_cubit.dart';
 import '../../domain/models/independent_exercise_log.dart';
 import '../../domain/repositories/exercise_repository.dart';
 import '../bloc/exercise_bloc.dart';
@@ -27,9 +30,18 @@ class ExercisePage extends StatelessWidget {
         if (!modulesState.isEnabled(AppModule.exercise)) {
           return const InactiveModulePage(module: AppModule.exercise);
         }
-        return BlocProvider(
-          create: (_) => ExerciseBloc(getIt<ExerciseRepository>())
-            ..add(ExerciseLoaded(date: DateTime.now())),
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) => ExerciseBloc(getIt<ExerciseRepository>())
+                ..add(ExerciseLoaded(date: DateTime.now())),
+            ),
+            BlocProvider(
+              create: (_) => ExerciseWeightUnitCubit(
+                  getIt<ExerciseWeightUnitService>())
+                ..init(),
+            ),
+          ],
           child: const _ExerciseView(),
         );
       },
@@ -54,22 +66,27 @@ class _ExerciseViewState extends State<_ExerciseView> {
       appBar: AppBar(
         title: const Text('Ejercicio'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
+          GradientIconButton(
+            icon: Icons.bar_chart,
             onPressed: () {
               final bloc = context.read<ExerciseBloc>();
+              final weightCubit =
+                  context.read<ExerciseWeightUnitCubit>();
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => BlocProvider.value(
-                    value: bloc,
+                  builder: (_) => MultiBlocProvider(
+                    providers: [
+                      BlocProvider.value(value: bloc),
+                      BlocProvider.value(value: weightCubit),
+                    ],
                     child: const ExerciseProgressPage(),
                   ),
                 ),
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.history),
+          GradientIconButton(
+            icon: Icons.history,
             onPressed: () => _showPlansDialog(context),
           ),
         ],
@@ -87,10 +104,15 @@ class _ExerciseViewState extends State<_ExerciseView> {
           // Navigate to the session page when a new session becomes active.
           if (state.hasActiveSession) {
             final bloc = context.read<ExerciseBloc>();
+            final weightCubit =
+                context.read<ExerciseWeightUnitCubit>();
             Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => BlocProvider.value(
-                  value: bloc,
+                builder: (_) => MultiBlocProvider(
+                  providers: [
+                    BlocProvider.value(value: bloc),
+                    BlocProvider.value(value: weightCubit),
+                  ],
                   child: ExerciseSessionPage(
                     sessionId: state.activeSession!.id,
                   ),
@@ -366,7 +388,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
           ),
           if (isExpanded) ...[
             const Divider(height: 1),
-            ...items.map((item) => _buildItemRow(context, item, routine.id)),
+            ...items.map((item) =>
+                _buildItemRow(context, item, routine.id, state.planWeightUnit)),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
               child: Align(
@@ -388,16 +411,17 @@ class _ExerciseViewState extends State<_ExerciseView> {
     );
   }
 
-  Widget _buildItemRow(
-      BuildContext context, ExerciseRoutineItem item, int routineId) {
+  Widget _buildItemRow(BuildContext context, ExerciseRoutineItem item,
+      int routineId, String weightUnit) {
     final theme = Theme.of(context);
-    final weightStr = item.weightKg != null ? ' @ ${item.weightKg}kg' : '';
+    final weightStr =
+        item.weightKg != null ? ' @ ${item.weightKg}$weightUnit' : '';
     return ListTile(
       dense: true,
       contentPadding: const EdgeInsets.only(left: 16, right: 4),
       title: Text(item.exerciseName, style: theme.textTheme.bodyMedium),
       subtitle: Text(
-        '${item.sets}×${item.reps}$weightStr · ${item.setType}',
+        '${item.sets}×${item.reps}$weightStr',
         style: theme.textTheme.bodySmall
             ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
       ),
@@ -428,6 +452,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
     ExerciseRoutineItem? item,
     required int routineId,
   }) {
+    final weightUnit = state.planWeightUnit;
     final nameCtrl = TextEditingController(text: item?.exerciseName ?? '');
     final setsCtrl =
         TextEditingController(text: item != null ? '${item.sets}' : '');
@@ -435,225 +460,93 @@ class _ExerciseViewState extends State<_ExerciseView> {
         TextEditingController(text: item != null ? '${item.reps}' : '');
     final weightCtrl = TextEditingController(
         text: item?.weightKg != null ? '${item!.weightKg}' : '');
-    String selectedType = item?.setType ?? 'normal';
-
-    List<(TextEditingController, TextEditingController)> setRows = [];
-
-    void rebuildRows(int count, StateSetter setInner) {
-      setInner(() {
-        while (setRows.length < count) {
-          setRows.add((TextEditingController(), TextEditingController()));
-        }
-        while (setRows.length > count) {
-          setRows.last.$1.dispose();
-          setRows.last.$2.dispose();
-          setRows.removeLast();
-        }
-      });
-    }
 
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (ctx, setInner) {
-          final isNormal = selectedType == 'normal';
-          final setsCount = int.tryParse(setsCtrl.text) ?? 0;
-
-          return AlertDialog(
-            title:
-                Text(item == null ? 'Agregar ejercicio' : 'Editar ejercicio'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(item == null ? 'Agregar ejercicio' : 'Editar ejercicio'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Nombre *'),
+                autofocus: item == null,
+              ),
+              const SizedBox(height: 8),
+              Row(
                 children: [
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Nombre *'),
-                    autofocus: item == null,
+                  Expanded(
+                    child: TextField(
+                      controller: setsCtrl,
+                      decoration:
+                          const InputDecoration(labelText: 'Series *'),
+                      keyboardType: TextInputType.number,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: setsCtrl,
-                          decoration:
-                              const InputDecoration(labelText: 'Series *'),
-                          keyboardType: TextInputType.number,
-                          onChanged: (v) {
-                            if (!isNormal) {
-                              rebuildRows(int.tryParse(v) ?? 0, setInner);
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: repsCtrl,
-                          decoration:
-                              const InputDecoration(labelText: 'Reps *'),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: weightCtrl,
-                          decoration: const InputDecoration(labelText: 'kg'),
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: repsCtrl,
+                      decoration: const InputDecoration(labelText: 'Reps *'),
+                      keyboardType: TextInputType.number,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: selectedType,
-                    decoration:
-                        const InputDecoration(labelText: 'Tipo de serie'),
-                    items: const [
-                      DropdownMenuItem(value: 'normal', child: Text('Normal')),
-                      DropdownMenuItem(
-                          value: 'pyramid', child: Text('Pirámide')),
-                      DropdownMenuItem(
-                          value: 'pyramid_drop',
-                          child: Text('Pirámide + Drop')),
-                    ],
-                    onChanged: (v) {
-                      if (v == null) return;
-                      setInner(() => selectedType = v);
-                      if (v != 'normal') {
-                        rebuildRows(setsCount, setInner);
-                      } else {
-                        setInner(() {
-                          for (final r in setRows) {
-                            r.$1.dispose();
-                            r.$2.dispose();
-                          }
-                          setRows = [];
-                        });
-                      }
-                    },
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: weightCtrl,
+                      decoration: InputDecoration(labelText: weightUnit),
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                    ),
                   ),
-                  if (!isNormal && setRows.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text('Detalle por serie',
-                        style: Theme.of(ctx).textTheme.labelSmall),
-                    const SizedBox(height: 4),
-                    ...List.generate(setRows.length, (i) {
-                      final (rCtrl, wCtrl) = setRows[i];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                                width: 24,
-                                child: Text('${i + 1}',
-                                    style: Theme.of(ctx).textTheme.bodySmall)),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: rCtrl,
-                                decoration: const InputDecoration(
-                                    labelText: 'Reps', isDense: true),
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: wCtrl,
-                                decoration: const InputDecoration(
-                                    labelText: 'kg', isDense: true),
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
                 ],
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  for (final r in setRows) {
-                    r.$1.dispose();
-                    r.$2.dispose();
-                  }
-                  Navigator.pop(dialogContext);
-                },
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final name = nameCtrl.text.trim();
-                  final sets = int.tryParse(setsCtrl.text);
-                  final reps = int.tryParse(repsCtrl.text);
-                  if (name.isEmpty || sets == null || reps == null) return;
-                  final weight =
-                      double.tryParse(weightCtrl.text.replaceAll(',', '.'));
-
-                  final defs = setRows.isNotEmpty
-                      ? List.generate(setRows.length, (i) {
-                          final (rCtrl, wCtrl) = setRows[i];
-                          return (
-                            setNumber: i + 1,
-                            dropOfSetNumber: null as int?,
-                            reps: int.tryParse(rCtrl.text) ?? reps,
-                            weightKg: double.tryParse(
-                                wCtrl.text.replaceAll(',', '.')),
-                          );
-                        })
-                      : <({
-                          int setNumber,
-                          int? dropOfSetNumber,
-                          int reps,
-                          double? weightKg
-                        })>[];
-
-                  if (item == null) {
-                    context.read<ExerciseBloc>().add(
-                          ExerciseRoutineItemAdded(
-                            routineId: routineId,
-                            exerciseName: name,
-                            sets: sets,
-                            reps: reps,
-                            weightKg: weight,
-                            setType: selectedType,
-                            setDefs: defs,
-                          ),
-                        );
-                  } else {
-                    context.read<ExerciseBloc>().add(
-                          ExerciseRoutineItemUpdated(
-                            itemId: item.id,
-                            exerciseName: name,
-                            sets: sets,
-                            reps: reps,
-                            weightKg: weight,
-                            setType: selectedType,
-                            setDefs: defs.isEmpty ? null : defs,
-                          ),
-                        );
-                  }
-                  for (final r in setRows) {
-                    r.$1.dispose();
-                    r.$2.dispose();
-                  }
-                  Navigator.pop(dialogContext);
-                },
-                child: const Text('Guardar'),
-              ),
             ],
-          );
-        },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = nameCtrl.text.trim();
+              final sets = int.tryParse(setsCtrl.text);
+              final reps = int.tryParse(repsCtrl.text);
+              if (name.isEmpty || sets == null || reps == null) return;
+              final weight =
+                  double.tryParse(weightCtrl.text.replaceAll(',', '.'));
+
+              if (item == null) {
+                context.read<ExerciseBloc>().add(
+                      ExerciseRoutineItemAdded(
+                        routineId: routineId,
+                        exerciseName: name,
+                        sets: sets,
+                        reps: reps,
+                        weightKg: weight,
+                      ),
+                    );
+              } else {
+                context.read<ExerciseBloc>().add(
+                      ExerciseRoutineItemUpdated(
+                        itemId: item.id,
+                        exerciseName: name,
+                        sets: sets,
+                        reps: reps,
+                        weightKg: weight,
+                      ),
+                    );
+              }
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
       ),
     );
   }
@@ -860,7 +753,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
 
   // ── Ejercicio libre ──────────────────────────────────────────────────────
 
-  Widget _buildIndependentSection(BuildContext context, ExerciseState state) {
+  Widget _buildIndependentSection(
+      BuildContext context, ExerciseState state) {
     final theme = Theme.of(context);
 
     return Column(
@@ -879,21 +773,24 @@ class _ExerciseViewState extends State<_ExerciseView> {
         ),
         const SizedBox(height: 10),
         ...state.weeklyIndependentLogs
-            .map((log) => _buildIndependentItem(context, log)),
+            .map((log) =>
+                _buildIndependentItem(context, log, state.planWeightUnit)),
         _buildDashedAddButton(
           context: context,
           label: '＋ Registrar ejercicio libre',
           color: theme.colorScheme.secondary,
-          onTap: () => _showIndependentExerciseDialog(context),
+          onTap: () =>
+              _showIndependentExerciseDialog(context, state.planWeightUnit),
         ),
       ],
     );
   }
 
-  Widget _buildIndependentItem(
-      BuildContext context, IndependentExerciseLog log) {
+  Widget _buildIndependentItem(BuildContext context, IndependentExerciseLog log,
+      String weightUnit) {
     final theme = Theme.of(context);
-    final weightStr = log.weightKg != null ? ' @ ${log.weightKg}kg' : '';
+    final weightStr =
+        log.weightKg != null ? ' @ ${log.weightKg}$weightUnit' : '';
     final weekday = _weekdayName(log.date.weekday);
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -915,7 +812,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
     );
   }
 
-  void _showIndependentExerciseDialog(BuildContext context) {
+  void _showIndependentExerciseDialog(
+      BuildContext context, String weightUnit) {
     final nameCtrl = TextEditingController();
     final setsCtrl = TextEditingController();
     final repsCtrl = TextEditingController();
@@ -955,7 +853,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                 Expanded(
                   child: TextField(
                     controller: weightCtrl,
-                    decoration: const InputDecoration(labelText: 'kg'),
+                    decoration: InputDecoration(labelText: weightUnit),
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                   ),
