@@ -15,6 +15,7 @@ class PdfReportService {
   static final _muted = PdfColor.fromHex('#6B7280');
 
   static Future<File> generate(ReportData data) async {
+    final now = DateTime.now();
     final dateFmt = DateFormat.yMMMd('es');
     final doc = pw.Document();
 
@@ -45,16 +46,16 @@ class PdfReportService {
             pw.SizedBox(height: 16),
             _sectionHeading('MEDIDAS'),
             pw.SizedBox(height: 6),
-            ..._measuresRows(data),
+            ..._measuresRows(data, dateFmt),
           ],
           pw.SizedBox(height: 24),
-          _footer(dateFmt),
+          _footer(dateFmt, now),
         ],
       ),
     );
 
     final dir = await getTemporaryDirectory();
-    final dateStr = DateFormat('yyyyMMdd').format(DateTime.now());
+    final dateStr = DateFormat('yyyyMMdd').format(now);
     final file = File('${dir.path}/kiolog_reporte_$dateStr.pdf');
     await file.writeAsBytes(await doc.save());
     return file;
@@ -313,8 +314,7 @@ class PdfReportService {
 
   // ── Measures rows ─────────────────────────────────────────────────────────
 
-  static List<pw.Widget> _measuresRows(ReportData data) {
-    final dateFmt = DateFormat.yMMMd('es');
+  static List<pw.Widget> _measuresRows(ReportData data, DateFormat fmt) {
     final widgets = <pw.Widget>[];
 
     if (data.weightLogs.isNotEmpty) {
@@ -335,7 +335,7 @@ class PdfReportService {
               pw.SizedBox(
                 width: 130,
                 child: pw.Text(
-                  dateFmt.format(log.date),
+                  fmt.format(log.date),
                   style: pw.TextStyle(fontSize: 10, color: _muted),
                 ),
               ),
@@ -357,7 +357,7 @@ class PdfReportService {
       final m = data.latestMeasurement!;
       widgets.add(pw.SizedBox(height: 8));
       widgets.add(pw.Text(
-        'Última medición (${dateFmt.format(m.date)})',
+        'Última medición (${fmt.format(m.date)})',
         style: pw.TextStyle(
           fontSize: 11,
           fontWeight: pw.FontWeight.bold,
@@ -383,9 +383,9 @@ class PdfReportService {
 
   // ── Footer ────────────────────────────────────────────────────────────────
 
-  static pw.Widget _footer(DateFormat fmt) {
+  static pw.Widget _footer(DateFormat fmt, DateTime now) {
     return pw.Text(
-      'Generado por Kiolog · ${fmt.format(DateTime.now())}',
+      'Generado por Kiolog · ${fmt.format(now)}',
       style: pw.TextStyle(fontSize: 9, color: _muted),
     );
   }
