@@ -22,15 +22,20 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
   // ── Plans ────────────────────────────────────────────────────────────────
 
   Future<int> insertExercisePlan(ExercisePlansCompanion plan) =>
-      into(exercisePlans).insert(plan.copyWith(
-        createdAt: plan.createdAt.present
-            ? plan.createdAt
-            : Value(DateTime.now().toUtc()),
-        isActive: const Value(true),
-        periodStart: plan.periodStart.present
-            ? plan.periodStart
-            : Value(DateTime.now().toUtc()),
-      ));
+      db.transaction(() async {
+        final now = DateTime.now().toUtc();
+        // Close any currently active plan
+        await (update(exercisePlans)..where((t) => t.isActive.equals(true)))
+            .write(ExercisePlansCompanion(
+          isActive: const Value(false),
+          periodEnd: Value(now),
+        ));
+        return into(exercisePlans).insert(plan.copyWith(
+          createdAt: plan.createdAt.present ? plan.createdAt : Value(now),
+          isActive: const Value(true),
+          periodStart: plan.periodStart.present ? plan.periodStart : Value(now),
+        ));
+      });
 
   Future<List<ExercisePlan>> getExercisePlans() =>
       (select(exercisePlans)

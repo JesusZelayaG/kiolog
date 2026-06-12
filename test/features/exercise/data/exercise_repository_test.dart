@@ -2,7 +2,6 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/exercise/data/repositories/exercise_repository_impl.dart';
-import 'package:kiolog/features/exercise/domain/models/plan_compliance_stat.dart';
 
 import '../../../helpers/database_helper.dart';
 
