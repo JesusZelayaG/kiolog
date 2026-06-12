@@ -72,7 +72,7 @@ class _HistoryView extends StatelessWidget {
                 ),
                 Expanded(
                   child: GridView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 7,
@@ -86,19 +86,8 @@ class _HistoryView extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _LegendDot(color: Colors.blue, label: 'Agua'),
-                      const SizedBox(width: 12),
-                      _LegendDot(color: Colors.indigo, label: 'Sueño'),
-                      const SizedBox(width: 12),
-                      _LegendDot(color: Colors.orange, label: 'Comida'),
-                      const SizedBox(width: 12),
-                      _LegendDot(color: Colors.red, label: 'Ejercicio'),
-                    ],
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: _ComplianceSection(compliance: state.compliance),
                 ),
               ],
             ),
@@ -119,35 +108,40 @@ class _DayCell extends StatelessWidget {
     final theme = Theme.of(context);
     final count = day.completedCount;
 
-    return Card(
-      margin: const EdgeInsets.all(2),
-      color: count == 4
-          ? theme.colorScheme.primaryContainer
-          : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '${day.date.day}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onTap: () {
+        final dateStr = DateFormat('yyyy-MM-dd').format(day.date);
+        context.push('/history/day/$dateStr');
+      },
+      child: Card(
+        margin: const EdgeInsets.all(2),
+        color: count == 4
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '${day.date.day}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 2,
-              runSpacing: 2,
-              alignment: WrapAlignment.center,
-              children: [
-                if (day.hasWater) const _MiniDot(color: Colors.blue),
-                if (day.hasSleep) const _MiniDot(color: Colors.indigo),
-                if (day.hasMeals) const _MiniDot(color: Colors.orange),
-                if (day.hasExercise) const _MiniDot(color: Colors.red),
-              ],
-            ),
-          ],
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 2,
+                runSpacing: 2,
+                alignment: WrapAlignment.center,
+                children: [
+                  if (day.hasWater) const _MiniDot(color: Color(0xFF3B82F6)),
+                  if (day.hasMeals) const _MiniDot(color: Color(0xFFF97316)),
+                  if (day.hasExercise) const _MiniDot(color: Color(0xFFEF4444)),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -172,24 +166,123 @@ class _MiniDot extends StatelessWidget {
   }
 }
 
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
+class _ComplianceSection extends StatelessWidget {
+  final MonthCompliance compliance;
 
-  const _LegendDot({required this.color, required this.label});
+  const _ComplianceSection({required this.compliance});
 
   @override
   Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Cumplimiento del mes',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    letterSpacing: 0.5,
+                  ),
+            ),
+            const SizedBox(height: 10),
+            _SegmentRow(
+              icon: '💧',
+              iconBackground: const Color(0xFF1E3A5F),
+              label: 'Agua',
+              value: compliance.water,
+              barColor: const Color(0xFF3B82F6),
+              valueColor: const Color(0xFF60A5FA),
+            ),
+            const SizedBox(height: 8),
+            _SegmentRow(
+              icon: '🍽️',
+              iconBackground: const Color(0xFF3D2000),
+              label: 'Comida',
+              value: compliance.meals,
+              barColor: const Color(0xFFF97316),
+              valueColor: const Color(0xFFFB923C),
+            ),
+            const SizedBox(height: 8),
+            _SegmentRow(
+              icon: '🏋️',
+              iconBackground: const Color(0xFF3D0A0A),
+              label: 'Ejercicio',
+              value: compliance.exercise,
+              barColor: const Color(0xFFEF4444),
+              valueColor: const Color(0xFFF87171),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SegmentRow extends StatelessWidget {
+  final String icon;
+  final Color iconBackground;
+  final String label;
+  final double value;
+  final Color barColor;
+  final Color valueColor;
+
+  const _SegmentRow({
+    required this.icon,
+    required this.iconBackground,
+    required this.label,
+    required this.value,
+    required this.barColor,
+    required this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final pct = (value * 100).round();
+
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: iconBackground,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Center(
+            child: Text(icon, style: const TextStyle(fontSize: 13)),
+          ),
         ),
-        const SizedBox(width: 4),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 60,
+          child: Text(label, style: theme.textTheme.bodySmall),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: LinearProgressIndicator(
+              value: value,
+              minHeight: 6,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 32,
+          child: Text(
+            '$pct%',
+            textAlign: TextAlign.right,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: valueColor,
+            ),
+          ),
+        ),
       ],
     );
   }
