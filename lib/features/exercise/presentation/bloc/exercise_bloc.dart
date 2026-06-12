@@ -109,9 +109,10 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
 
   Future<void> _onPlanHistoryLoaded(
       ExercisePlanHistoryLoaded event, Emitter<ExerciseState> emit) async {
+    emit(state.copyWith(status: ExerciseStatus.loading));
     try {
       final history = await _repository.getPlanHistory();
-      emit(state.copyWith(planHistory: history));
+      emit(state.copyWith(status: ExerciseStatus.success, planHistory: history));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
     }

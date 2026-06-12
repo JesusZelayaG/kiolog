@@ -325,6 +325,7 @@ void main() {
       },
       act: (bloc) => bloc.add(const ExercisePlanHistoryLoaded()),
       expect: () => [
+        const ExerciseState(status: ExerciseStatus.loading),
         isA<ExerciseState>().having(
           (s) => s.planHistory,
           'planHistory',

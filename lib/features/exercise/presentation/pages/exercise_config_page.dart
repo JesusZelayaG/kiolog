@@ -79,44 +79,47 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
   Future<void> _applyTemplate(int planId) async {
     if (_applyingTemplate) return;
     setState(() => _applyingTemplate = true);
-    final repo = getIt<ExerciseRepository>();
-    final routines = await repo.getRoutinesForPlan(planId);
+    try {
+      final repo = getIt<ExerciseRepository>();
+      final routines = await repo.getRoutinesForPlan(planId);
 
-    final newDays = <_RoutineDayLocal>[];
-    for (final routine in routines) {
-      final items = await repo.getRoutineItemsOrdered(routine.id);
-      final day = _RoutineDayLocal();
-      day.nameController.text = routine.routineName;
-      for (final item in items) {
-        final entry = _ExerciseEntryLocal();
-        entry.name.text = item.exerciseName;
-        entry.sets.text = '${item.sets}';
-        entry.reps.text = '${item.reps}';
-        if (item.weightKg != null) entry.weight.text = '${item.weightKg}';
-        day.exercises.add(entry);
+      final newDays = <_RoutineDayLocal>[];
+      for (final routine in routines) {
+        final items = await repo.getRoutineItemsOrdered(routine.id);
+        final day = _RoutineDayLocal();
+        day.nameController.text = routine.routineName;
+        for (final item in items) {
+          final entry = _ExerciseEntryLocal();
+          entry.name.text = item.exerciseName;
+          entry.sets.text = '${item.sets}';
+          entry.reps.text = '${item.reps}';
+          if (item.weightKg != null) entry.weight.text = '${item.weightKg}';
+          day.exercises.add(entry);
+        }
+        newDays.add(day);
       }
-      newDays.add(day);
-    }
 
-    // Dispose old day controllers before replacing
-    for (final day in _routineDays) {
-      day.nameController.dispose();
-      for (final e in day.exercises) {
-        e.name.dispose();
-        e.sets.dispose();
-        e.reps.dispose();
-        e.weight.dispose();
+      // Dispose old day controllers before replacing
+      for (final day in _routineDays) {
+        day.nameController.dispose();
+        for (final e in day.exercises) {
+          e.name.dispose();
+          e.sets.dispose();
+          e.reps.dispose();
+          e.weight.dispose();
+        }
       }
-    }
 
-    if (mounted) {
-      setState(() {
-        _routineDays
-          ..clear()
-          ..addAll(newDays);
-        _planNameController.clear(); // user types the new name
-        _applyingTemplate = false;
-      });
+      if (mounted) {
+        setState(() {
+          _routineDays
+            ..clear()
+            ..addAll(newDays);
+          _planNameController.clear();
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _applyingTemplate = false);
     }
   }
 
