@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:kiolog/core/dao/exercise_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import '../../domain/models/independent_exercise_log.dart';
+import '../../domain/models/plan_compliance_stat.dart';
 import '../../domain/models/weekly_stat.dart';
 import '../../domain/repositories/exercise_repository.dart';
 
@@ -306,6 +307,56 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
             .length,
       ));
     }
+    return stats;
+  }
+
+  @override
+  Future<List<PlanComplianceStat>> getPlanHistory() async {
+    final plans = await _dao.getExercisePlans();
+    final config = await _dao.getExerciseConfig();
+    final goal = config?.weeklyRoutineDaysGoal ?? 4;
+    final stats = <PlanComplianceStat>[];
+
+    for (final plan in plans) {
+      final periodStart = plan.periodStart ?? plan.createdAt;
+      final periodEnd = plan.periodEnd ?? DateTime.now().toUtc();
+
+      final routines = await _dao.getRoutinesForPlan(plan.id);
+      final routineIds = routines.map((r) => r.id).toList();
+
+      final sessions = await _dao.getCompletedSessionsInPeriod(
+        routineIds,
+        periodStart,
+        periodEnd,
+      );
+
+      // Count unique days (avoid duplicate sessions on the same day)
+      final uniqueDays = sessions
+          .map((s) {
+            final d = s.date.toUtc();
+            return DateTime.utc(d.year, d.month, d.day);
+          })
+          .toSet()
+          .length;
+
+      final durationDays = periodEnd.difference(periodStart).inDays;
+      final weeksActive = ((durationDays / 7).ceil()).clamp(1, 9999);
+      final weeklyAvg = uniqueDays / weeksActive;
+      final compliancePercent =
+          ((uniqueDays / (goal * weeksActive)) * 100).round().clamp(0, 100);
+
+      stats.add(PlanComplianceStat(
+        planId: plan.id,
+        planName: plan.name,
+        periodStart: periodStart,
+        periodEnd: plan.periodEnd,
+        totalSessions: uniqueDays,
+        weeksActive: weeksActive,
+        weeklyAvg: weeklyAvg,
+        compliancePercent: compliancePercent,
+      ));
+    }
+
     return stats;
   }
 }

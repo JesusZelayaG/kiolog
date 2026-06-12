@@ -1,5 +1,6 @@
 import 'package:kiolog/core/database/app_database.dart';
 import '../models/independent_exercise_log.dart';
+import '../models/plan_compliance_stat.dart';
 import '../models/weekly_stat.dart';
 
 abstract class ExerciseRepository {
@@ -103,4 +104,5 @@ abstract class ExerciseRepository {
 
   // ── Progress ───────────────────────────────────────────────────────────
   Future<List<WeeklyStat>> getWeeklyStats({int weeksBack = 8});
+  Future<List<PlanComplianceStat>> getPlanHistory();
 }

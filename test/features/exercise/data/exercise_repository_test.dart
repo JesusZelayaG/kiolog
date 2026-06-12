@@ -1,6 +1,8 @@
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/exercise/data/repositories/exercise_repository_impl.dart';
+import 'package:kiolog/features/exercise/domain/models/plan_compliance_stat.dart';
 
 import '../../../helpers/database_helper.dart';
 
@@ -233,6 +235,47 @@ void main() {
         expect(config?.weeklyRoutineDaysGoal, 5);
         expect(config?.weeklyCardioDaysGoal, 4);
         expect(config?.cardioMinutesGoal, 45);
+      });
+    });
+
+    group('plan history', () {
+      test('getPlanHistory devuelve stats correctos para plan con sesiones',
+          () async {
+        // Create a plan
+        final planId = await db.exerciseDao.insertExercisePlan(
+          ExercisePlansCompanion(
+            name: const Value('Plan A'),
+            periodStart: Value(DateTime.utc(2026, 3, 1)),
+          ),
+        );
+        // Create a routine under this plan
+        final routineId = await db.exerciseDao.insertExerciseRoutine(
+          ExerciseRoutinesCompanion(
+            planId: Value(planId),
+            dayNumber: const Value(1),
+            routineName: const Value('Pecho'),
+          ),
+        );
+        // Insert 3 completed sessions on different days
+        for (int i = 1; i <= 3; i++) {
+          final date = DateTime.utc(2026, 3, i + 1);
+          await db.exerciseDao.insertExerciseSession(
+            ExerciseSessionLogsCompanion(
+              date: Value(date),
+              routineId: Value(routineId),
+              gymArrivedAt: Value(date),
+              gymLeftAt: Value(date.add(const Duration(hours: 1))),
+            ),
+          );
+        }
+
+        final history = await repository.getPlanHistory();
+
+        expect(history, hasLength(1));
+        expect(history.first.planId, planId);
+        expect(history.first.planName, 'Plan A');
+        expect(history.first.totalSessions, 3);
+        expect(history.first.compliancePercent, inInclusiveRange(0, 100));
       });
     });
 
