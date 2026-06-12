@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/exercise/domain/models/independent_exercise_log.dart';
+import 'package:kiolog/features/exercise/domain/models/plan_compliance_stat.dart';
 import 'package:kiolog/features/exercise/domain/models/weekly_stat.dart';
 
 enum ExerciseStatus { initial, loading, success, failure }
@@ -25,6 +26,7 @@ class ExerciseState extends Equatable {
   final List<WeeklyStat> weeklyStats;
   final List<ExerciseSessionLog> completedRoutineSessionsThisWeek;
   final List<IndependentExerciseLog> weeklyIndependentLogs;
+  final List<PlanComplianceStat> planHistory;
   final String? error;
 
   const ExerciseState({
@@ -47,6 +49,7 @@ class ExerciseState extends Equatable {
     this.weeklyStats = const [],
     this.completedRoutineSessionsThisWeek = const [],
     this.weeklyIndependentLogs = const [],
+    this.planHistory = const [],
     this.error,
   });
 
@@ -91,6 +94,7 @@ class ExerciseState extends Equatable {
     List<WeeklyStat>? weeklyStats,
     List<ExerciseSessionLog>? completedRoutineSessionsThisWeek,
     List<IndependentExerciseLog>? weeklyIndependentLogs,
+    List<PlanComplianceStat>? planHistory,
     String? error,
   }) =>
       ExerciseState(
@@ -117,6 +121,7 @@ class ExerciseState extends Equatable {
             completedRoutineSessionsThisWeek ?? this.completedRoutineSessionsThisWeek,
         weeklyIndependentLogs:
             weeklyIndependentLogs ?? this.weeklyIndependentLogs,
+        planHistory: planHistory ?? this.planHistory,
         error: error,
       );
 
@@ -141,6 +146,7 @@ class ExerciseState extends Equatable {
         weeklyStats,
         completedRoutineSessionsThisWeek,
         weeklyIndependentLogs,
+        planHistory,
         error,
       ];
 }

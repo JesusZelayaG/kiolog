@@ -20,6 +20,10 @@ class ExercisePlanLoaded extends ExerciseEvent {
   const ExercisePlanLoaded();
 }
 
+class ExercisePlanHistoryLoaded extends ExerciseEvent {
+  const ExercisePlanHistoryLoaded();
+}
+
 // ── Planes ───────────────────────────────────────────────────────────────────
 
 class ExercisePlanActivated extends ExerciseEvent {

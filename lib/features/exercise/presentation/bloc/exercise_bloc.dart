@@ -12,6 +12,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
   ExerciseBloc(this._repository) : super(const ExerciseState()) {
     on<ExerciseLoaded>(_onLoaded);
     on<ExercisePlanLoaded>(_onPlanLoaded);
+    on<ExercisePlanHistoryLoaded>(_onPlanHistoryLoaded);
     on<ExercisePlanActivated>(_onPlanActivated);
     on<ExercisePlanCreated>(_onPlanCreated);
     on<ExerciseRoutineAdded>(_onRoutineAdded);
@@ -105,13 +106,24 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
     }
   }
 
+  Future<void> _onPlanHistoryLoaded(
+      ExercisePlanHistoryLoaded event, Emitter<ExerciseState> emit) async {
+    try {
+      final history = await _repository.getPlanHistory();
+      emit(state.copyWith(planHistory: history));
+    } catch (e) {
+      emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
+    }
+  }
+
   Future<void> _onPlanActivated(
       ExercisePlanActivated event, Emitter<ExerciseState> emit) async {
     try {
       await _repository.activatePlan(event.planId);
       final plan = await _repository.getActivePlan();
       final plans = await _repository.getAllPlans();
-      emit(state.copyWith(activePlan: plan, allPlans: plans));
+      final history = await _repository.getPlanHistory();
+      emit(state.copyWith(activePlan: plan, allPlans: plans, planHistory: history));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
     }
