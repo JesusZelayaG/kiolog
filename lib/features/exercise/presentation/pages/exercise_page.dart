@@ -16,6 +16,7 @@ import '../../domain/repositories/exercise_repository.dart';
 import '../bloc/exercise_bloc.dart';
 import '../bloc/exercise_event.dart';
 import '../bloc/exercise_state.dart';
+import 'package:kiolog/shared/widgets/kiolog_app_bar.dart';
 import 'exercise_config_page.dart';
 import 'exercise_session_page.dart';
 import 'exercise_progress_page.dart';
@@ -63,8 +64,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ejercicio'),
+      appBar: KiologAppBar(
+        title: 'Ejercicio',
         actions: [
           GradientIconButton(
             icon: Icons.bar_chart,

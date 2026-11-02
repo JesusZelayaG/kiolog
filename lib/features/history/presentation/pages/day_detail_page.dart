@@ -66,7 +66,7 @@ class _DayDetailView extends StatelessWidget {
               ),
               _SegmentCard(
                 icon: '💧',
-                iconBackground: const Color(0xFF1E3A5F),
+                iconBackground: const Color(0xFFD7EFE6),
                 title: 'Agua',
                 hasData: state.hasWater,
                 child: _WaterContent(state: state),
@@ -74,7 +74,7 @@ class _DayDetailView extends StatelessWidget {
               const SizedBox(height: 8),
               _SegmentCard(
                 icon: '🍽️',
-                iconBackground: const Color(0xFF3D2000),
+                iconBackground: const Color(0xFFFDEFE3),
                 title: 'Nutrición',
                 hasData: state.hasMeals,
                 child: _NutritionContent(state: state),
@@ -82,7 +82,7 @@ class _DayDetailView extends StatelessWidget {
               const SizedBox(height: 8),
               _SegmentCard(
                 icon: '🏋️',
-                iconBackground: const Color(0xFF3D0A0A),
+                iconBackground: const Color(0xFFFFDAD2),
                 title: 'Ejercicio',
                 hasData: state.hasExercise,
                 child: _ExerciseContent(state: state),
@@ -146,7 +146,7 @@ class _SegmentCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: hasData
-                        ? const Color(0xFF1A3D27)
+                        ? const Color(0xFFD7EFE6)
                         : theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(99),
                   ),
@@ -154,7 +154,7 @@ class _SegmentCard extends StatelessWidget {
                     hasData ? 'Cumplido' : 'Sin registro',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: hasData
-                          ? const Color(0xFF4BE277)
+                          ? const Color(0xFF2E7D68)
                           : theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
@@ -193,7 +193,7 @@ class _WaterContent extends StatelessWidget {
               '${state.totalWaterMl} ml',
               style: theme.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF60A5FA),
+                color: const Color(0xFF2E7D68),
               ),
             ),
           ],
@@ -207,13 +207,13 @@ class _WaterContent extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E3A5F),
+                color: const Color(0xFFD7EFE6),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 '$time · ${log.amountMl} ml',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: const Color(0xFF93C5FD),
+                  color: const Color(0xFF076450),
                 ),
               ),
             );
@@ -272,7 +272,7 @@ class _NutritionContent extends StatelessWidget {
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: log != null
-                      ? const Color(0xFFFB923C)
+                      ? const Color(0xFF804B13)
                       : theme.colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -324,7 +324,7 @@ class _ExerciseContent extends StatelessWidget {
                 '$arrived – $left',
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFFF87171),
+                  color: const Color(0xFF9A4530),
                 ),
               ),
             ],

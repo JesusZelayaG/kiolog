@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/shared/widgets/gradient_icon_button.dart';
+import 'package:kiolog/shared/widgets/kiolog_app_bar.dart';
 import 'package:kiolog/shared/widgets/stat_chip.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 import '../../../../core/di/injection.dart';
@@ -37,8 +38,8 @@ class _ProgressView extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Progreso'),
+      appBar: KiologAppBar(
+        title: 'Progreso',
         actions: [
           GradientIconButton(
             icon: Icons.straighten,
@@ -141,7 +142,7 @@ class _ProgressView extends StatelessWidget {
                 onTap: () => context.push('/body'),
                 child: Row(
                   children: [
-                    Icon(Icons.accessibility_new, color: cs.primary),
+                    Icon(Icons.accessibility_new, color: cs.primary, size: 28),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(

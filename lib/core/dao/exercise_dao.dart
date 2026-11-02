@@ -43,7 +43,10 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
           .get();
 
   Future<ExercisePlan?> getActiveExercisePlan() =>
-      (select(exercisePlans)..where((t) => t.isActive.equals(true)))
+      (select(exercisePlans)
+            ..where((t) => t.isActive.equals(true))
+            ..orderBy([(t) => OrderingTerm.desc(t.id)])
+            ..limit(1))
           .getSingleOrNull();
 
   Future<void> setActiveExercisePlan(int planId) async {

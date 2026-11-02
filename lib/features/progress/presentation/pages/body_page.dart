@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kiolog/core/dao/user_profile_dao.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:kiolog/shared/widgets/stat_chip.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 
@@ -87,12 +88,18 @@ class _BodyContent extends StatelessWidget {
     return Column(
       children: [
         Expanded(
-          child: BodyViewer(
-            sex: state.sex,
-            perimetersCm: perimeters,
-            heightCm: measurement.heightCm,
-            fatPercent: measurement.bodyFatPct,
-            showFat: state.showFat,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(Tropical.cardRadius),
+              child: BodyViewer(
+                sex: state.sex,
+                perimetersCm: perimeters,
+                heightCm: measurement.heightCm,
+                fatPercent: measurement.bodyFatPct,
+                showFat: state.showFat,
+              ),
+            ),
           ),
         ),
         SafeArea(

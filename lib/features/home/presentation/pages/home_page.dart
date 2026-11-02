@@ -6,8 +6,9 @@ import '../../../../features/exercise/domain/repositories/exercise_repository.da
 import '../../../../features/nutrition/domain/repositories/nutrition_repository.dart';
 import '../../../../features/sleep/domain/repositories/sleep_repository.dart';
 import '../../../../features/water/domain/repositories/water_repository.dart';
-import '../../../../shared/widgets/vitality_progress_bar.dart';
-import '../../../../shared/widgets/module_icon_badge.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/kiolog_app_bar.dart';
+import '../../../../shared/widgets/vitality_card.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
@@ -39,49 +40,15 @@ class HomePage extends StatelessWidget {
   }
 }
 
+const _waterSegments = 6;
+
 class _HomeView extends StatelessWidget {
   const _HomeView();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
     return Scaffold(
-      appBar: AppBar(
-        title: Image.asset(
-          'assets/img/kiolog_banner.png',
-          height: 88,
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: GestureDetector(
-              onTap: () => context.push('/history'),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF0A8F53),
-                      Color(0xFF4CBF4A),
-                      Color(0xFF9ACD32),
-                    ],
-                    stops: [0.0, 0.5, 1.0],
-                  ),
-                ),
-                child: const Icon(
-                  Icons.calendar_month_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: const KiologAppBar(title: 'Inicio'),
       body: BlocBuilder<HomeBloc, HomeState>(
         builder: (context, state) {
           if (state.status == HomeStatus.loading) {
@@ -90,137 +57,27 @@ class _HomeView extends StatelessWidget {
           if (state.status == HomeStatus.failure) {
             return Center(child: Text('Error: ${state.error}'));
           }
-
-          final overall = calcOverallProgress(state);
-
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'BIENVENIDO DE NUEVO',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: cs.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Resumen del día',
-                                style:
-                                    theme.textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '${(overall * 100).round()}%',
-                                style:
-                                    theme.textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.primary,
-                                ),
-                              ),
-                              Text(
-                                'META DIARIA',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: cs.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      VitalityProgressBar(value: overall, color: cs.primary),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              _Summary(overall: calcOverallProgress(state)),
+              const SizedBox(height: 24),
+              _WaterCard(state: state),
+              const SizedBox(height: 16),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _SleepCard(hours: state.sleepHours)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _NutritionCard(state: state)),
+                  ],
                 ),
               ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    _WaterCard(
-                      icon: Icons.water_drop,
-                      label: 'Agua',
-                      subtitle:
-                          '${state.dailyWaterTotalMl} / ${state.dailyWaterGoalMl} ml',
-                      color: cs.tertiary,
-                      bgImage: 'assets/img/watter_bg2.png',
-                      onTap: () => context.push('/water'),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _CompactModuleCard(
-                            icon: Icons.nightlight_round,
-                            label: 'Sueño',
-                            subtitle: state.sleepHours != null
-                                ? '${state.sleepHours!.toStringAsFixed(1)} h'
-                                : 'Sin registro',
-                            color: const Color(0xFFAFC7FF),
-                            bgImage: 'assets/img/sleep_bg2.png',
-                            onTap: () => context.push('/sleep'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _CompactModuleCard(
-                            icon: Icons.restaurant,
-                            label: 'Nutrición',
-                            subtitle:
-                                '${state.mealsLogged} / ${state.totalMeals} comidas',
-                            color: cs.secondary,
-                            bgImage: 'assets/img/nutrition_bg2.png',
-                            onTap: () => context.go('/nutrition'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _ExerciseCard(
-                      icon: Icons.fitness_center,
-                      label: 'Ejercicio',
-                      subtitle: state.exerciseRoutineDone
-                          ? 'Rutina completada'
-                          : state.hasGymSession
-                              ? 'Sesión en progreso'
-                              : 'Pendiente',
-                      color: cs.primary,
-                      bgImage: 'assets/img/exercise_bg2.png',
-                      onTap: () => context.go('/exercise'),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      '"La disciplina es el puente entre las metas y los logros."',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurface.withValues(alpha: 0.5),
-                        fontStyle: FontStyle.italic,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-                  ]),
-                ),
-              ),
+              const SizedBox(height: 16),
+              _ExerciseCard(state: state),
+              const SizedBox(height: 24),
+              const _QuoteCard(),
             ],
           );
         },
@@ -229,263 +86,373 @@ class _HomeView extends StatelessWidget {
   }
 }
 
-class _WaterCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final Color color;
-  final String bgImage;
-  final VoidCallback onTap;
+class _Summary extends StatelessWidget {
+  const _Summary({required this.overall});
 
-  const _WaterCard({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.color,
-    required this.bgImage,
-    required this.onTap,
-  });
+  final double overall;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          height: 120,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.asset(
-                bgImage,
-                fit: BoxFit.cover,
-                alignment: Alignment.centerRight,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '¡HOLA DE NUEVO!',
+                    style: theme.textTheme.labelMedium?.copyWith(color: cs.primary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text('Resumen de hoy', style: theme.textTheme.displayMedium),
+                ],
               ),
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xEE000000), Color(0x33000000)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: const ShapeDecoration(
+                color: Tropical.mintWash,
+                shape: StadiumBorder(),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.verified_outlined, size: 18, color: cs.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${(overall * 100).round()}% Meta',
+                    style: theme.textTheme.labelMedium?.copyWith(color: cs.primary),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(100),
+          child: SizedBox(
+            height: 10,
+            child: Stack(
+              children: [
+                Positioned.fill(child: ColoredBox(color: cs.surfaceContainerHighest)),
+                FractionallySizedBox(
+                  widthFactor: overall.clamp(0.0, 1.0),
+                  child: const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF88D5BD), Color(0xFF076450), Tropical.guava],
+                      ),
+                    ),
                   ),
                 ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoundIcon extends StatelessWidget {
+  const _RoundIcon({
+    required this.icon,
+    required this.background,
+    required this.color,
+    this.size = 56,
+  });
+
+  final IconData icon;
+  final Color background;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+      child: Icon(icon, color: color, size: size * 0.5),
+    );
+  }
+}
+
+class _WaterCard extends StatelessWidget {
+  const _WaterCard({required this.state});
+
+  final HomeState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final filled = (state.waterProgress.clamp(0.0, 1.0) * _waterSegments).round();
+    return VitalityCard(
+      onTap: () => context.push('/water'),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _RoundIcon(
+                icon: Icons.water_drop_outlined,
+                background: Tropical.mintWash,
+                color: cs.primary,
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ModuleIconBadge(icon: icon, color: color),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
+                    Text('HIDRATACIÓN', style: theme.textTheme.labelSmall),
+                    Text.rich(
+                      TextSpan(
                         children: [
-                          Text(
-                            label,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: cs.onSurface,
-                            ),
+                          TextSpan(
+                            text: '${state.dailyWaterTotalMl}',
+                            style: theme.textTheme.displayMedium?.copyWith(color: cs.primary),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            subtitle,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: cs.onSurface.withValues(alpha: 0.7),
-                            ),
+                          TextSpan(
+                            text: ' / ${state.dailyWaterGoalMl} ml',
+                            style: theme.textTheme.bodyMedium,
                           ),
                         ],
                       ),
                     ),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: cs.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.add, color: cs.onPrimary, size: 18),
-                    ),
                   ],
                 ),
               ),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle),
+                child: Icon(Icons.add, color: cs.onPrimary),
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              for (var i = 0; i < _waterSegments; i++)
+                Expanded(
+                  child: Container(
+                    height: 8,
+                    margin: EdgeInsets.only(right: i == _waterSegments - 1 ? 0 : 6),
+                    decoration: ShapeDecoration(
+                      color: i < filled ? cs.primary : cs.surfaceContainerHigh,
+                      shape: const StadiumBorder(),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _SmallCard extends StatelessWidget {
+  const _SmallCard({
+    required this.icon,
+    required this.iconBackground,
+    required this.iconColor,
+    required this.title,
+    required this.value,
+    required this.caption,
+    required this.titleColor,
+    required this.background,
+    required this.onTap,
+    this.badge,
+  });
+
+  final IconData icon;
+  final Color iconBackground;
+  final Color iconColor;
+  final String title;
+  final String value;
+  final String caption;
+  final Color titleColor;
+  final Color background;
+  final VoidCallback onTap;
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return VitalityCard(
+      color: background,
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _RoundIcon(
+                icon: icon,
+                background: iconBackground,
+                color: iconColor,
+                size: 48,
+              ),
+              if (badge != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: ShapeDecoration(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Text(badge!, style: theme.textTheme.labelMedium),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(title, style: theme.textTheme.labelSmall?.copyWith(color: titleColor)),
+          const SizedBox(height: 4),
+          Text(value, style: theme.textTheme.headlineLarge),
+          const SizedBox(height: 4),
+          Text(caption, style: theme.textTheme.bodySmall?.copyWith(color: titleColor)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SleepCard extends StatelessWidget {
+  const _SleepCard({required this.hours});
+
+  final double? hours;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final known = hours;
+    return _SmallCard(
+      icon: Icons.nightlight_outlined,
+      iconBackground: cs.surfaceContainerHigh,
+      iconColor: cs.onSurface,
+      title: 'SUEÑO',
+      value: known != null ? '${known.toStringAsFixed(1)} h' : '—',
+      caption: known != null ? 'Última noche' : 'Sin registro',
+      titleColor: cs.onSurfaceVariant,
+      background: cs.surfaceContainerLow,
+      onTap: () => context.push('/sleep'),
+    );
+  }
+}
+
+class _NutritionCard extends StatelessWidget {
+  const _NutritionCard({required this.state});
+
+  final HomeState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final pending = state.totalMeals - state.mealsLogged;
+    return _SmallCard(
+      icon: Icons.restaurant_outlined,
+      iconBackground: const Color(0xFFFFDCC1),
+      iconColor: cs.tertiary,
+      title: 'NUTRICIÓN',
+      value: '${state.mealsLogged}',
+      caption: pending > 0 ? 'Comida pendiente' : 'Comidas al día',
+      titleColor: cs.tertiary,
+      background: Tropical.peachWash,
+      badge: '${state.mealsLogged} / ${state.totalMeals}',
+      onTap: () => context.go('/nutrition'),
     );
   }
 }
 
 class _ExerciseCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final Color color;
-  final String bgImage;
-  final VoidCallback onTap;
+  const _ExerciseCard({required this.state});
 
-  const _ExerciseCard({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.color,
-    required this.bgImage,
-    required this.onTap,
-  });
+  final HomeState state;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          height: 160,
-          child: Stack(
-            fit: StackFit.expand,
+    final status = state.exerciseRoutineDone
+        ? 'Rutina completada'
+        : state.hasGymSession
+            ? 'Sesión en progreso'
+            : 'Listo para iniciar';
+    return VitalityCard(
+      onTap: () => context.go('/exercise'),
+      child: Column(
+        children: [
+          Row(
             children: [
-              Image.asset(bgImage, fit: BoxFit.cover),
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [Color(0x1A000000), Color(0xCC000000)],
-                    stops: [0.0, 1.0],
-                    radius: 1.1,
-                  ),
-                ),
+              _RoundIcon(
+                icon: Icons.fitness_center,
+                background: const Color(0xFFFFDAD2),
+                color: cs.secondary,
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        ModuleIconBadge(icon: icon, color: color),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              label,
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: cs.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              subtitle,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurface.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    Text(
+                      'RUTINA DEL DÍA',
+                      style: theme.textTheme.labelSmall?.copyWith(color: cs.secondary),
                     ),
-                    const Spacer(),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.play_arrow, size: 16),
-                        label: const Text('VER AHORA'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: cs.primary,
-                          foregroundColor: cs.onPrimary,
-                          shape: const StadiumBorder(),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          textStyle: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        onPressed: onTap,
-                      ),
-                    ),
+                    Text('Ejercicio', style: theme.textTheme.headlineMedium),
                   ],
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Estado actual', style: theme.textTheme.bodySmall),
+                    Text(status, style: theme.textTheme.titleMedium),
+                  ],
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => context.go('/exercise'),
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Comenzar'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _CompactModuleCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final Color color;
-  final String bgImage;
-  final VoidCallback onTap;
-
-  const _CompactModuleCard({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.color,
-    required this.bgImage,
-    required this.onTap,
-  });
+class _QuoteCard extends StatelessWidget {
+  const _QuoteCard();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          height: 120,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.asset(bgImage, fit: BoxFit.cover),
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [Color(0x1A000000), Color(0xCC000000)],
-                    stops: [0.0, 1.0],
-                    radius: 1.1,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ModuleIconBadge(icon: icon, color: color, size: 32),
-                    const Spacer(),
-                    Text(
-                      label,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: cs.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurface.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(Tropical.cardRadius),
+      ),
+      child: Text(
+        '"La disciplina es el puente entre las metas y los logros."',
+        style: theme.textTheme.bodyLarge?.copyWith(fontStyle: FontStyle.italic),
+        textAlign: TextAlign.center,
       ),
     );
   }

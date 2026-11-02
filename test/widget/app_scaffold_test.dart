@@ -81,7 +81,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: createRouter(),
-        theme: AppTheme.dark,
+        theme: AppTheme.light,
       ),
     );
 
@@ -97,7 +97,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: createRouter(),
-        theme: AppTheme.dark,
+        theme: AppTheme.light,
       ),
     );
 

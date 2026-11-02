@@ -13,6 +13,7 @@ import '../../domain/repositories/nutrition_repository.dart';
 import '../bloc/nutrition_bloc.dart';
 import '../bloc/nutrition_event.dart';
 import '../bloc/nutrition_state.dart';
+import 'package:kiolog/shared/widgets/kiolog_app_bar.dart';
 import 'nutrition_config_page.dart';
 import 'nutrition_progress_page.dart';
 
@@ -42,8 +43,8 @@ class _NutritionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Nutrición'),
+      appBar: KiologAppBar(
+        title: 'Nutrición',
         actions: [
           GradientIconButton(
             icon: Icons.bar_chart,
@@ -192,7 +193,7 @@ class _PendingPlanBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      color: cs.primaryContainer.withValues(alpha: 0.5),
+      color: cs.inversePrimary.withValues(alpha: 0.3),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [

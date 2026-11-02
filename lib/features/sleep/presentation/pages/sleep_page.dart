@@ -277,7 +277,7 @@ class _SleepLogTile extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: isMain
-                    ? const Color(0xFFAFC7FF).withValues(alpha: 0.2)
+                    ? const Color(0xFF2E7D68).withValues(alpha: 0.2)
                     : Colors.amber.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
@@ -286,7 +286,7 @@ class _SleepLogTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: isMain ? const Color(0xFFAFC7FF) : Colors.amber,
+                  color: isMain ? const Color(0xFF2E7D68) : Colors.amber,
                 ),
               ),
             ),

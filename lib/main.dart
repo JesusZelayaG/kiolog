@@ -32,9 +32,7 @@ class KiologApp extends StatelessWidget {
       value: getIt<ModulesCubit>(),
       child: MaterialApp.router(
         title: 'Kiolog',
-        theme: AppTheme.dark,
-        darkTheme: AppTheme.dark,
-        themeMode: ThemeMode.dark,
+        theme: AppTheme.light,
         routerConfig: createRouter(
           initialLocation: onboardingComplete ? '/' : '/onboarding',
         ),

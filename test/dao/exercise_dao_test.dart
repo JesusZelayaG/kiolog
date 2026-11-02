@@ -21,6 +21,24 @@ void main() {
       expect(active?.isActive, true);
     });
 
+    test('con dos planes activos devuelve el más reciente', () async {
+      final now = DateTime.utc(2026, 11, 1);
+      await db.into(db.exercisePlans).insert(ExercisePlansCompanion.insert(
+            name: 'Viejo',
+            createdAt: now,
+            isActive: const Value(true),
+          ));
+      await db.into(db.exercisePlans).insert(ExercisePlansCompanion.insert(
+            name: 'Nuevo',
+            createdAt: now,
+            isActive: const Value(true),
+          ));
+
+      final active = await db.exerciseDao.getActiveExercisePlan();
+
+      expect(active?.name, 'Nuevo');
+    });
+
     test('setActiveExercisePlan desactiva planes anteriores', () async {
       final id1 = await db.exerciseDao.insertExercisePlan(
         const ExercisePlansCompanion(name: Value('Plan A')),
