@@ -149,12 +149,6 @@ class SettingsPage extends StatelessWidget {
                         subtitle: 'Próximamente',
                         onTap: () => _showSoon(context),
                       ),
-                      _ToolTile(
-                        icon: Icons.smart_toy_outlined,
-                        title: 'Integración IA',
-                        subtitle: 'Próximamente',
-                        onTap: () => _showSoon(context),
-                      ),
                     ],
                   ),
                 ),

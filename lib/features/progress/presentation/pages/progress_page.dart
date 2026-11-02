@@ -11,19 +11,38 @@ import 'package:kiolog/shared/widgets/kiolog_app_bar.dart';
 import 'package:kiolog/shared/widgets/stat_chip.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 import '../../../../core/di/injection.dart';
+import '../../../exercise/domain/repositories/exercise_repository.dart';
+import '../../../nutrition/domain/repositories/nutrition_repository.dart';
+import '../../../sleep/domain/repositories/sleep_repository.dart';
+import '../../../water/domain/repositories/water_repository.dart';
 import '../../domain/repositories/progress_repository.dart';
 import '../bloc/progress_bloc.dart';
 import '../bloc/progress_event.dart';
+import '../bloc/progress_overview_cubit.dart';
 import '../bloc/progress_state.dart';
+import '../widgets/progress_charts.dart';
 
 class ProgressPage extends StatelessWidget {
   const ProgressPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => ProgressBloc(getIt<ProgressRepository>())
-        ..add(const ProgressLoaded()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => ProgressBloc(getIt<ProgressRepository>())
+            ..add(const ProgressLoaded()),
+        ),
+        BlocProvider(
+          create: (_) => ProgressOverviewCubit(
+            exercise: getIt<ExerciseRepository>(),
+            nutrition: getIt<NutritionRepository>(),
+            water: getIt<WaterRepository>(),
+            sleep: getIt<SleepRepository>(),
+            progress: getIt<ProgressRepository>(),
+          )..load(),
+        ),
+      ],
       child: const _ProgressView(),
     );
   }
@@ -163,6 +182,7 @@ class _ProgressView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              const ProgressCharts(),
 
               if (state.latestMeasurement != null) ...[
                 _buildMeasurementsCard(context, state),
