@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kiolog/core/dao/user_profile_dao.dart';
+import 'package:kiolog/core/database/app_database.dart';
+import 'package:kiolog/core/database/backup_service.dart';
+import 'package:kiolog/core/database/file_chooser.dart';
+import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
@@ -10,6 +16,7 @@ import 'package:kiolog/features/nutrition/presentation/pages/nutrition_config_pa
 import 'package:kiolog/features/water/presentation/pages/water_config_page.dart';
 import 'package:kiolog/shared/widgets/kiolog_app_bar.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
+import 'package:share_plus/share_plus.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -144,6 +151,24 @@ class SettingsPage extends StatelessWidget {
                         onTap: () => context.push('/report'),
                       ),
                       _ToolTile(
+                        icon: Icons.accessibility_new,
+                        title: 'Sexo del modelo 3D',
+                        subtitle: 'Hombre o mujer',
+                        onTap: () => _chooseBodySex(context),
+                      ),
+                      _ToolTile(
+                        icon: Icons.upload_file_outlined,
+                        title: 'Crear respaldo',
+                        subtitle: 'Guarda tus datos en un archivo',
+                        onTap: () => _exportBackup(context),
+                      ),
+                      _ToolTile(
+                        icon: Icons.settings_backup_restore,
+                        title: 'Restaurar respaldo',
+                        subtitle: 'Reemplaza los datos de este teléfono',
+                        onTap: () => _restoreBackup(context),
+                      ),
+                      _ToolTile(
                         icon: Icons.notifications_outlined,
                         title: 'Notificaciones',
                         subtitle: 'Próximamente',
@@ -171,6 +196,82 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
+
+Future<void> _chooseBodySex(BuildContext context) async {
+  final dao = getIt<UserProfileDao>();
+  final messenger = ScaffoldMessenger.of(context);
+  final current = (await dao.getProfile())?.bodySex;
+  if (!context.mounted) return;
+  final chosen = await showDialog<String>(
+    context: context,
+    builder: (dialogContext) => SimpleDialog(
+      title: const Text('Sexo del modelo 3D'),
+      children: [
+        for (final (value, label) in const [('male', 'Hombre'), ('female', 'Mujer')])
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(dialogContext, value),
+            child: Text(value == current ? '$label (actual)' : label),
+          ),
+      ],
+    ),
+  );
+  if (chosen == null) return;
+  await dao.updateBodySex(chosen);
+  messenger.showSnackBar(const SnackBar(content: Text('Guardado')));
+}
+
+Future<void> _exportBackup(BuildContext context) async {
+  final messenger = ScaffoldMessenger.of(context);
+  try {
+    final file = await BackupService(getIt<AppDatabase>()).export();
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], subject: 'Respaldo de Kiolog'),
+    );
+  } catch (_) {
+    messenger.showSnackBar(
+      const SnackBar(content: Text('No se pudo crear el respaldo')),
+    );
+  }
+}
+
+Future<void> _restoreBackup(BuildContext context) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final path = await chooseFile();
+  if (path == null || !context.mounted) return;
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Restaurar respaldo'),
+      content: const Text(
+        'Los datos actuales de este teléfono se reemplazarán por los del respaldo. '
+        'La app se cerrará y deberás abrirla de nuevo.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: const Text('Restaurar'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+  try {
+    await BackupService(getIt<AppDatabase>()).restore(path);
+    await SystemNavigator.pop();
+  } on InvalidBackupException {
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Ese archivo no es un respaldo de Kiolog')),
+    );
+  } catch (_) {
+    messenger.showSnackBar(
+      const SnackBar(content: Text('No se pudo restaurar el respaldo')),
+    );
+  }
+}
 
 void _showSoon(BuildContext context) {
   ScaffoldMessenger.of(context).showSnackBar(

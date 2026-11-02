@@ -62,7 +62,7 @@ class _ProgressView extends StatelessWidget {
         actions: [
           GradientIconButton(
             icon: Icons.straighten,
-            onPressed: () => _showAddMeasurementDialog(context),
+            onPressed: () => _openConsultations(context),
           ),
         ],
       ),
@@ -318,86 +318,12 @@ class _ProgressView extends StatelessWidget {
     );
   }
 
-  void _showAddMeasurementDialog(BuildContext context) {
-    final bloc = context.read<ProgressBloc>();
-    final fields = {
-      'Peso (kg)': TextEditingController(),
-      'Talla (cm)': TextEditingController(),
-      'Brazo flex (cm)': TextEditingController(),
-      'Brazo relaj (cm)': TextEditingController(),
-      'Cintura (cm)': TextEditingController(),
-      'Cadera (cm)': TextEditingController(),
-      'Pantorrilla (cm)': TextEditingController(),
-      'Abdomen bajo (cm)': TextEditingController(),
-      'Muslo (cm)': TextEditingController(),
-      'Glúteo (cm)': TextEditingController(),
-      'Tórax (cm)': TextEditingController(),
-      '% Grasa': TextEditingController(),
-      'Masa magra (kg)': TextEditingController(),
-      'Masa visceral': TextEditingController(),
-    };
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Nueva consulta'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: fields.entries
-                .map((e) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: TextField(
-                        controller: e.value,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        decoration: InputDecoration(labelText: e.key),
-                      ),
-                    ))
-                .toList(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final weight = double.tryParse(fields['Peso (kg)']!.text);
-              final height = double.tryParse(fields['Talla (cm)']!.text);
-              if (weight != null && height != null) {
-                bloc.add(ProgressMeasurementAdded(
-                  date: DateTime.now(),
-                  weightKg: weight,
-                  heightCm: height,
-                  armFlexedCm: _parse(fields['Brazo flex (cm)']!.text),
-                  armRelaxedCm: _parse(fields['Brazo relaj (cm)']!.text),
-                  waistCm: _parse(fields['Cintura (cm)']!.text),
-                  hipCm: _parse(fields['Cadera (cm)']!.text),
-                  calfCm: _parse(fields['Pantorrilla (cm)']!.text),
-                  lowerAbdomenCm:
-                      _parse(fields['Abdomen bajo (cm)']!.text),
-                  thighCm: _parse(fields['Muslo (cm)']!.text),
-                  midGluteusCm: _parse(fields['Glúteo (cm)']!.text),
-                  chestCm: _parse(fields['Tórax (cm)']!.text),
-                  bodyFatPct: _parse(fields['% Grasa']!.text),
-                  leanMassKg: _parse(fields['Masa magra (kg)']!.text),
-                  visceralMass: _parse(fields['Masa visceral']!.text),
-                ));
-              }
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  double? _parse(String text) {
-    final value = double.tryParse(text);
-    return value != null && value > 0 ? value : null;
+  Future<void> _openConsultations(BuildContext context) async {
+    final progress = context.read<ProgressBloc>();
+    final overview = context.read<ProgressOverviewCubit>();
+    await context.push('/consultations');
+    progress.add(const ProgressLoaded());
+    await overview.load();
   }
 }
 

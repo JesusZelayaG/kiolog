@@ -12,8 +12,27 @@ class ProgressRepositoryImpl implements ProgressRepository {
       DateTime.utc(date.year, date.month, date.day);
 
   @override
-  Future<List<WeightLog>> getWeightLogs(DateTime start, DateTime end) =>
-      _measurementsDao.getWeightLogs(start, end);
+  Future<List<WeightLog>> getWeightLogs(DateTime start, DateTime end) async {
+    final logs = await _measurementsDao.getWeightLogs(start, end);
+    final first = DateTime.utc(start.year, start.month, start.day);
+    final last = DateTime.utc(end.year, end.month, end.day);
+    DateTime day(DateTime date) {
+      final utc = date.toUtc();
+      return DateTime.utc(utc.year, utc.month, utc.day);
+    }
+
+    // A consultation also weighs you, so it counts unless that day has its own log.
+    final logged = logs.map((log) => day(log.date)).toSet();
+    final consultations = await _measurementsDao.getMeasurements();
+    return [
+      ...logs,
+      for (final m in consultations)
+        if (!day(m.date).isBefore(first) &&
+            !day(m.date).isAfter(last) &&
+            !logged.contains(day(m.date)))
+          WeightLog(id: -m.id, date: m.date, weightKg: m.weightKg),
+    ]..sort((a, b) => a.date.compareTo(b.date));
+  }
 
   @override
   Future<void> addWeightLog(DateTime date, double weightKg) =>
@@ -31,6 +50,13 @@ class ProgressRepositoryImpl implements ProgressRepository {
   @override
   Future<Measurement?> getLatestMeasurement() =>
       _measurementsDao.getLatestMeasurement();
+
+  @override
+  Future<void> updateMeasurement(Measurement measurement) => _measurementsDao
+      .updateMeasurement(measurement.copyWith(date: _dateOnly(measurement.date.toUtc())));
+
+  @override
+  Future<void> deleteMeasurement(int id) => _measurementsDao.deleteMeasurement(id);
 
   @override
   Future<void> addMeasurement({

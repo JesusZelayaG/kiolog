@@ -33,6 +33,12 @@ class MeasurementsDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(t) => OrderingTerm.desc(t.date)]))
           .get();
 
+  Future<bool> updateMeasurement(Measurement measurement) =>
+      update(measurements).replace(measurement);
+
+  Future<int> deleteMeasurement(int id) =>
+      (delete(measurements)..where((t) => t.id.equals(id))).go();
+
   Future<Measurement?> getLatestMeasurement() =>
       (select(measurements)
             ..orderBy([(t) => OrderingTerm.desc(t.date)])

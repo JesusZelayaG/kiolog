@@ -9,7 +9,6 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
   ProgressBloc(this._repository) : super(const ProgressState()) {
     on<ProgressLoaded>(_onLoaded);
     on<ProgressWeightAdded>(_onWeightAdded);
-    on<ProgressMeasurementAdded>(_onMeasurementAdded);
   }
 
   Future<void> _onLoaded(ProgressLoaded event, Emitter<ProgressState> emit) async {
@@ -40,39 +39,6 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
       final start = end.subtract(const Duration(days: 365));
       final logs = await _repository.getWeightLogs(start, end);
       emit(state.copyWith(weightLogs: logs));
-    } catch (e) {
-      emit(state.copyWith(status: ProgressStatus.failure, error: e.toString()));
-    }
-  }
-
-  Future<void> _onMeasurementAdded(
-    ProgressMeasurementAdded event,
-    Emitter<ProgressState> emit,
-  ) async {
-    if (state.status != ProgressStatus.success) return;
-    try {
-      await _repository.addMeasurement(
-        date: event.date,
-        weightKg: event.weightKg,
-        heightCm: event.heightCm,
-        armFlexedCm: event.armFlexedCm,
-        armRelaxedCm: event.armRelaxedCm,
-        waistCm: event.waistCm,
-        hipCm: event.hipCm,
-        calfCm: event.calfCm,
-        lowerAbdomenCm: event.lowerAbdomenCm,
-        thighCm: event.thighCm,
-        midGluteusCm: event.midGluteusCm,
-        chestCm: event.chestCm,
-        bodyFatPct: event.bodyFatPct,
-        leanMassKg: event.leanMassKg,
-        visceralMass: event.visceralMass,
-      );
-      final measurement = await _repository.getLatestMeasurement();
-      final end = DateTime.now();
-      final start = end.subtract(const Duration(days: 365));
-      final logs = await _repository.getWeightLogs(start, end);
-      emit(state.copyWith(latestMeasurement: measurement, weightLogs: logs));
     } catch (e) {
       emit(state.copyWith(status: ProgressStatus.failure, error: e.toString()));
     }

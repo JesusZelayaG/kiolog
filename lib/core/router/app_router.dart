@@ -9,6 +9,7 @@ import '../../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../../features/exercise/presentation/pages/exercise_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/progress/presentation/pages/body_page.dart';
+import '../../features/progress/presentation/pages/consultations_page.dart';
 import '../../features/progress/presentation/pages/progress_page.dart';
 import '../../features/reports/presentation/pages/report_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
@@ -72,6 +73,10 @@ GoRouter createRouter({String initialLocation = '/'}) => GoRouter(
               },
             ),
           ],
+        ),
+        GoRoute(
+          path: '/consultations',
+          builder: (context, state) => const ConsultationsPage(),
         ),
         GoRoute(
           path: '/body',

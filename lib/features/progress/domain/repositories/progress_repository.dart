@@ -6,6 +6,8 @@ abstract class ProgressRepository {
 
   Future<List<Measurement>> getMeasurements();
   Future<Measurement?> getLatestMeasurement();
+  Future<void> updateMeasurement(Measurement measurement);
+  Future<void> deleteMeasurement(int id);
   Future<void> addMeasurement({
     required DateTime date,
     required double weightKg,
