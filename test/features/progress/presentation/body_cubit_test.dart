@@ -21,12 +21,18 @@ void main() {
     await db.close();
   });
 
-  Future<void> addMeasurement({required double heightCm}) =>
+  Future<void> addMeasurement({
+    required double heightCm,
+    double waistCm = 85.5,
+    double? hipCm,
+    int day = 1,
+  }) =>
       db.measurementsDao.insertMeasurement(MeasurementsCompanion.insert(
-        date: DateTime.utc(2026, 10, 1),
+        date: DateTime.utc(2026, 10, day),
         weightKg: 74.4,
         heightCm: heightCm,
-        waistCm: const Value(85.5),
+        waistCm: Value(waistCm),
+        hipCm: Value(hipCm),
       ));
 
   test('sin medición queda vacío', () async {
@@ -48,12 +54,34 @@ void main() {
     expect(cubit.state.perimeters['cadera'], isNull);
   });
 
-  test('el sexo elegido persiste entre aperturas', () async {
-    await cubit.setSex(BodySex.female);
-    final reopened = BodyCubit(ProgressRepositoryImpl(db.measurementsDao), db.userProfileDao);
-    await reopened.load();
-    expect(reopened.state.sex, BodySex.female);
-    await reopened.close();
+  test('abre en la consulta más reciente, aunque se guardara antes', () async {
+    await addMeasurement(heightCm: 160, waistCm: 80, day: 20);
+    await addMeasurement(heightCm: 160, waistCm: 90, day: 5);
+    await cubit.load();
+    expect(cubit.state.sessions.map((m) => m.waistCm), [90, 80]);
+    expect(cubit.state.perimeters['cintura'], 80);
+  });
+
+  test('elegir una fecha muestra sus medidas y el cambio frente a la anterior', () async {
+    await addMeasurement(heightCm: 160, waistCm: 90, day: 1);
+    await addMeasurement(heightCm: 160, waistCm: 88, day: 10);
+    await addMeasurement(heightCm: 160, waistCm: 85, hipCm: 100, day: 20);
+    await cubit.load();
+
+    expect(cubit.state.changeIn('cintura'), -3);
+    expect(cubit.state.changeIn('cadera'), isNull);
+
+    cubit.selectSession(0);
+    expect(cubit.state.perimeters['cintura'], 90);
+    expect(cubit.state.previous, isNull);
+    expect(cubit.state.changeIn('cintura'), isNull);
+  });
+
+  test('usa el sexo guardado en el onboarding', () async {
+    await db.userProfileDao.completeOnboarding(DateTime.utc(2026, 11, 1));
+    await db.userProfileDao.updateBodySex('female');
+    await cubit.load();
+    expect(cubit.state.sex, BodySex.female);
   });
 
   test('registrar otro dato no borra la medición del estado de Progreso', () {
