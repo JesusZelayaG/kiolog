@@ -76,7 +76,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/img/
-    - assets/models/
+    - assets/models/anatomy_body.glb
+    - assets/models/anatomy_body.json
 
 # thermion pulls image 4.11.0, which needs a newer archive than its own constraint allows.
 dependency_overrides:

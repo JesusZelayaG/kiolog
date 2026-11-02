@@ -51,23 +51,27 @@ class BodyCalibration {
   final List<String> fat;
   final Map<BodySex, _SexTable> _bySex;
 
-  /// [perimetersCm] holds one value per entry of [sites]. The fat pads take
-  /// their share of each perimeter and the muscles fill the rest, so a higher
-  /// [fatPercent] at the same perimeters leaves less muscle.
+  /// [perimetersCm] may lack any entry of [sites]: that site keeps the model's
+  /// own size. The fat pads take their share of each perimeter and the muscles
+  /// fill the rest, so a higher [fatPercent] at the same perimeters leaves less
+  /// muscle. Without [fatPercent] the pads stay hidden.
   BodyShape solve({
     required BodySex sex,
-    required Map<String, double> perimetersCm,
+    required Map<String, double?> perimetersCm,
     required double heightCm,
-    required double fatPercent,
+    double? fatPercent,
   }) {
     final table = _bySex[sex]!;
-    final fatWeights = _fatWeights(sex, fatPercent);
+    final fatWeights = fatPercent == null
+        ? List<double>.filled(fat.length, 0)
+        : _fatWeights(sex, fatPercent);
     final toModel = this.heightCm / heightCm;
     final goal = [
       for (var site = 0; site < sites.length; site++)
-        perimetersCm[sites[site]]! * toModel -
-            table.base[site] -
-            _dot(table.fat[site], fatWeights),
+        switch (perimetersCm[sites[site]]) {
+          final cm? => cm * toModel - table.base[site] - _dot(table.fat[site], fatWeights),
+          null => 0.0,
+        },
     ];
     final w = List<double>.filled(shapes.length, 0);
     for (var pass = 0; pass < _passes; pass++) {

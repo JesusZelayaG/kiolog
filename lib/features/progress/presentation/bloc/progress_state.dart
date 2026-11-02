@@ -36,7 +36,7 @@ class ProgressState extends Equatable {
       ProgressState(
         status: status ?? this.status,
         weightLogs: weightLogs ?? this.weightLogs,
-        latestMeasurement: latestMeasurement,
+        latestMeasurement: latestMeasurement ?? this.latestMeasurement,
         error: error,
       );
 

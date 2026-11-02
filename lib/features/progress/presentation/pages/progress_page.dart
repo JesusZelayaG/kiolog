@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/shared/widgets/gradient_icon_button.dart';
@@ -136,6 +137,32 @@ class _ProgressView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
+              VitalityCard(
+                onTap: () => context.push('/body'),
+                child: Row(
+                  children: [
+                    Icon(Icons.accessibility_new, color: cs.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Tu cuerpo en 3D', style: theme.textTheme.titleMedium),
+                          Text(
+                            'Con las medidas de tu última consulta',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
               if (state.latestMeasurement != null) ...[
                 _buildMeasurementsCard(context, state),
                 const SizedBox(height: 16),
@@ -180,7 +207,7 @@ class _ProgressView extends StatelessWidget {
           Text('Última consulta', style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
           Text(
-            DateFormat.yMMMd('es').format(m.date),
+            DateFormat.yMMMd('es').format(m.date.toUtc()),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -218,7 +245,7 @@ class _ProgressView extends StatelessWidget {
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 leading: Text(
-                  DateFormat.MMMd('es').format(log.date),
+                  DateFormat.MMMd('es').format(log.date.toUtc()),
                   style: theme.textTheme.bodyMedium,
                 ),
                 trailing: Text(
@@ -477,7 +504,7 @@ class _LineChartPainter extends CustomPainter {
     _paintTextRight(canvas, _fmt(logs.last.date), size.width - _padRight, size.height - _padBottom + 6, dateColor);
   }
 
-  String _fmt(DateTime d) => DateFormat.MMMd('es').format(d);
+  String _fmt(DateTime d) => DateFormat.MMMd('es').format(d.toUtc());
 
   void _paintText(Canvas canvas, String text, Offset offset, Color color) {
     final tp = TextPainter(

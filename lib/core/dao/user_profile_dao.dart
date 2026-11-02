@@ -46,4 +46,13 @@ class UserProfileDao extends DatabaseAccessor<AppDatabase>
       UserProfilesCompanion(name: Value(name)),
     );
   }
+
+  Future<void> updateBodySex(String sex) async {
+    final profile = await getProfile();
+    if (profile == null) {
+      await into(userProfiles).insert(UserProfilesCompanion(bodySex: Value(sex)));
+    } else {
+      await update(userProfiles).write(UserProfilesCompanion(bodySex: Value(sex)));
+    }
+  }
 }

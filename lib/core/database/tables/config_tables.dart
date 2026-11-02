@@ -45,4 +45,6 @@ class UserProfiles extends Table {
       boolean().withDefault(const Constant(false))();
   DateTimeColumn get registrationDate => dateTime().nullable()();
   TextColumn get name => text().nullable()();
+  // male | female, elige la forma del modelo corporal
+  TextColumn get bodySex => text().nullable()();
 }
