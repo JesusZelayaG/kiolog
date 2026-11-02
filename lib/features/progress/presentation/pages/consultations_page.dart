@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import 'package:kiolog/core/database/file_chooser.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../data/ficha_reader.dart';
 import '../../domain/repositories/progress_repository.dart';
 import '../bloc/consultations_cubit.dart';
 import '../widgets/measurement_form.dart';
@@ -28,6 +30,29 @@ class _ConsultationsView extends StatelessWidget {
     final cubit = context.read<ConsultationsCubit>();
     final measurement = await showMeasurementForm(context);
     if (measurement != null) await cubit.save(measurement);
+  }
+
+  Future<void> _import(BuildContext context) async {
+    final cubit = context.read<ConsultationsCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    final path = await chooseFile(mimeTypes: const ['application/pdf', 'image/*']);
+    if (path == null) return;
+    final now = DateTime.now();
+    Measurement? read;
+    try {
+      read = await readFicha(path, DateTime.utc(now.year, now.month, now.day));
+    } catch (_) {
+      read = null;
+    }
+    if (!context.mounted) return;
+    if (read == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('No se reconocieron medidas en ese archivo')),
+      );
+      return;
+    }
+    final reviewed = await showMeasurementForm(context, initial: read);
+    if (reviewed != null) await cubit.save(reviewed);
   }
 
   @override
@@ -62,10 +87,22 @@ class _ConsultationsView extends StatelessWidget {
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         child: Builder(
-          builder: (context) => ElevatedButton.icon(
-            onPressed: () => _add(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Nueva consulta'),
+          builder: (context) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _import(context),
+                icon: const Icon(Icons.document_scanner_outlined),
+                label: const Text('Importar ficha (PDF o foto)'),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () => _add(context),
+                icon: const Icon(Icons.add),
+                label: const Text('Nueva consulta'),
+              ),
+            ],
           ),
         ),
       ),

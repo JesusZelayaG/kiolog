@@ -235,6 +235,11 @@ class _MeasuresCard extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Ilustración orientativa de tus medidas, no un retrato exacto.',
+            style: theme.textTheme.bodySmall,
+          ),
           if (previous != null) ...[
             const SizedBox(height: 8),
             Text(

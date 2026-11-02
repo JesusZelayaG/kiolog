@@ -66,10 +66,14 @@ class _MeasurementFormState extends State<_MeasurementForm> {
     _date = initial?.date.toUtc() ?? DateTime.utc(now.year, now.month, now.day);
     _controllers = {
       for (final field in _fields)
-        field.label: TextEditingController(
-          text: initial == null ? '' : '${field.read(initial) ?? ''}',
-        ),
+        field.label: TextEditingController(text: _initialText(field)),
     };
+  }
+
+  String _initialText(_Field field) {
+    final initial = widget.initial;
+    final value = initial == null ? null : field.read(initial);
+    return value == null || value <= 0 ? '' : '$value';
   }
 
   @override
@@ -127,7 +131,7 @@ class _MeasurementFormState extends State<_MeasurementForm> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initial == null ? 'Nueva consulta' : 'Editar consulta'),
+      title: Text((widget.initial?.id ?? 0) == 0 ? 'Nueva consulta' : 'Editar consulta'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

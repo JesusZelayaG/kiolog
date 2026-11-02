@@ -27,7 +27,9 @@ class BackupService {
     final dir = await getTemporaryDirectory();
     final stamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
     final file = File(p.join(dir.path, 'kiolog_respaldo_$stamp.sqlite'));
-    if (await file.exists()) await file.delete();
+    await for (final old in dir.list()) {
+      if (p.basename(old.path).startsWith('kiolog_respaldo_')) await old.delete();
+    }
     await _db.customStatement('VACUUM INTO ?', [file.path]);
     return file;
   }

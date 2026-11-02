@@ -3,7 +3,10 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:kiolog/core/database/app_database.dart';
 import '../domain/repositories/report_repository.dart';
+
+const _maxConsultations = 8;
 
 class PdfReportService {
   static final _green = PdfColor.fromHex('#22C55E');
@@ -353,32 +356,74 @@ class PdfReportService {
       }
     }
 
-    if (data.latestMeasurement != null) {
-      final m = data.latestMeasurement!;
+    if (data.consultations.isNotEmpty) {
+      final table = consultationTable(data.consultations);
       widgets.add(pw.SizedBox(height: 8));
       widgets.add(pw.Text(
-        'Última medición (${fmt.format(m.date)})',
+        'Evolución por consulta',
         style: pw.TextStyle(
           fontSize: 11,
           fontWeight: pw.FontWeight.bold,
           color: _body,
         ),
       ));
-      if (m.waistCm != null) {
-        widgets.add(pw.Text(
-          'Cintura: ${m.waistCm} cm',
-          style: pw.TextStyle(fontSize: 10, color: _body),
-        ));
-      }
-      if (m.hipCm != null) {
-        widgets.add(pw.Text(
-          'Cadera: ${m.hipCm} cm',
-          style: pw.TextStyle(fontSize: 10, color: _body),
-        ));
-      }
+      widgets.add(pw.SizedBox(height: 4));
+      widgets.add(pw.TableHelper.fromTextArray(
+        headers: table.first,
+        data: table.sublist(1),
+        headerStyle: pw.TextStyle(
+          fontSize: 9,
+          fontWeight: pw.FontWeight.bold,
+          color: _heading,
+        ),
+        cellStyle: pw.TextStyle(fontSize: 9, color: _body),
+        border: pw.TableBorder(horizontalInside: pw.BorderSide(color: _track, width: 0.5)),
+      ));
     }
 
     return widgets;
+  }
+
+  static const _columns = <(String, double? Function(Measurement))>[
+    ('Peso', _weightOf),
+    ('Cintura', _waistOf),
+    ('Cadera', _hipOf),
+    ('Muslo', _thighOf),
+    ('Brazo', _armOf),
+    ('% Grasa', _fatOf),
+  ];
+
+  static double? _weightOf(Measurement m) => m.weightKg;
+  static double? _waistOf(Measurement m) => m.waistCm;
+  static double? _hipOf(Measurement m) => m.hipCm;
+  static double? _thighOf(Measurement m) => m.thighCm;
+  static double? _armOf(Measurement m) => m.armRelaxedCm;
+  static double? _fatOf(Measurement m) => m.bodyFatPct;
+
+  /// Encabezado, una fila por consulta reciente y el cambio total si hay varias.
+  static List<List<String>> consultationTable(List<Measurement> consultations) {
+    final dates = DateFormat('dd/MM/yy');
+    String cell(double? value) => value == null ? '—' : value.toStringAsFixed(1);
+    final shown = consultations.length > _maxConsultations
+        ? consultations.sublist(consultations.length - _maxConsultations)
+        : consultations;
+    return [
+      ['Fecha', for (final (label, _) in _columns) label],
+      for (final m in shown)
+        [dates.format(m.date.toUtc()), for (final (_, read) in _columns) cell(read(m))],
+      if (consultations.length > 1)
+        [
+          'Cambio',
+          for (final (_, read) in _columns)
+            _change(read(consultations.first), read(consultations.last)),
+        ],
+    ];
+  }
+
+  static String _change(double? first, double? last) {
+    if (first == null || last == null) return '—';
+    final change = last - first;
+    return '${change > 0 ? '+' : ''}${change.toStringAsFixed(1)}';
   }
 
   // ── Footer ────────────────────────────────────────────────────────────────

@@ -76,6 +76,9 @@ class ReportData {
   final double? sleepAverage;
   final List<WeightLog> weightLogs;
   final Measurement? latestMeasurement;
+
+  /// Consultas registradas, de la más antigua a la más reciente.
+  final List<Measurement> consultations;
   final NutritionReportData? nutritionDetail;
   final ExerciseReportData? exerciseDetail;
 
@@ -91,6 +94,7 @@ class ReportData {
     this.sleepAverage,
     required this.weightLogs,
     this.latestMeasurement,
+    this.consultations = const [],
     this.nutritionDetail,
     this.exerciseDetail,
   });

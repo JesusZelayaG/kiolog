@@ -66,10 +66,10 @@ class ReportRepositoryImpl implements ReportRepository {
       current = current.add(const Duration(days: 1));
     }
 
-    final (weightLogs, latestMeasurement, nutritionDetail, exerciseDetail) =
+    final (weightLogs, consultations, nutritionDetail, exerciseDetail) =
         await (
           _measurementsDao.getWeightLogs(start, end),
-          _measurementsDao.getLatestMeasurement(),
+          _measurementsDao.getMeasurements(),
           _buildNutritionDetail(start, end),
           _buildExerciseDetail(start, end),
         ).wait;
@@ -85,7 +85,8 @@ class ReportRepositoryImpl implements ReportRepository {
       exerciseTotalDays: exerciseTotalDays,
       sleepAverage: sleepDays > 0 ? sleepTotal / sleepDays : null,
       weightLogs: weightLogs,
-      latestMeasurement: latestMeasurement,
+      latestMeasurement: consultations.firstOrNull,
+      consultations: consultations.reversed.toList(),
       nutritionDetail: nutritionDetail,
       exerciseDetail: exerciseDetail,
     );
