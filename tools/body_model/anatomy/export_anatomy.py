@@ -35,6 +35,8 @@ HIDDEN_DEPTH = 0.05
 HIDDEN_REACH = 0.8
 SLICE_HEIGHT = 0.04
 LIMB_ZONES = {"muslo"}
+# Pads hidden on the midline show through the gap at the sternum, so aim them to the side.
+BESIDE_MIDLINE = {"pecho": 0.105}
 HOLE_RINGS = 4
 MIN_ISLAND = 300
 # Below this height a slice of the torso is centred between the legs, outside the body.
@@ -211,6 +213,9 @@ def cross_section_centers(points, zones, cloud):
             slices = np.floor(np.maximum(points[chosen, 2], lowest) / SLICE_HEIGHT)
             for value in np.unique(slices):
                 centers[chosen[slices == value]] = pool[pool_slice == value].mean(axis=0)
+        if name in BESIDE_MIDLINE:
+            chosen = zones == index
+            centers[chosen, 0] = np.sign(points[chosen, 0]) * BESIDE_MIDLINE[name]
     return centers
 
 
