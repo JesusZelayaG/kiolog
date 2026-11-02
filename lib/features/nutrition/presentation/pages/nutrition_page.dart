@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
@@ -82,8 +83,6 @@ class _NutritionView extends StatelessWidget {
 
           return Column(
             children: [
-              if (state.hasPendingPlan)
-                _PendingPlanBanner(plan: state.pendingPlan!),
               Expanded(
                 child: ListView(
                   padding:
@@ -106,6 +105,8 @@ class _NutritionView extends StatelessWidget {
                               ),
                     ),
                     const SizedBox(height: 16),
+                    if (state.planOptions.isEmpty)
+                      _EmptyPlanCard(plan: state.activePlan!),
                     ...state.planOptions.keys.map(
                       (type) => _MealSection(
                         mealType: type,
@@ -113,6 +114,12 @@ class _NutritionView extends StatelessWidget {
                         options: state.planOptions[type] ?? [],
                         log: state.getLogForMeal(type),
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => _openPlanForm(context),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Nuevo plan'),
                     ),
                   ],
                 ),
@@ -150,22 +157,11 @@ class _NutritionView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => _navigateToConfigPage(context),
+              onPressed: () => _openPlanForm(context),
               icon: const Icon(Icons.add),
               label: const Text('Crear plan'),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _navigateToConfigPage(BuildContext context) {
-    final bloc = context.read<NutritionBloc>();
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => NutritionConfigPage(
-          onComplete: () => bloc.add(NutritionLoaded(date: DateTime.now())),
         ),
       ),
     );
@@ -183,42 +179,89 @@ class _NutritionView extends StatelessWidget {
   }
 }
 
-// ── Banner plan pendiente ────────────────────────────────────────────────────
+// ── Formulario y acciones de plan ────────────────────────────────────────────
 
-class _PendingPlanBanner extends StatelessWidget {
+enum _PlanAction { activate, edit, delete }
+
+void _pushPlanForm(BuildContext context, NutritionBloc bloc, {MealPlan? plan}) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => NutritionConfigPage(
+        plan: plan,
+        onComplete: () => bloc.add(NutritionLoaded(date: DateTime.now())),
+      ),
+    ),
+  );
+}
+
+void _openPlanForm(BuildContext context, {MealPlan? plan}) =>
+    _pushPlanForm(context, context.read<NutritionBloc>(), plan: plan);
+
+Future<void> _onPlanAction(
+  BuildContext context,
+  _PlanAction action,
+  MealPlan plan,
+) async {
+  final bloc = context.read<NutritionBloc>();
+  final navigator = Navigator.of(context);
+  switch (action) {
+    case _PlanAction.activate:
+      bloc.add(NutritionPlanActivated(planId: plan.id));
+      navigator.pop();
+    case _PlanAction.edit:
+      navigator.pop();
+      _pushPlanForm(context, bloc, plan: plan);
+    case _PlanAction.delete:
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Borrar plan'),
+          content: Text(
+            'Se borrará "${plan.name}" con las comidas registradas en él. '
+            'No se puede deshacer.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Borrar'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed == true) {
+        bloc.add(NutritionPlanDeleted(planId: plan.id));
+        navigator.pop();
+      }
+  }
+}
+
+class _EmptyPlanCard extends StatelessWidget {
+  const _EmptyPlanCard({required this.plan});
+
   final MealPlan plan;
-  const _PendingPlanBanner({required this.plan});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      color: cs.inversePrimary.withValues(alpha: 0.3),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
+    final theme = Theme.of(context);
+    return VitalityCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(Icons.new_releases_outlined, color: cs.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(plan.name,
-                    style: Theme.of(context).textTheme.labelLarge),
-                Text(
-                  'Listo para activar',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ),
+          Text('Este plan no tiene comidas', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            'Agrégalas para registrar lo que comes cada día.',
+            style: theme.textTheme.bodySmall,
           ),
-          TextButton(
-            onPressed: () => context
-                .read<NutritionBloc>()
-                .add(NutritionPlanActivated(planId: plan.id)),
-            child: const Text('Activar'),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () => _openPlanForm(context, plan: plan),
+            icon: const Icon(Icons.restaurant_menu),
+            label: const Text('Agregar comidas'),
           ),
         ],
       ),
@@ -263,22 +306,29 @@ class _PlansDialog extends StatelessWidget {
                           title: Text(plan.name,
                               style: TextStyle(color: cs.onSurface)),
                           subtitle: Text(
-                              plan.isActive ? 'Activo' : 'Inactivo',
+                              '${plan.isActive ? 'Plan actual' : 'Plan anterior'}'
+                              ' · ${DateFormat('dd/MM/yy').format((plan.periodStart ?? plan.createdAt).toUtc())}',
                               style:
                                   TextStyle(color: cs.onSurfaceVariant)),
-                          trailing: isActive
-                              ? Icon(Icons.check_circle,
-                                  color: Theme.of(context).colorScheme.primary)
-                              : TextButton(
-                                  onPressed: () {
-                                    context.read<NutritionBloc>().add(
-                                          NutritionPlanActivated(
-                                              planId: plan.id),
-                                        );
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text('Activar'),
+                          trailing: PopupMenuButton<_PlanAction>(
+                            onSelected: (action) =>
+                                _onPlanAction(context, action, plan),
+                            itemBuilder: (_) => [
+                              if (!isActive)
+                                const PopupMenuItem(
+                                  value: _PlanAction.activate,
+                                  child: Text('Activar'),
                                 ),
+                              const PopupMenuItem(
+                                value: _PlanAction.edit,
+                                child: Text('Editar'),
+                              ),
+                              const PopupMenuItem(
+                                value: _PlanAction.delete,
+                                child: Text('Borrar'),
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),
@@ -288,17 +338,10 @@ class _PlansDialog extends StatelessWidget {
                   onPressed: () {
                     final bloc = context.read<NutritionBloc>();
                     Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => NutritionConfigPage(
-                          onComplete: () =>
-                              bloc.add(NutritionLoaded(date: DateTime.now())),
-                        ),
-                      ),
-                    );
+                    _pushPlanForm(context, bloc);
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text('Nueva consulta'),
+                  label: const Text('Nuevo plan'),
                 ),
               ],
             );

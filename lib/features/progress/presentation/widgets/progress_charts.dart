@@ -7,6 +7,7 @@ import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 
 import '../bloc/progress_overview_cubit.dart';
+import 'plan_progress_card.dart';
 
 // Checked with the dataviz palette validator: passes CVD and contrast on cream.
 const _seriesColors = [Color(0xFF00785A), Color(0xFFD97B1E)];
@@ -44,6 +45,9 @@ class ProgressCharts extends StatelessWidget {
         }
         return Column(
           children: [
+            if (modules.isEnabled(AppModule.nutrition))
+              for (final progress in state.plans)
+                _ChartSection(child: PlanProgressCard(progress: progress)),
             if (modules.isEnabled(AppModule.exercise))
               _ChartSection(
                 child: BarChartCard(
@@ -60,7 +64,7 @@ class ProgressCharts extends StatelessWidget {
               _ChartSection(
                 child: BarChartCard(
                   title: 'Comidas cumplidas',
-                  caption: 'Porcentaje del plan, últimas 8 semanas',
+                  caption: 'Porcentaje por semana del plan actual',
                   bars: state.nutrition,
                   goal: _nutritionGoalPercent,
                   goalLabel: 'Meta 100 %',

@@ -1,6 +1,7 @@
 // lib/core/dao/nutrition_dao.dart
 import 'package:drift/drift.dart';
 import 'package:kiolog/features/nutrition/domain/models/option_frequency_stat.dart';
+import 'package:kiolog/features/nutrition/domain/models/plan_option_draft.dart';
 import '../database/app_database.dart';
 import '../database/tables/nutrition_tables.dart';
 
@@ -14,19 +15,82 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
   Future<int> insertMealPlan(MealPlansCompanion plan) async {
     return db.transaction(() async {
       final now = DateTime.now().toUtc();
-      final hasActivePlan = await (select(mealPlans)
-                ..where((t) => t.isActive.equals(true)))
-              .getSingleOrNull() !=
-          null;
+      // A new plan replaces the current one, usually after a consultation.
+      await (update(mealPlans)..where((t) => t.isActive.equals(true)))
+          .write(MealPlansCompanion(
+        isActive: const Value(false),
+        periodEnd: Value(now),
+      ));
       return into(mealPlans).insert(plan.copyWith(
         createdAt: plan.createdAt.present ? plan.createdAt : Value(now),
-        isActive: Value(!hasActivePlan),
-        periodStart: hasActivePlan
-            ? const Value(null)
-            : (plan.periodStart.present ? plan.periodStart : Value(now)),
+        isActive: const Value(true),
+        periodStart: plan.periodStart.present ? plan.periodStart : Value(now),
       ));
     });
   }
+
+  /// Corrige un plan sin perder lo registrado: una opción quitada deja sus
+  /// comidas como texto libre, y renombrar un tiempo también las actualiza.
+  Future<void> updateMealPlan({
+    required int planId,
+    required String name,
+    required int dailyMealGoal,
+    required List<PlanOptionDraft> options,
+  }) =>
+      db.transaction(() async {
+        await (update(mealPlans)..where((t) => t.id.equals(planId))).write(
+          MealPlansCompanion(name: Value(name), dailyMealGoal: Value(dailyMealGoal)),
+        );
+        final kept = options.map((o) => o.id).nonNulls.toSet();
+        final current = await getAllPlanOptions(planId);
+        for (final option in current.where((o) => !kept.contains(o.id))) {
+          await (update(dailyMealLogs)..where((t) => t.planOptionId.equals(option.id)))
+              .write(DailyMealLogsCompanion(
+            planOptionId: const Value(null),
+            freeDescription: Value(option.description),
+          ));
+          await (delete(mealPlanOptions)..where((t) => t.id.equals(option.id))).go();
+        }
+        for (final draft in options) {
+          final id = draft.id;
+          final row = MealPlanOptionsCompanion(
+            planId: Value(planId),
+            mealType: Value(draft.mealType),
+            optionNumber: Value(draft.optionNumber),
+            description: Value(draft.description),
+          );
+          if (id == null) {
+            await into(mealPlanOptions).insert(row);
+          } else {
+            await (update(mealPlanOptions)..where((t) => t.id.equals(id))).write(row);
+            await (update(dailyMealLogs)..where((t) => t.planOptionId.equals(id)))
+                .write(DailyMealLogsCompanion(mealType: Value(draft.mealType)));
+          }
+        }
+      });
+
+  /// Borra un plan y las comidas registradas con sus opciones. Si era el
+  /// vigente, retoma el plan más reciente que quede.
+  Future<void> deleteMealPlan(int planId) => db.transaction(() async {
+        final plan = await (select(mealPlans)..where((t) => t.id.equals(planId)))
+            .getSingleOrNull();
+        if (plan == null) return;
+        final options = await getAllPlanOptions(planId);
+        await (delete(dailyMealLogs)
+              ..where((t) => t.planOptionId.isIn(options.map((o) => o.id))))
+            .go();
+        await (delete(mealPlanOptions)..where((t) => t.planId.equals(planId))).go();
+        await (delete(mealPlans)..where((t) => t.id.equals(planId))).go();
+        if (!plan.isActive) return;
+        final previous = await (select(mealPlans)
+              ..orderBy([(t) => OrderingTerm.desc(t.id)])
+              ..limit(1))
+            .getSingleOrNull();
+        if (previous == null) return;
+        await (update(mealPlans)..where((t) => t.id.equals(previous.id))).write(
+          const MealPlansCompanion(isActive: Value(true), periodEnd: Value(null)),
+        );
+      });
 
   Future<List<MealPlan>> getMealPlans() =>
       (select(mealPlans)..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))

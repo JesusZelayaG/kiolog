@@ -73,6 +73,7 @@ void main() {
       ],
     );
     when(() => progress.getMeasurements()).thenAnswer((_) async => []);
+    when(() => nutrition.getAllPlans()).thenAnswer((_) async => []);
   });
 
   Future<ProgressOverviewState> load() async {
@@ -111,6 +112,25 @@ void main() {
     final state = await load();
     expect(state.sleep.last.total, 8);
     expect(state.sleep.first.total, 0);
+  });
+
+  test('comidas cumplidas solo muestra semanas del plan actual', () async {
+    final plan = MealPlan(
+      id: 1,
+      name: 'Noviembre',
+      createdAt: DateTime.utc(2026, 11, 3),
+      isActive: true,
+      dailyMealGoal: 4,
+      periodStart: DateTime.utc(2026, 11, 3),
+    );
+    when(() => nutrition.getAllPlans()).thenAnswer((_) async => [plan]);
+    when(() => nutrition.getPlanMealCounts(plan))
+        .thenAnswer((_) async => (logged: 2, expected: 4));
+
+    final state = await load();
+
+    expect(state.nutrition.map((b) => b.label), ['02/11']);
+    expect(state.plans.single.adherencePercent, 50);
   });
 
   test('si una fuente falla queda en error en vez de romper la pantalla', () async {

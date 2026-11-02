@@ -72,6 +72,15 @@ class NutritionPlanActivated extends NutritionEvent {
   List<Object?> get props => [planId];
 }
 
+class NutritionPlanDeleted extends NutritionEvent {
+  final int planId;
+
+  const NutritionPlanDeleted({required this.planId});
+
+  @override
+  List<Object?> get props => [planId];
+}
+
 class NutritionPlanCreated extends NutritionEvent {
   final String name;
   final int dailyMealGoal;

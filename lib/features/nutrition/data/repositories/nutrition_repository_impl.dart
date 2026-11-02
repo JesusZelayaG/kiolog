@@ -1,3 +1,4 @@
+import 'package:kiolog/features/nutrition/domain/models/plan_option_draft.dart';
 import 'package:drift/drift.dart';
 import 'package:kiolog/core/dao/nutrition_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
@@ -175,6 +176,43 @@ class NutritionRepositoryImpl implements NutritionRepository {
     }
 
     return result;
+  }
+
+  @override
+  Future<void> updatePlan({
+    required int planId,
+    required String name,
+    required int dailyMealGoal,
+    required List<PlanOptionDraft> options,
+  }) =>
+      _nutritionDao.updateMealPlan(
+        planId: planId,
+        name: name,
+        dailyMealGoal: dailyMealGoal,
+        options: options,
+      );
+
+  @override
+  Future<void> deletePlan(int planId) => _nutritionDao.deleteMealPlan(planId);
+
+  @override
+  Future<({int logged, int expected})> getPlanMealCounts(MealPlan plan) async {
+    final start = plan.periodStart;
+    if (start == null) return (logged: 0, expected: 0);
+    DateTime day(DateTime date) {
+      final utc = date.toUtc();
+      return DateTime.utc(utc.year, utc.month, utc.day);
+    }
+
+    // As in the weekly stats, the plan that starts on a day owns that day.
+    final tomorrow = day(DateTime.now()).add(const Duration(days: 1));
+    final first = day(start);
+    final end = plan.periodEnd == null ? tomorrow : day(plan.periodEnd!);
+    final logs = await _nutritionDao.getLogsInRange(first, end);
+    return (
+      logged: logs.where((log) => log.planOptionId != null).length,
+      expected: end.difference(first).inDays * plan.dailyMealGoal,
+    );
   }
 
   @override

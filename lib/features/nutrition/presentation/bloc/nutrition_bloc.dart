@@ -15,6 +15,7 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
     on<NutritionOffPlanMealLogged>(_onOffPlanMealLogged);
     on<NutritionMealLogRemoved>(_onMealLogRemoved);
     on<NutritionPlanActivated>(_onPlanActivated);
+    on<NutritionPlanDeleted>(_onPlanDeleted);
     on<NutritionPlanCreated>(_onPlanCreated);
     on<NutritionOptionAdded>(_onOptionAdded);
     on<NutritionProgressPlanSelected>(_onProgressPlanSelected);
@@ -159,6 +160,18 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
         planOptions: options,
         optionFrequencies: frequencies,
       ));
+    } catch (e) {
+      emit(state.copyWith(status: NutritionStatus.failure, error: e.toString()));
+    }
+  }
+
+  Future<void> _onPlanDeleted(
+    NutritionPlanDeleted event,
+    Emitter<NutritionState> emit,
+  ) async {
+    try {
+      await _repository.deletePlan(event.planId);
+      add(NutritionLoaded(date: DateTime.now()));
     } catch (e) {
       emit(state.copyWith(status: NutritionStatus.failure, error: e.toString()));
     }

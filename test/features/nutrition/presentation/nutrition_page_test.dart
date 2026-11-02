@@ -94,33 +94,6 @@ Widget _wrap(NutritionBloc bloc) => MaterialApp(
       ),
     );
 
-Widget _wrapWithBanner(NutritionBloc bloc) => MaterialApp(
-      home: BlocProvider<NutritionBloc>.value(
-        value: bloc,
-        child: Scaffold(
-          body: BlocBuilder<NutritionBloc, NutritionState>(
-            builder: (context, state) {
-              if (state.activePlan == null) return const SizedBox();
-              return Column(
-                children: [
-                  if (state.hasPendingPlan) ...[
-                    Text(state.pendingPlan!.name),
-                    TextButton(
-                      onPressed: () => context.read<NutritionBloc>().add(
-                            NutritionPlanActivated(
-                                planId: state.pendingPlan!.id),
-                          ),
-                      child: const Text('Activar'),
-                    ),
-                  ],
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-
 void main() {
   late MockNutritionBloc bloc;
 
@@ -248,63 +221,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Fuera de plan: Pizza con amigos'), findsOneWidget);
-    });
-
-    testWidgets('muestra banner cuando hay plan pendiente de activación',
-        (tester) async {
-      final activePlan = MealPlan(
-        id: 1,
-        name: 'Plan Actual',
-        createdAt: DateTime(2026, 5, 1),
-        isActive: true,
-        dailyMealGoal: 3,
-        periodStart: DateTime(2026, 5, 1),
-        periodEnd: null,
-      );
-      final pendingPlan = MealPlan(
-        id: 2,
-        name: 'Plan Junio',
-        createdAt: DateTime(2026, 6, 1),
-        isActive: false,
-        dailyMealGoal: 4,
-        periodStart: null,
-        periodEnd: null,
-      );
-      whenListen(
-        bloc,
-        const Stream<NutritionState>.empty(),
-        initialState: NutritionState(
-          status: NutritionStatus.success,
-          activePlan: activePlan,
-          allPlans: [activePlan, pendingPlan],
-          planOptions: const {},
-        ),
-      );
-
-      await tester.pumpWidget(_wrapWithBanner(bloc));
-      await tester.pump();
-
-      expect(find.text('Plan Junio'), findsOneWidget);
-      expect(find.text('Activar'), findsOneWidget);
-    });
-
-    testWidgets('no muestra banner cuando no hay plan pendiente',
-        (tester) async {
-      whenListen(
-        bloc,
-        const Stream<NutritionState>.empty(),
-        initialState: NutritionState(
-          status: NutritionStatus.success,
-          activePlan: _plan,
-          allPlans: [_plan],
-          planOptions: const {},
-        ),
-      );
-
-      await tester.pumpWidget(_wrapWithBanner(bloc));
-      await tester.pump();
-
-      expect(find.text('Activar'), findsNothing);
     });
   });
 }

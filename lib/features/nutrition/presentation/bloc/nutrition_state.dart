@@ -29,20 +29,6 @@ class NutritionState extends Equatable {
     this.error,
   });
 
-  bool get hasPendingPlan {
-    if (activePlan == null) return false;
-    return allPlans.any(
-        (p) => !p.isActive && p.createdAt.isAfter(activePlan!.createdAt));
-  }
-
-  MealPlan? get pendingPlan {
-    if (activePlan == null) return null;
-    return allPlans
-        .where(
-            (p) => !p.isActive && p.createdAt.isAfter(activePlan!.createdAt))
-        .firstOrNull;
-  }
-
   MealPlan? get viewingPlan => viewingPlanId == null
       ? activePlan
       : allPlans.firstWhereOrNull((p) => p.id == viewingPlanId);

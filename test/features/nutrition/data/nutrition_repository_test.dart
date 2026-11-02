@@ -141,19 +141,20 @@ void main() {
       expect(plan.isActive, isTrue);
     });
 
-    test('insertMealPlan inserts second plan as inactive with no periodStart', () async {
-      // First plan auto-activates
-      await db.nutritionDao.insertMealPlan(
+    test('insertMealPlan activates a new plan and closes the previous one', () async {
+      final id1 = await db.nutritionDao.insertMealPlan(
         const MealPlansCompanion(name: Value('Plan A'), dailyMealGoal: Value(4)),
       );
-      // Second plan should be inactive, no periodStart
       final id2 = await db.nutritionDao.insertMealPlan(
         const MealPlansCompanion(name: Value('Plan B'), dailyMealGoal: Value(3)),
       );
       final plans = await db.nutritionDao.getMealPlans();
+      final planA = plans.firstWhere((p) => p.id == id1);
       final planB = plans.firstWhere((p) => p.id == id2);
-      expect(planB.isActive, isFalse);
-      expect(planB.periodStart, isNull);
+      expect(planA.isActive, isFalse);
+      expect(planA.periodEnd, isNotNull);
+      expect(planB.isActive, isTrue);
+      expect(planB.periodStart, isNotNull);
     });
 
     test('getLogsInRange returns only logs within range', () async {
