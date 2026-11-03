@@ -20,3 +20,14 @@ class MonthlyRewards extends Table {
         {month, threshold},
       ];
 }
+
+/// Elecciones de Recompensas: qué se viste, qué se oculta del cuarto y qué
+/// desbloqueos ya se anunciaron. Claves: slot.<espacio>, hidden.<pieza>,
+/// seen.<pieza>.
+class RewardSettings extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+
+  @override
+  Set<Column> get primaryKey => {key};
+}

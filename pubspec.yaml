@@ -77,6 +77,7 @@ flutter:
     - assets/img/
     - assets/models/anatomy_body.glb
     - assets/models/anatomy_body.json
+    - assets/models/rewards.glb
 
 # thermion pulls image 4.11.0, which needs a newer archive than its own constraint allows.
 dependency_overrides:

@@ -4,7 +4,7 @@ import '../database/tables/rewards_tables.dart';
 
 part 'rewards_dao.g.dart';
 
-@DriftAccessor(tables: [MonthlyRewards])
+@DriftAccessor(tables: [MonthlyRewards, RewardSettings])
 class RewardsDao extends DatabaseAccessor<AppDatabase> with _$RewardsDaoMixin {
   RewardsDao(super.db);
 
@@ -38,4 +38,23 @@ class RewardsDao extends DatabaseAccessor<AppDatabase> with _$RewardsDaoMixin {
           redeemedAt: Value(redeemed ? DateTime.now().toUtc() : null),
         ),
       );
+
+  Future<Map<String, String>> settings() async => {
+        for (final row in await select(rewardSettings).get()) row.key: row.value,
+      };
+
+  Future<void> putSetting(String key, String value) =>
+      into(rewardSettings).insertOnConflictUpdate(
+        RewardSettingsCompanion.insert(key: key, value: value),
+      );
+
+  Future<void> removeSetting(String key) =>
+      (delete(rewardSettings)..where((t) => t.key.equals(key))).go();
+
+  Future<void> putSettings(Map<String, String> values) => batch((b) {
+        for (final MapEntry(:key, :value) in values.entries) {
+          b.insert(rewardSettings, RewardSettingsCompanion.insert(key: key, value: value),
+              mode: InsertMode.insertOrReplace);
+        }
+      });
 }

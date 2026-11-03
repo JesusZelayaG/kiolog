@@ -59,6 +59,7 @@ part 'app_database.g.dart';
     UserModules,
     // Rewards
     MonthlyRewards,
+    RewardSettings,
   ],
   daos: [
     NutritionDao,
@@ -78,7 +79,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration {
@@ -150,6 +151,9 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 13) {
           await m.createTable(monthlyRewards);
+        }
+        if (from < 14) {
+          await m.createTable(rewardSettings);
         }
       },
     );
