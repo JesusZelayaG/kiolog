@@ -10,6 +10,7 @@ import '../../data/ficha_reader.dart';
 import '../../domain/repositories/progress_repository.dart';
 import '../bloc/consultations_cubit.dart';
 import '../widgets/measurement_form.dart';
+import '../widgets/next_consultation_card.dart';
 
 class ConsultationsPage extends StatelessWidget {
   const ConsultationsPage({super.key});
@@ -66,21 +67,25 @@ class _ConsultationsView extends StatelessWidget {
             const Center(child: CircularProgressIndicator()),
           ConsultationsStatus.failure =>
             const Center(child: Text('No se pudieron cargar las consultas.')),
-          ConsultationsStatus.ready when state.consultations.isEmpty => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Text(
-                  'Registra aquí las medidas de cada consulta con tu nutricionista.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge,
-                ),
-              ),
-            ),
-          ConsultationsStatus.ready => ListView.separated(
+          ConsultationsStatus.ready => ListView(
               padding: const EdgeInsets.all(16),
-              itemCount: state.consultations.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) => _ConsultationCard(state.consultations[i]),
+              children: [
+                const NextConsultationCard(),
+                const SizedBox(height: 16),
+                if (state.consultations.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      'Registra aquí las medidas de cada consulta con tu nutricionista.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                  ),
+                for (final (i, consultation) in state.consultations.indexed) ...[
+                  if (i > 0) const SizedBox(height: 12),
+                  _ConsultationCard(consultation),
+                ],
+              ],
             ),
         },
       ),

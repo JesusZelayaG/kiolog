@@ -47,4 +47,7 @@ class UserProfiles extends Table {
   TextColumn get name => text().nullable()();
   // male | female, elige la forma del modelo corporal
   TextColumn get bodySex => text().nullable()();
+
+  /// Fecha y hora de la próxima cita con la nutricionista.
+  DateTimeColumn get nextConsultationAt => dateTime().nullable()();
 }

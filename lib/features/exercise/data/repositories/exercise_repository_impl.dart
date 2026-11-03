@@ -1,3 +1,4 @@
+import 'package:kiolog/core/domain/day.dart';
 import 'package:drift/drift.dart';
 import 'package:kiolog/core/dao/exercise_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
@@ -77,6 +78,8 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
     double? weightKg,
     String setType = 'normal',
     int orderIndex = 0,
+    String? repsLabel,
+    String? notes,
   }) =>
       _dao.insertExerciseRoutineItem(ExerciseRoutineItemsCompanion(
         routineId: Value(routineId),
@@ -86,6 +89,8 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
         weightKg: Value(weightKg),
         setType: Value(setType),
         orderIndex: Value(orderIndex),
+        repsLabel: Value(repsLabel),
+        notes: Value(notes),
       ));
 
   @override
@@ -97,6 +102,8 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
     double? weightKg,
     String? setType,
     int? orderIndex,
+    ({String? value})? repsLabel,
+    ({String? value})? notes,
   }) =>
       _dao.updateRoutineItem(
         itemId,
@@ -110,6 +117,9 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
           setType: setType != null ? Value(setType) : const Value.absent(),
           orderIndex:
               orderIndex != null ? Value(orderIndex) : const Value.absent(),
+          repsLabel:
+              repsLabel != null ? Value(repsLabel.value) : const Value.absent(),
+          notes: notes != null ? Value(notes.value) : const Value.absent(),
         ),
       );
 
@@ -237,7 +247,7 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
     String? notes,
   }) =>
       _dao.insertCardioLog(CardioLogsCompanion(
-        date: Value(date.toUtc()),
+        date: Value(_utcDate(date)),
         cardioType: Value(cardioType),
         durationMinutes: Value(durationMinutes),
         notes: Value(notes),
@@ -292,7 +302,7 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
 
   @override
   Future<List<WeeklyStat>> getWeeklyStats({int weeksBack = 8}) async {
-    final thisMonday = _mondayOf(DateTime.now().toUtc());
+    final thisMonday = _mondayOf(todayUtcDay());
     final stats = <WeeklyStat>[];
     for (var i = weeksBack - 1; i >= 0; i--) {
       final weekStart = thisMonday.subtract(Duration(days: 7 * i));

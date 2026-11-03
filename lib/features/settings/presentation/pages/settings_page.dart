@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kiolog/core/dao/user_profile_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/core/database/backup_service.dart';
-import 'package:kiolog/core/database/file_chooser.dart';
 import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
@@ -15,6 +15,7 @@ import 'package:kiolog/features/exercise/presentation/pages/exercise_config_page
 import 'package:kiolog/features/nutrition/presentation/pages/nutrition_config_page.dart';
 import 'package:kiolog/features/water/presentation/pages/water_config_page.dart';
 import 'package:kiolog/shared/widgets/kiolog_app_bar.dart';
+import 'package:kiolog/shared/widgets/restore_backup.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -159,9 +160,10 @@ class SettingsPage extends StatelessWidget {
                       _ToolTile(
                         icon: Icons.upload_file_outlined,
                         title: 'Crear respaldo',
-                        subtitle: 'Guarda tus datos en un archivo',
+                        subtitle: 'En el teléfono o en Drive, correo…',
                         onTap: () => _exportBackup(context),
                       ),
+                      const _AutoBackupTile(),
                       _ToolTile(
                         icon: Icons.settings_backup_restore,
                         title: 'Restaurar respaldo',
@@ -220,13 +222,47 @@ Future<void> _chooseBodySex(BuildContext context) async {
   messenger.showSnackBar(const SnackBar(content: Text('Guardado')));
 }
 
+enum _BackupTarget { phone, share }
+
 Future<void> _exportBackup(BuildContext context) async {
   final messenger = ScaffoldMessenger.of(context);
+  final target = await showModalBottomSheet<_BackupTarget>(
+    context: context,
+    // Por encima de la barra de navegación.
+    useRootNavigator: true,
+    builder: (sheetContext) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.phone_android),
+            title: const Text('Guardar en el teléfono'),
+            subtitle: const Text('Descargas/Kiolog. Sigue ahí aunque borres la app.'),
+            onTap: () => Navigator.pop(sheetContext, _BackupTarget.phone),
+          ),
+          ListTile(
+            leading: const Icon(Icons.share),
+            title: const Text('Enviar a Drive, correo…'),
+            subtitle: const Text('Una copia fuera del teléfono.'),
+            onTap: () => Navigator.pop(sheetContext, _BackupTarget.share),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (target == null) return;
+  final service = BackupService(getIt<AppDatabase>());
   try {
-    final file = await BackupService(getIt<AppDatabase>()).export();
-    await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)], subject: 'Respaldo de Kiolog'),
-    );
+    switch (target) {
+      case _BackupTarget.phone:
+        final saved = await service.saveToPhone();
+        messenger.showSnackBar(SnackBar(content: Text('Respaldo guardado en $saved')));
+      case _BackupTarget.share:
+        final file = await service.export();
+        await SharePlus.instance.share(
+          ShareParams(files: [XFile(file.path)], subject: 'Respaldo de Kiolog'),
+        );
+    }
   } catch (_) {
     messenger.showSnackBar(
       const SnackBar(content: Text('No se pudo crear el respaldo')),
@@ -234,41 +270,27 @@ Future<void> _exportBackup(BuildContext context) async {
   }
 }
 
-Future<void> _restoreBackup(BuildContext context) async {
-  final messenger = ScaffoldMessenger.of(context);
-  final path = await chooseFile();
-  if (path == null || !context.mounted) return;
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: const Text('Restaurar respaldo'),
-      content: const Text(
-        'Los datos actuales de este teléfono se reemplazarán por los del respaldo. '
-        'La app se cerrará y deberás abrirla de nuevo.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext, false),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(dialogContext, true),
-          child: const Text('Restaurar'),
-        ),
-      ],
-    ),
-  );
-  if (confirmed != true) return;
-  try {
-    await BackupService(getIt<AppDatabase>()).restore(path);
-    await SystemNavigator.pop();
-  } on InvalidBackupException {
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Ese archivo no es un respaldo de Kiolog')),
-    );
-  } catch (_) {
-    messenger.showSnackBar(
-      const SnackBar(content: Text('No se pudo restaurar el respaldo')),
+Future<void> _restoreBackup(BuildContext context) => restoreBackupFlow(context);
+
+/// Muestra cuándo se hizo el último respaldo automático.
+class _AutoBackupTile extends StatelessWidget {
+  const _AutoBackupTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<DateTime?>(
+      future: BackupService.lastAutoBackup(),
+      builder: (context, snapshot) {
+        final last = snapshot.data;
+        final when = last == null
+            ? 'todavía ninguno'
+            : 'último: ${DateFormat.yMMMd('es').format(last)}';
+        return _ToolTile(
+          icon: Icons.history,
+          title: 'Respaldo automático diario',
+          subtitle: 'Descargas/Kiolog, guarda $autoBackupsKept días · $when',
+        );
+      },
     );
   }
 }

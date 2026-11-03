@@ -1,12 +1,16 @@
 package com.kiolog.kiolog
 
 import android.app.Activity
+import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
+import android.os.Build
+import android.os.Environment
 import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -22,6 +26,14 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+            if (call.method == "saveToDownloads") {
+                saveToDownloads(call.argument<String>("path")!!, call.argument<String>("name")!!, result)
+                return@setMethodCallHandler
+            }
+            if (call.method == "pruneDownloads") {
+                pruneDownloads(call.argument<String>("prefix")!!, call.argument<Int>("keep")!!, result)
+                return@setMethodCallHandler
+            }
             if (call.method == "readText") {
                 readText(call.argument<String>("path")!!, result)
                 return@setMethodCallHandler
@@ -60,6 +72,61 @@ class MainActivity : FlutterActivity() {
             result.success(copy.path)
         } catch (e: Exception) {
             result.error("pick_failed", e.message, null)
+        }
+    }
+
+    /** Copies [path] to Download/Kiolog so it survives uninstalling the app. */
+    private fun saveToDownloads(path: String, name: String, result: MethodChannel.Result) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            result.error("unsupported", "Android 10 or newer is required", null)
+            return
+        }
+        try {
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, name)
+                put(MediaStore.Downloads.MIME_TYPE, "application/octet-stream")
+                put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/$FOLDER")
+                put(MediaStore.Downloads.IS_PENDING, 1)
+            }
+            val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            val uri = contentResolver.insert(collection, values)!!
+            contentResolver.openOutputStream(uri)!!.use { output ->
+                File(path).inputStream().use { input -> input.copyTo(output) }
+            }
+            values.clear()
+            values.put(MediaStore.Downloads.IS_PENDING, 0)
+            contentResolver.update(uri, values, null, null)
+            result.success("${Environment.DIRECTORY_DOWNLOADS}/$FOLDER/$name")
+        } catch (e: Exception) {
+            result.error("save_failed", e.message, null)
+        }
+    }
+
+    /** Deletes this app's oldest Download/Kiolog files named [prefix]*, keeping [keep]. */
+    private fun pruneDownloads(prefix: String, keep: Int, result: MethodChannel.Result) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            result.success(0)
+            return
+        }
+        try {
+            val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            val ids = mutableListOf<Long>()
+            contentResolver.query(
+                collection,
+                arrayOf(MediaStore.Downloads._ID),
+                "${MediaStore.Downloads.RELATIVE_PATH} LIKE ? AND ${MediaStore.Downloads.DISPLAY_NAME} LIKE ?",
+                arrayOf("${Environment.DIRECTORY_DOWNLOADS}/$FOLDER%", "$prefix%"),
+                "${MediaStore.Downloads.DISPLAY_NAME} DESC",
+            )?.use { cursor ->
+                while (cursor.moveToNext()) ids.add(cursor.getLong(0))
+            }
+            val stale = ids.drop(keep)
+            stale.forEach { id ->
+                contentResolver.delete(android.content.ContentUris.withAppendedId(collection, id), null, null)
+            }
+            result.success(stale.size)
+        } catch (e: Exception) {
+            result.error("prune_failed", e.message, null)
         }
     }
 
@@ -113,6 +180,7 @@ class MainActivity : FlutterActivity() {
     private companion object {
         const val PDF_WIDTH = 2000
         const val CHANNEL = "kiolog/files"
+        const val FOLDER = "Kiolog"
         const val PICK_REQUEST = 4210
     }
 }

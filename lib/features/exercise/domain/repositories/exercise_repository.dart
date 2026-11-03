@@ -31,7 +31,11 @@ abstract class ExerciseRepository {
     double? weightKg,
     String setType = 'normal',
     int orderIndex = 0,
+    String? repsLabel,
+    String? notes,
   });
+
+  /// [repsLabel] y [notes]: null no los toca; un registro con null los borra.
   Future<void> updateRoutineItem({
     required int itemId,
     String? exerciseName,
@@ -40,6 +44,8 @@ abstract class ExerciseRepository {
     double? weightKg,
     String? setType,
     int? orderIndex,
+    ({String? value})? repsLabel,
+    ({String? value})? notes,
   });
   Future<void> deleteRoutineItem(int itemId);
 

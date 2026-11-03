@@ -253,9 +253,7 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
   // ── Cardio Logs ───────────────────────────────────────────────────────────
 
   Future<int> insertCardioLog(CardioLogsCompanion log) =>
-      into(cardioLogs).insert(log.copyWith(
-        date: Value(log.date.value.toUtc()),
-      ));
+      into(cardioLogs).insert(log);
 
   Future<void> updateCardioLog(int id, CardioLogsCompanion data) =>
       (update(cardioLogs)..where((t) => t.id.equals(id))).write(data);

@@ -7,6 +7,7 @@ import 'package:kiolog/features/nutrition/domain/repositories/nutrition_reposito
 import 'package:kiolog/features/progress/domain/body_calibration.dart';
 import 'package:kiolog/features/progress/domain/repositories/progress_repository.dart';
 import 'package:kiolog/features/water/domain/repositories/water_repository.dart';
+import 'package:kiolog/shared/widgets/restore_backup.dart';
 import '../../../../core/domain/app_module.dart';
 import '../../../../core/dao/user_modules_dao.dart';
 import '../../../../core/modules/cubit/modules_cubit.dart';
@@ -56,6 +57,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
   final _weightController = TextEditingController();
   DateTime _startDate = DateTime.now();
   BodySex? _bodySex;
+  bool _finishing = false;
 
 
   @override
@@ -136,6 +138,9 @@ class _OnboardingViewState extends State<_OnboardingView> {
   }
 
   Future<void> _finish() async {
+    // Un segundo toque mientras se guarda duplicaba los planes.
+    if (_finishing) return;
+    setState(() => _finishing = true);
     // Save water config (only if active)
     if (_activeModules.contains(AppModule.water)) {
       await getIt<WaterRepository>().saveConfig(
@@ -152,9 +157,10 @@ class _OnboardingViewState extends State<_OnboardingView> {
         _mealPlanNameController.text,
         dailyMealGoal: _mealTimes.length,
       );
-      for (final mealTime in _mealTimes) {
-        final typeName = mealTime.nameController.text.trim();
-        if (typeName.isEmpty) continue;
+      for (final (index, mealTime) in _mealTimes.indexed) {
+        // Sin nombre, las opciones escritas se perdían sin aviso.
+        final typed = mealTime.nameController.text.trim();
+        final typeName = typed.isEmpty ? 'Tiempo ${index + 1}' : typed;
         for (int i = 0; i < mealTime.options.length; i++) {
           final text = mealTime.options[i].text.trim();
           if (text.isNotEmpty) {
@@ -280,7 +286,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
         ),
-        onPressed: _canProceed
+        onPressed: _canProceed && !_finishing
             ? (_currentStep == _totalSteps - 1 ? _finish : _nextStep)
             : null,
         child: Row(
@@ -523,6 +529,43 @@ class _OnboardingViewState extends State<_OnboardingView> {
             ),
           ),
           _buildNavFooter(theme),
+          _buildRestoreCard(theme),
+        ],
+      ),
+    );
+  }
+
+  /// Para quien ya usaba Kiolog en otro teléfono o reinstaló la app.
+  Widget _buildRestoreCard(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('¿Ya usabas Kiolog?', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            'Si tienes un respaldo, recupera tus planes, consultas y registros '
+            'sin volver a configurar nada.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => restoreBackupFlow(context, keepCopy: false),
+              icon: const Icon(Icons.settings_backup_restore),
+              label: const Text('Ya tengo un respaldo'),
+            ),
+          ),
         ],
       ),
     );

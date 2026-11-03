@@ -72,6 +72,42 @@ class NotificationService {
     );
   }
 
+  /// Pide permiso para mostrar notificaciones (Android 13 o más nuevo).
+  static Future<bool> requestPermission() async {
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    return await android?.requestNotificationsPermission() ?? true;
+  }
+
+  /// Una sola notificación en el instante [at].
+  static Future<void> scheduleOnce({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime at,
+  }) async {
+    await _plugin.zonedSchedule(
+      id,
+      title,
+      body,
+      // El instante es absoluto: no depende de la zona configurada en tz.
+      tz.TZDateTime.from(at, tz.UTC),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'kiolog_consultas',
+          'Consultas',
+          channelDescription: 'Recordatorio de la próxima consulta',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+      // Sin permiso de alarma exacta; unos minutos de holgura bastan.
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
   static Future<void> cancel(int id) => _plugin.cancel(id);
 
   static Future<void> cancelAll() => _plugin.cancelAll();

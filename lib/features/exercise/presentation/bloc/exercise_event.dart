@@ -67,6 +67,8 @@ class ExerciseRoutineItemAdded extends ExerciseEvent {
   final int orderIndex;
   final List<({int setNumber, int? dropOfSetNumber, int reps, double? weightKg})>
       setDefs;
+  final String? repsLabel;
+  final String? notes;
 
   const ExerciseRoutineItemAdded({
     required this.routineId,
@@ -77,6 +79,8 @@ class ExerciseRoutineItemAdded extends ExerciseEvent {
     this.setType = 'normal',
     this.orderIndex = 0,
     this.setDefs = const [],
+    this.repsLabel,
+    this.notes,
   });
 
   @override
@@ -93,6 +97,8 @@ class ExerciseRoutineItemUpdated extends ExerciseEvent {
   final String? setType;
   final List<({int setNumber, int? dropOfSetNumber, int reps, double? weightKg})>?
       setDefs;
+  final ({String? value})? repsLabel;
+  final ({String? value})? notes;
 
   const ExerciseRoutineItemUpdated({
     required this.itemId,
@@ -102,10 +108,13 @@ class ExerciseRoutineItemUpdated extends ExerciseEvent {
     this.weightKg,
     this.setType,
     this.setDefs,
+    this.repsLabel,
+    this.notes,
   });
 
   @override
-  List<Object?> get props => [itemId, exerciseName, sets, reps, weightKg, setType];
+  List<Object?> get props =>
+      [itemId, exerciseName, sets, reps, weightKg, setType, repsLabel, notes];
 }
 
 class ExerciseRoutineItemDeleted extends ExerciseEvent {

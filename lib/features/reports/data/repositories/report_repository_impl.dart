@@ -2,6 +2,7 @@ import 'package:kiolog/core/dao/config_dao.dart';
 import 'package:kiolog/core/dao/exercise_dao.dart';
 import 'package:kiolog/core/dao/measurements_dao.dart';
 import 'package:kiolog/core/dao/nutrition_dao.dart';
+import 'package:kiolog/core/dao/user_profile_dao.dart';
 import 'package:kiolog/core/dao/water_sleep_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import '../../domain/repositories/report_repository.dart';
@@ -12,14 +13,16 @@ class ReportRepositoryImpl implements ReportRepository {
   final ExerciseDao _exerciseDao;
   final MeasurementsDao _measurementsDao;
   final ConfigDao _configDao;
+  final UserProfileDao? _profileDao;
 
   ReportRepositoryImpl(
     this._waterSleepDao,
     this._nutritionDao,
     this._exerciseDao,
     this._measurementsDao,
-    this._configDao,
-  );
+    this._configDao, {
+    UserProfileDao? profileDao,
+  }) : _profileDao = profileDao;
 
   DateTime _dateOnly(DateTime date) =>
       DateTime.utc(date.year, date.month, date.day);
@@ -27,69 +30,88 @@ class ReportRepositoryImpl implements ReportRepository {
   @override
   Future<ReportData> generateReport(DateTime start, DateTime end) async {
     final waterConfig = await _configDao.getWaterConfig();
-    final dailyGoal = waterConfig?.dailyGoalMl ?? 3000;
+    final exerciseConfig = await _exerciseDao.getExerciseConfig();
+    final mealPlan = await _nutritionDao.getActiveMealPlan();
+    final goals = ReportGoals(
+      waterMl: waterConfig?.dailyGoalMl ?? 3000,
+      mealsPerDay: mealPlan?.dailyMealGoal ?? 4,
+      routineDaysPerWeek: exerciseConfig?.weeklyRoutineDaysGoal ?? 4,
+      cardioDaysPerWeek: exerciseConfig?.weeklyCardioDaysGoal ?? 3,
+      cardioMinutes: exerciseConfig?.cardioMinutesGoal ?? 30,
+    );
 
-    int waterGoalDays = 0;
-    int waterTotalDays = 0;
-    int mealsLogged = 0;
-    int mealsTotal = 0;
-    int exerciseDays = 0;
-    int exerciseTotalDays = 0;
-    double sleepTotal = 0;
-    int sleepDays = 0;
+    final first = _dateOnly(start);
+    // Los días que aún no llegan no cuentan como incumplidos.
+    final today = _dateOnly(DateTime.now());
+    final requestedLast = _dateOnly(end);
+    final last = requestedLast.isAfter(today) ? today : requestedLast;
 
-    var current = _dateOnly(start);
-    final last = _dateOnly(end);
-
-    while (!current.isAfter(last)) {
-      final water = await _waterSleepDao.getDailyWaterTotalMl(current);
-      if (water > 0) waterTotalDays++;
-      if (water >= dailyGoal) waterGoalDays++;
-
-      final meals = await _nutritionDao.getDailyMealLogs(current);
-      mealsLogged += meals.length;
-      mealsTotal += 4;
-
-      final exerciseLog = await _exerciseDao.getDailyExerciseLog(current);
-      final sessions = await _exerciseDao.getSessionsForDate(current);
-      if (exerciseLog?.completed == true || sessions.isNotEmpty) {
-        exerciseDays++;
-      }
-      if (current.weekday <= 5) exerciseTotalDays++;
-
-      final sleepLogs = await _waterSleepDao.getSleepLogsForDate(current);
-      if (sleepLogs.isNotEmpty) {
-        sleepTotal += sleepLogs.fold(0.0, (s, l) => s + l.hoursCalculated);
-        sleepDays++;
-      }
-
-      current = current.add(const Duration(days: 1));
-    }
-
-    final (weightLogs, consultations, nutritionDetail, exerciseDetail) =
+    final (weightLogs, consultations, cardioLogs, nutritionDetail, exerciseDetail) =
         await (
           _measurementsDao.getWeightLogs(start, end),
           _measurementsDao.getMeasurements(),
+          _exerciseDao.getCardioLogsInRange(start, end),
           _buildNutritionDetail(start, end),
           _buildExerciseDetail(start, end),
         ).wait;
 
+    final weightByDay = {for (final log in weightLogs) _day(log.date): log.weightKg};
+    final cardioByDay = <DateTime, int>{};
+    for (final log in cardioLogs) {
+      final day = _day(log.date);
+      cardioByDay[day] = (cardioByDay[day] ?? 0) + log.durationMinutes;
+    }
+
+    final days = <ReportDay>[];
+    for (var current = first; !current.isAfter(last); current = current.add(const Duration(days: 1))) {
+      final water = await _waterSleepDao.getDailyWaterTotalMl(current);
+      final meals = await _nutritionDao.getDailyMealLogs(current);
+      final exerciseLog = await _exerciseDao.getDailyExerciseLog(current);
+      final sessions = await _exerciseDao.getSessionsForDate(current);
+      final sleepLogs = await _waterSleepDao.getSleepLogsForDate(current);
+      days.add(ReportDay(
+        date: current,
+        waterMl: water,
+        meals: meals.length,
+        mealsFromPlan: meals.where((m) => m.planOptionId != null).length,
+        exercised: exerciseLog?.completed == true || sessions.isNotEmpty,
+        cardioMinutes: cardioByDay[current] ?? 0,
+        sleepHours: sleepLogs.isEmpty
+            ? null
+            : sleepLogs.fold<double>(0, (sum, l) => sum + l.hoursCalculated),
+        weightKg: weightByDay[current],
+      ));
+    }
+
+    final slept = days.where((d) => d.sleepHours != null).toList();
+    final exerciseDays = days.where((d) => d.exercised).length;
     return ReportData(
       start: start,
       end: end,
-      waterGoalDays: waterGoalDays,
-      waterTotalDays: waterTotalDays,
-      mealsLogged: mealsLogged,
-      mealsTotal: mealsTotal,
+      waterGoalDays: days.where((d) => d.waterMl >= goals.waterMl).length,
+      waterTotalDays: days.length,
+      mealsLogged: days.fold(0, (sum, d) => sum + d.meals),
+      mealsTotal: goals.mealsPerDay * days.length,
       exerciseDays: exerciseDays,
-      exerciseTotalDays: exerciseTotalDays,
-      sleepAverage: sleepDays > 0 ? sleepTotal / sleepDays : null,
+      exerciseTotalDays: (goals.routineDaysPerWeek * days.length / 7).round(),
+      sleepAverage: slept.isEmpty
+          ? null
+          : slept.fold<double>(0, (sum, d) => sum + d.sleepHours!) / slept.length,
       weightLogs: weightLogs,
       latestMeasurement: consultations.firstOrNull,
       consultations: consultations.reversed.toList(),
       nutritionDetail: nutritionDetail,
       exerciseDetail: exerciseDetail,
+      days: days,
+      goals: goals,
+      cardioLogs: cardioLogs,
+      personName: (await _profileDao?.getProfile())?.name,
     );
+  }
+
+  DateTime _day(DateTime stored) {
+    final utc = stored.toUtc();
+    return DateTime.utc(utc.year, utc.month, utc.day);
   }
 
   Future<NutritionReportData?> _buildNutritionDetail(

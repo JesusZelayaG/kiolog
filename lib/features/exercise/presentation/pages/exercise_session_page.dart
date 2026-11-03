@@ -152,8 +152,9 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
               ),
               subtitle: BlocBuilder<ExerciseWeightUnitCubit, String>(
                 builder: (ctx, unit) => Text(
-                  '${item.sets} series × ${item.reps} reps'
-                  '${item.weightKg != null ? ' @ ${item.weightKg}$unit' : ''}',
+                  '${item.sets} series × ${item.repsLabel ?? item.reps} reps'
+                  '${item.weightKg != null ? ' @ ${item.weightKg}$unit' : ''}'
+                  '${item.notes == null ? '' : '\n${item.notes}'}',
                 ),
               ),
               onTap: isCompleted

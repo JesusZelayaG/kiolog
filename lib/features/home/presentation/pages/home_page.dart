@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/features/progress/presentation/widgets/next_consultation_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/injection.dart';
@@ -62,6 +63,10 @@ class _HomeView extends StatelessWidget {
             children: [
               _Summary(overall: calcOverallProgress(state)),
               const SizedBox(height: 24),
+              const NextConsultationCard(
+                hideWhenEmpty: true,
+                margin: EdgeInsets.only(bottom: 16),
+              ),
               _WaterCard(state: state),
               const SizedBox(height: 16),
               IntrinsicHeight(

@@ -69,6 +69,7 @@ Future<void> setupDependencies() async {
       getIt<ExerciseDao>(),
       getIt<MeasurementsDao>(),
       getIt<ConfigDao>(),
+      profileDao: getIt<UserProfileDao>(),
     ),
   );
   getIt.registerLazySingleton<HistoryRepository>(

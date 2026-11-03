@@ -115,4 +115,16 @@ void main() {
     expect(counts.logged, 1);
     expect(counts.expected, 6);
   });
+
+  test('meal times keep the order they were written in', () async {
+    final id = await plan('Plan');
+    for (final type in ['Desayuno', 'Almuerzo', 'Refacción', 'Cena']) {
+      await option(id, type, type);
+    }
+
+    final options = await db.nutritionDao.getAllPlanOptions(id);
+
+    expect(options.map((o) => o.mealType),
+        ['Desayuno', 'Almuerzo', 'Refacción', 'Cena']);
+  });
 }

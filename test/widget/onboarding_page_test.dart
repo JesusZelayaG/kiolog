@@ -22,6 +22,13 @@ void main() {
   });
 
   group('OnboardingPage — welcome step', () {
+    testWidgets('ofrece restaurar un respaldo existente', (tester) async {
+      await tester.pumpWidget(_wrap(const OnboardingPage()));
+      await tester.pump();
+      expect(find.text('¿Ya usabas Kiolog?'), findsOneWidget);
+      expect(find.text('Ya tengo un respaldo'), findsOneWidget);
+    });
+
     testWidgets('muestra encabezado Bienvenida', (tester) async {
       await tester.pumpWidget(_wrap(const OnboardingPage()));
       await tester.pump();

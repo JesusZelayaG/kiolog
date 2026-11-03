@@ -26,7 +26,7 @@ void main() {
     expect(table.last[0], 'Cambio');
     expect(table.last[1], '-6.2');
     expect(table.last[2], '-4.5');
-    expect(table.last[3], '—');
+    expect(table.last[3], '-');
   });
 
   test('muestra solo las 8 más recientes, pero el cambio usa todas', () {

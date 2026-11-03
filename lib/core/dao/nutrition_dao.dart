@@ -136,14 +136,23 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(t) => OrderingTerm.asc(t.optionNumber)]))
           .get();
 
-  Future<List<MealPlanOption>> getAllPlanOptions(int planId) =>
-      (select(mealPlanOptions)
-            ..where((t) => t.planId.equals(planId))
-            ..orderBy([
-              (t) => OrderingTerm.asc(t.mealType),
-              (t) => OrderingTerm.asc(t.optionNumber),
-            ]))
-          .get();
+  /// Los tiempos de comida en el orden en que se escribieron en el plan
+  /// (desayuno antes que almuerzo), no en orden alfabético.
+  Future<List<MealPlanOption>> getAllPlanOptions(int planId) async {
+    final options = await (select(mealPlanOptions)
+          ..where((t) => t.planId.equals(planId)))
+        .get();
+    final firstId = <String, int>{};
+    for (final o in options) {
+      final seen = firstId[o.mealType];
+      if (seen == null || o.id < seen) firstId[o.mealType] = o.id;
+    }
+    return options
+      ..sort((a, b) {
+        final byMeal = firstId[a.mealType]!.compareTo(firstId[b.mealType]!);
+        return byMeal != 0 ? byMeal : a.optionNumber.compareTo(b.optionNumber);
+      });
+  }
 
   Future<int> insertDailyMealLog(DailyMealLogsCompanion log) =>
       into(dailyMealLogs).insert(log);

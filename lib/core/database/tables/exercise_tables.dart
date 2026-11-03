@@ -32,6 +32,13 @@ class ExerciseRoutineItems extends Table {
   // orden dentro del día de rutina
   IntColumn get orderIndex =>
       integer().withDefault(const Constant(0))();
+
+  /// Repeticiones como las indica el plan ("6-8", "Las que salgan");
+  /// [reps] queda como número para prellenar la sesión.
+  TextColumn get repsLabel => text().nullable()();
+
+  /// Indicaciones del entrenador para este ejercicio.
+  TextColumn get notes => text().nullable()();
 }
 
 /// Definiciones opcionales por serie de un ítem de rutina.

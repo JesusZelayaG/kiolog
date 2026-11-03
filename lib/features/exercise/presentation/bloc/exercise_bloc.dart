@@ -1,3 +1,4 @@
+import 'package:kiolog/core/domain/day.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/exercise/domain/models/independent_exercise_log.dart';
@@ -62,7 +63,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         sets = await _repository.getSessionSets(activeSession.id);
       }
 
-      final monday = _mondayOf(DateTime.now().toUtc());
+      final monday = _mondayOf(todayUtcDay());
       final results = await Future.wait([
         _repository.getCardioLogsForWeek(monday),
         _repository.getCompletedRoutineSessionsForWeek(monday),
@@ -185,6 +186,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         weightKg: event.weightKg,
         setType: event.setType,
         orderIndex: event.orderIndex,
+        repsLabel: event.repsLabel,
+        notes: event.notes,
       );
       if (event.setDefs.isNotEmpty) {
         await _repository.replaceRoutineSetDefs(
@@ -213,6 +216,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         reps: event.reps,
         weightKg: event.weightKg,
         setType: event.setType,
+        repsLabel: event.repsLabel,
+        notes: event.notes,
       );
       if (event.setDefs != null) {
         await _repository.replaceRoutineSetDefs(
@@ -322,7 +327,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         durationMinutes: event.durationMinutes,
         notes: event.notes,
       );
-      final monday = _mondayOf(DateTime.now().toUtc());
+      final monday = _mondayOf(todayUtcDay());
       final cardioLogs = await _repository.getCardioLogsForWeek(monday);
       final weeklyStats = await _repository.getWeeklyStats(weeksBack: 8);
       emit(state.copyWith(
@@ -341,7 +346,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         durationMinutes: event.durationMinutes,
         notes: event.notes,
       );
-      final monday = _mondayOf(DateTime.now().toUtc());
+      final monday = _mondayOf(todayUtcDay());
       final cardioLogs = await _repository.getCardioLogsForWeek(monday);
       final weeklyStats = await _repository.getWeeklyStats(weeksBack: 8);
       emit(state.copyWith(weeklyCardioLogs: cardioLogs, weeklyStats: weeklyStats));
@@ -354,7 +359,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
       CardioDeleted event, Emitter<ExerciseState> emit) async {
     try {
       await _repository.deleteCardio(event.cardioId);
-      final monday = _mondayOf(DateTime.now().toUtc());
+      final monday = _mondayOf(todayUtcDay());
       final cardioLogs = await _repository.getCardioLogsForWeek(monday);
       final weeklyStats = await _repository.getWeeklyStats(weeksBack: 8);
       emit(state.copyWith(
@@ -380,7 +385,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         );
       }
       await _repository.endSession(sessionId);
-      final monday = _mondayOf(DateTime.now().toUtc());
+      final monday = _mondayOf(todayUtcDay());
       final sessions = await _repository.getSessionsForDate(event.date);
       final logs = await _repository.getIndependentSessionsForWeek(monday);
       emit(state.copyWith(recentSessions: sessions, weeklyIndependentLogs: logs));
@@ -393,7 +398,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
       IndependentExerciseDeleted event, Emitter<ExerciseState> emit) async {
     try {
       await _repository.deleteSession(event.sessionId);
-      final monday = _mondayOf(DateTime.now().toUtc());
+      final monday = _mondayOf(todayUtcDay());
       final sessions = await _repository.getSessionsForDate(DateTime.now());
       final logs = await _repository.getIndependentSessionsForWeek(monday);
       emit(state.copyWith(recentSessions: sessions, weeklyIndependentLogs: logs));

@@ -64,6 +64,63 @@ class ExerciseReportData extends Equatable {
       [planName, weeklyCompliance, totalRoutineSessions, cardioSessionsCount, freeExerciseCount];
 }
 
+/// Lo registrado en un día del periodo.
+class ReportDay extends Equatable {
+  const ReportDay({
+    required this.date,
+    this.waterMl = 0,
+    this.meals = 0,
+    this.mealsFromPlan = 0,
+    this.exercised = false,
+    this.cardioMinutes = 0,
+    this.sleepHours,
+    this.weightKg,
+  });
+
+  /// Medianoche UTC del día local, como se guardan los registros.
+  final DateTime date;
+  final int waterMl;
+  final int meals;
+
+  /// Comidas registradas eligiendo una opción del plan.
+  final int mealsFromPlan;
+
+  /// Rutina, sesión libre o día marcado como hecho.
+  final bool exercised;
+  final int cardioMinutes;
+  final double? sleepHours;
+
+  /// Último peso registrado ese día.
+  final double? weightKg;
+
+  @override
+  List<Object?> get props =>
+      [date, waterMl, meals, mealsFromPlan, exercised, cardioMinutes, sleepHours, weightKg];
+}
+
+/// Las metas con que se mide el cumplimiento.
+class ReportGoals extends Equatable {
+  const ReportGoals({
+    this.waterMl = 3000,
+    this.mealsPerDay = 4,
+    this.routineDaysPerWeek = 4,
+    this.cardioDaysPerWeek = 3,
+    this.cardioMinutes = 30,
+  });
+
+  final int waterMl;
+  final int mealsPerDay;
+  final int routineDaysPerWeek;
+  final int cardioDaysPerWeek;
+
+  /// Minutos por sesión de cardio.
+  final int cardioMinutes;
+
+  @override
+  List<Object?> get props =>
+      [waterMl, mealsPerDay, routineDaysPerWeek, cardioDaysPerWeek, cardioMinutes];
+}
+
 class ReportData {
   final DateTime start;
   final DateTime end;
@@ -82,6 +139,12 @@ class ReportData {
   final NutritionReportData? nutritionDetail;
   final ExerciseReportData? exerciseDetail;
 
+  /// Un registro por día, del inicio hasta hoy o el fin del periodo.
+  final List<ReportDay> days;
+  final ReportGoals goals;
+  final List<CardioLog> cardioLogs;
+  final String? personName;
+
   ReportData({
     required this.start,
     required this.end,
@@ -97,6 +160,10 @@ class ReportData {
     this.consultations = const [],
     this.nutritionDetail,
     this.exerciseDetail,
+    this.days = const [],
+    this.goals = const ReportGoals(),
+    this.cardioLogs = const [],
+    this.personName,
   });
 
   double get waterCompliance =>

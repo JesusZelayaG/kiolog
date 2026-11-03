@@ -1,3 +1,4 @@
+import 'package:kiolog/core/domain/day.dart';
 import 'dart:math' show sqrt;
 
 import 'package:flutter/foundation.dart' show listEquals;
@@ -181,7 +182,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
 
   Widget _buildWeekNavigator(BuildContext context, ExerciseState state) {
     final theme = Theme.of(context);
-    final thisMonday = _mondayOf(DateTime.now().toUtc());
+    final thisMonday = _mondayOf(todayUtcDay());
     final weekMonday = thisMonday.add(Duration(days: 7 * _weekOffset));
     final weekSunday = weekMonday.add(const Duration(days: 6));
     final label = weekMonday.month == weekSunday.month
@@ -208,7 +209,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
 
   Widget _buildMonthNavigator(BuildContext context) {
     final theme = Theme.of(context);
-    final now = DateTime.now().toUtc();
+    final now = DateTime.now();
     final target = DateTime(now.year, now.month + _monthOffset);
     final label = '${_monthName(target.month)} ${target.year}';
     final sublabel =
@@ -287,7 +288,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
   }
 
   Widget _buildMesChips(BuildContext context, ExerciseState state) {
-    final now = DateTime.now().toUtc();
+    final now = DateTime.now();
     final target = DateTime(now.year, now.month + _monthOffset);
     final monthStats = state.weeklyStats
         .where((s) =>
@@ -371,7 +372,7 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
     final cs = Theme.of(context).colorScheme;
     final isRutina = _chart == _Chart.rutina;
     final goal = isRutina ? state.routineDaysGoal : state.cardioDaysGoal;
-    final now = DateTime.now().toUtc();
+    final now = DateTime.now();
     final target = DateTime(now.year, now.month + _monthOffset);
     final monthStats = state.weeklyStats
         .where((s) =>

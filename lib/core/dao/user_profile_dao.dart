@@ -55,4 +55,12 @@ class UserProfileDao extends DatabaseAccessor<AppDatabase>
       await update(userProfiles).write(UserProfilesCompanion(bodySex: Value(sex)));
     }
   }
+
+  /// Guarda la próxima consulta; null la borra.
+  Future<void> setNextConsultation(DateTime? at) async {
+    if (await getProfile() == null) await createProfile();
+    await update(userProfiles).write(
+      UserProfilesCompanion(nextConsultationAt: Value(at)),
+    );
+  }
 }

@@ -45,8 +45,75 @@ void main() {
       final report = await repository.generateReport(start, end);
 
       expect(report.waterGoalDays, 1);
-      expect(report.waterTotalDays, 1);
+      // Los días sin registro también cuentan: no tomar agua es incumplir.
+      expect(report.waterTotalDays, 7);
       expect(report.sleepAverage, 8.0);
+    });
+
+    test('builds one record per day with what was logged', () async {
+      final day = DateTime.utc(2026, 6, 2);
+      await db.waterSleepDao.insertWaterLog(DailyWaterLogsCompanion(
+        date: Value(day),
+        timestamp: Value(day),
+        amountMl: const Value(1500),
+      ));
+      await db.measurementsDao.insertWeightLog(WeightLogsCompanion(
+        date: Value(day),
+        weightKg: const Value(81.5),
+      ));
+      for (final minutes in [20, 15]) {
+        await db.exerciseDao.insertCardioLog(CardioLogsCompanion(
+          date: Value(day),
+          cardioType: const Value('Caminar'),
+          durationMinutes: Value(minutes),
+        ));
+      }
+      await db.nutritionDao.insertDailyMealLog(DailyMealLogsCompanion(
+        date: Value(day),
+        mealType: const Value('cena'),
+        freeDescription: const Value('Pizza'),
+      ));
+
+      final report = await repository.generateReport(
+        DateTime.utc(2026, 6, 1),
+        DateTime.utc(2026, 6, 3),
+      );
+
+      expect(report.days, hasLength(3));
+      final logged = report.days[1];
+      expect(logged.date, day);
+      expect(logged.waterMl, 1500);
+      expect(logged.weightKg, 81.5);
+      expect(logged.cardioMinutes, 35);
+      expect(logged.meals, 1);
+      expect(logged.mealsFromPlan, 0);
+      expect(report.days.first.weightKg, isNull);
+      expect(report.cardioLogs, hasLength(2));
+    });
+
+    test('does not count days that have not arrived yet', () async {
+      final today = DateTime.now();
+      final report = await repository.generateReport(
+        today.subtract(const Duration(days: 2)),
+        today.add(const Duration(days: 10)),
+      );
+
+      expect(report.days, hasLength(3));
+    });
+
+    test('meal goal comes from the active plan', () async {
+      await db.nutritionDao.insertMealPlan(const MealPlansCompanion(
+        name: Value('Plan'),
+        dailyMealGoal: Value(5),
+      ));
+
+      final report = await repository.generateReport(
+        DateTime.utc(2026, 6, 1),
+        DateTime.utc(2026, 6, 2),
+      );
+
+      expect(report.goals.mealsPerDay, 5);
+      expect(report.mealsTotal, 10);
     });
   });
 

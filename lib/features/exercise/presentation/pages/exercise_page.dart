@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/features/exercise/domain/reps.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/core/domain/app_module.dart';
@@ -451,7 +452,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
       contentPadding: const EdgeInsets.only(left: 16, right: 4),
       title: Text(item.exerciseName, style: theme.textTheme.bodyMedium),
       subtitle: Text(
-        '${item.sets}×${item.reps}$weightStr',
+        '${item.sets}×${item.repsLabel ?? item.reps}$weightStr'
+        '${item.notes == null ? '' : '\n${item.notes}'}',
         style: theme.textTheme.bodySmall
             ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
       ),
@@ -486,8 +488,9 @@ class _ExerciseViewState extends State<_ExerciseView> {
     final nameCtrl = TextEditingController(text: item?.exerciseName ?? '');
     final setsCtrl =
         TextEditingController(text: item != null ? '${item.sets}' : '');
-    final repsCtrl =
-        TextEditingController(text: item != null ? '${item.reps}' : '');
+    final repsCtrl = TextEditingController(
+        text: item != null ? item.repsLabel ?? '${item.reps}' : '');
+    final notesCtrl = TextEditingController(text: item?.notes ?? '');
     final weightCtrl = TextEditingController(
         text: item?.weightKg != null ? '${item!.weightKg}' : '');
 
@@ -519,8 +522,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
                   Expanded(
                     child: TextField(
                       controller: repsCtrl,
-                      decoration: const InputDecoration(labelText: 'Reps *'),
-                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                          labelText: 'Reps *', hintText: '8 o 6-8'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -534,6 +537,13 @@ class _ExerciseViewState extends State<_ExerciseView> {
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: notesCtrl,
+                decoration: const InputDecoration(labelText: 'Indicaciones'),
+                minLines: 1,
+                maxLines: 4,
+              ),
             ],
           ),
         ),
@@ -546,8 +556,12 @@ class _ExerciseViewState extends State<_ExerciseView> {
             onPressed: () {
               final name = nameCtrl.text.trim();
               final sets = int.tryParse(setsCtrl.text);
-              final reps = int.tryParse(repsCtrl.text);
-              if (name.isEmpty || sets == null || reps == null) return;
+              final parsed = parseReps(repsCtrl.text);
+              if (name.isEmpty || sets == null || parsed == null) return;
+              final (reps, repsLabel) = parsed;
+              final notes = notesCtrl.text.trim().isEmpty
+                  ? null
+                  : notesCtrl.text.trim();
               final weight =
                   double.tryParse(weightCtrl.text.replaceAll(',', '.'));
 
@@ -559,6 +573,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
                         sets: sets,
                         reps: reps,
                         weightKg: weight,
+                        repsLabel: repsLabel,
+                        notes: notes,
                       ),
                     );
               } else {
@@ -569,6 +585,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
                         sets: sets,
                         reps: reps,
                         weightKg: weight,
+                        repsLabel: (value: repsLabel),
+                        notes: (value: notes),
                       ),
                     );
               }

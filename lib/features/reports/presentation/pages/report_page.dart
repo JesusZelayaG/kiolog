@@ -32,10 +32,15 @@ class _ReportView extends StatefulWidget {
 }
 
 class _ReportViewState extends State<_ReportView> {
-  DateTimeRange _range = DateTimeRange(
-    start: DateTime.now().subtract(const Duration(days: 7)),
-    end: DateTime.now(),
-  );
+  DateTimeRange _range = _thisMonth();
+
+  static DateTimeRange _thisMonth() {
+    final now = DateTime.now();
+    return DateTimeRange(
+      start: DateTime(now.year, now.month),
+      end: DateTime(now.year, now.month, now.day),
+    );
+  }
 
   bool _exporting = false;
 
@@ -87,6 +92,37 @@ class _ReportViewState extends State<_ReportView> {
   }
 
   Widget _buildDateRangeSelector(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final presets = <(String, DateTimeRange)>[
+      ('Este mes', DateTimeRange(start: DateTime(now.year, now.month), end: today)),
+      ('Últimos 7 días',
+          DateTimeRange(start: today.subtract(const Duration(days: 6)), end: today)),
+      ('Últimos 30 días',
+          DateTimeRange(start: today.subtract(const Duration(days: 29)), end: today)),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          children: [
+            for (final (label, range) in presets)
+              ChoiceChip(
+                label: Text(label),
+                selected: DateUtils.isSameDay(_range.start, range.start) &&
+                    DateUtils.isSameDay(_range.end, range.end),
+                onSelected: (_) => setState(() => _range = range),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildRangeCard(context),
+      ],
+    );
+  }
+
+  Widget _buildRangeCard(BuildContext context) {
     return VitalityCard(
       padding: EdgeInsets.zero,
       child: ListTile(
