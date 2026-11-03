@@ -31,17 +31,87 @@ class WeeklyComplianceEntry extends Equatable {
   List<Object?> get props => [weekLabel, daysDone, daysGoal];
 }
 
+/// Una opción del plan y cuántas veces se eligió en el periodo.
+class OptionCount extends Equatable {
+  const OptionCount(this.optionNumber, this.description, this.count);
+
+  final int optionNumber;
+  final String description;
+  final int count;
+
+  @override
+  List<Object?> get props => [optionNumber, description, count];
+}
+
+/// Lo que se comió en un tiempo de comida durante el periodo.
+class MealTimeBreakdown extends Equatable {
+  const MealTimeBreakdown({
+    required this.mealType,
+    required this.options,
+    this.offPlan = 0,
+    this.skipped = 0,
+    this.offPlanTop = const [],
+  });
+
+  final String mealType;
+
+  /// Todas las opciones del plan, también las que nunca se eligieron.
+  final List<OptionCount> options;
+
+  /// Registradas como "Fuera de plan" (con lo que se comió).
+  final int offPlan;
+
+  /// Registradas como "No seguí el plan".
+  final int skipped;
+
+  /// Lo más repetido fuera del plan, de más a menos.
+  final List<(String, int)> offPlanTop;
+
+  int get fromPlan => options.fold(0, (sum, o) => sum + o.count);
+  int get logged => fromPlan + offPlan + skipped;
+
+  /// La opción más elegida, o null si no se eligió ninguna.
+  OptionCount? get favorite {
+    OptionCount? best;
+    for (final o in options) {
+      if (o.count > 0 && (best == null || o.count > best.count)) best = o;
+    }
+    return best;
+  }
+
+  @override
+  List<Object?> get props => [mealType, options, offPlan, skipped, offPlanTop];
+}
+
+/// Una comida fuera del plan, para la tabla del reporte.
+class OffPlanMeal extends Equatable {
+  const OffPlanMeal(this.date, this.mealType, this.description);
+
+  final DateTime date;
+  final String mealType;
+  final String description;
+
+  @override
+  List<Object?> get props => [date, mealType, description];
+}
+
 class NutritionReportData extends Equatable {
   final String? planName;
   final List<MealFrequencyEntry> mealFrequencies;
 
+  /// Un desglose por tiempo de comida, en el orden del plan.
+  final List<MealTimeBreakdown> mealTimes;
+  final List<OffPlanMeal> offPlanMeals;
+
   const NutritionReportData({
     this.planName,
     required this.mealFrequencies,
+    this.mealTimes = const [],
+    this.offPlanMeals = const [],
   });
 
   @override
-  List<Object?> get props => [planName, mealFrequencies];
+  List<Object?> get props => [planName, mealFrequencies, mealTimes, offPlanMeals];
 }
 
 class ExerciseReportData extends Equatable {
@@ -71,6 +141,7 @@ class ReportDay extends Equatable {
     this.waterMl = 0,
     this.meals = 0,
     this.mealsFromPlan = 0,
+    this.mealsOffPlan = 0,
     this.exercised = false,
     this.cardioMinutes = 0,
     this.sleepHours,
@@ -85,6 +156,12 @@ class ReportDay extends Equatable {
   /// Comidas registradas eligiendo una opción del plan.
   final int mealsFromPlan;
 
+  /// Comidas registradas como "Fuera de plan". El resto de [meals] son
+  /// "No seguí el plan".
+  final int mealsOffPlan;
+
+  int get mealsSkipped => meals - mealsFromPlan - mealsOffPlan;
+
   /// Rutina, sesión libre o día marcado como hecho.
   final bool exercised;
   final int cardioMinutes;
@@ -95,7 +172,7 @@ class ReportDay extends Equatable {
 
   @override
   List<Object?> get props =>
-      [date, waterMl, meals, mealsFromPlan, exercised, cardioMinutes, sleepHours, weightKg];
+      [date, waterMl, meals, mealsFromPlan, mealsOffPlan, exercised, cardioMinutes, sleepHours, weightKg];
 }
 
 /// Las metas con que se mide el cumplimiento.

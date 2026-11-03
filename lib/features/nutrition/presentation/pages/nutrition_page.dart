@@ -307,7 +307,7 @@ class _PlansDialog extends StatelessWidget {
                               style: TextStyle(color: cs.onSurface)),
                           subtitle: Text(
                               '${plan.isActive ? 'Plan actual' : 'Plan anterior'}'
-                              ' · ${DateFormat('dd/MM/yy').format((plan.periodStart ?? plan.createdAt).toUtc())}',
+                              ' · ${DateFormat('dd/MM/yy').format((plan.periodStart ?? plan.createdAt).toLocal())}',
                               style:
                                   TextStyle(color: cs.onSurfaceVariant)),
                           trailing: PopupMenuButton<_PlanAction>(

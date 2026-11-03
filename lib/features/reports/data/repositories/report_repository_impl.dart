@@ -74,6 +74,7 @@ class ReportRepositoryImpl implements ReportRepository {
         waterMl: water,
         meals: meals.length,
         mealsFromPlan: meals.where((m) => m.planOptionId != null).length,
+        mealsOffPlan: meals.where(_isOffPlan).length,
         exercised: exerciseLog?.completed == true || sessions.isNotEmpty,
         cardioMinutes: cardioByDay[current] ?? 0,
         sleepHours: sleepLogs.isEmpty
@@ -90,7 +91,8 @@ class ReportRepositoryImpl implements ReportRepository {
       end: end,
       waterGoalDays: days.where((d) => d.waterMl >= goals.waterMl).length,
       waterTotalDays: days.length,
-      mealsLogged: days.fold(0, (sum, d) => sum + d.meals),
+      // Cumplir es comer lo del plan, no solo registrar.
+      mealsLogged: days.fold(0, (sum, d) => sum + d.mealsFromPlan),
       mealsTotal: goals.mealsPerDay * days.length,
       exerciseDays: exerciseDays,
       exerciseTotalDays: (goals.routineDaysPerWeek * days.length / 7).round(),
@@ -153,7 +155,16 @@ class ReportRepositoryImpl implements ReportRepository {
         return b.count.compareTo(a.count);
       });
 
-    return NutritionReportData(planName: plan.name, mealFrequencies: entries);
+    return NutritionReportData(
+      planName: plan.name,
+      mealFrequencies: entries,
+      mealTimes: mealTimeBreakdown(options, logs),
+      offPlanMeals: [
+        for (final log in logs.where(_isOffPlan))
+          OffPlanMeal(_day(log.date), log.mealType,
+              log.freeDescription?.trim().isNotEmpty == true ? log.freeDescription!.trim() : 'Con foto'),
+      ]..sort((a, b) => a.date.compareTo(b.date)),
+    );
   }
 
   Future<ExerciseReportData?> _buildExerciseDetail(
@@ -248,4 +259,53 @@ class ReportRepositoryImpl implements ReportRepository {
 
     return weeks;
   }
+
+  /// "Fuera de plan" guarda lo que se comió; "No seguí el plan" no guarda nada.
+  static bool _isOffPlan(DailyMealLog log) =>
+      log.planOptionId == null &&
+      (log.freeDescription?.trim().isNotEmpty == true || log.photoPath != null);
+}
+
+/// Cuántas veces se eligió cada opción y qué se comió fuera del plan, por
+/// tiempo de comida. [options] llega en el orden del plan; los tiempos que
+/// solo aparecen en los registros (de un plan anterior) van al final.
+List<MealTimeBreakdown> mealTimeBreakdown(
+    List<MealPlanOption> options, List<DailyMealLog> logs) {
+  final types = <String>[
+    for (final o in options) o.mealType,
+    for (final l in logs) l.mealType,
+  ].toSet().toList();
+  final chosen = <int, int>{};
+  for (final log in logs) {
+    final id = log.planOptionId;
+    if (id != null) chosen[id] = (chosen[id] ?? 0) + 1;
+  }
+  return [
+    for (final type in types)
+      () {
+        final ofType = logs.where((l) => l.mealType == type && l.planOptionId == null);
+        final described = <String, (String, int)>{};
+        var offPlan = 0;
+        for (final log in ofType) {
+          if (!ReportRepositoryImpl._isOffPlan(log)) continue;
+          offPlan++;
+          final text = log.freeDescription?.trim() ?? '';
+          if (text.isEmpty) continue;
+          final key = text.toLowerCase();
+          final (shown, count) = described[key] ?? (text, 0);
+          described[key] = (shown, count + 1);
+        }
+        final top = described.values.toList()..sort((a, b) => b.$2.compareTo(a.$2));
+        return MealTimeBreakdown(
+          mealType: type,
+          options: [
+            for (final o in options.where((o) => o.mealType == type))
+              OptionCount(o.optionNumber, o.description, chosen[o.id] ?? 0),
+          ],
+          offPlan: offPlan,
+          skipped: ofType.length - offPlan,
+          offPlanTop: top.take(3).toList(),
+        );
+      }(),
+  ];
 }

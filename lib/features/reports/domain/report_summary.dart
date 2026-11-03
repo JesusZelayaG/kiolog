@@ -11,6 +11,11 @@ class ComplianceSummary {
 
   int get meals => days.fold(0, (sum, d) => sum + d.meals);
   int get mealsFromPlan => days.fold(0, (sum, d) => sum + d.mealsFromPlan);
+  int get mealsOffPlan => days.fold(0, (sum, d) => sum + d.mealsOffPlan);
+  int get mealsSkipped => days.fold(0, (sum, d) => sum + d.mealsSkipped);
+
+  /// Tiempos de comida sin ningún registro.
+  int get mealsUnlogged => (mealsExpected - meals).clamp(0, mealsExpected);
   int get mealsExpected => goals.mealsPerDay * dayCount;
 
   int get exerciseDays => days.where((d) => d.exercised).length;

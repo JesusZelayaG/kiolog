@@ -201,18 +201,18 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
     final start = plan.periodStart;
     if (start == null) return [];
 
-    // Usar .toUtc() para evitar desfase de zona horaria al reconstruir la fecha
-    final startUtc = start.toUtc();
-    final startDay = DateTime.utc(startUtc.year, startUtc.month, startUtc.day);
+    // Inicio y fin del plan son instantes reales: cuentan en el día local.
+    final startLocal = start.toLocal();
+    final startDay = DateTime.utc(startLocal.year, startLocal.month, startLocal.day);
 
     final DateTime endDay;
     if (plan.periodEnd != null) {
-      final endUtc = plan.periodEnd!.toUtc();
+      final endLocal = plan.periodEnd!.toLocal();
       // periodEnd es el último día incluido, por eso +1 día para el límite exclusivo
-      endDay = DateTime.utc(endUtc.year, endUtc.month, endUtc.day)
+      endDay = DateTime.utc(endLocal.year, endLocal.month, endLocal.day)
           .add(const Duration(days: 1));
     } else {
-      final now = DateTime.now().toUtc();
+      final now = DateTime.now();
       endDay = DateTime.utc(now.year, now.month, now.day)
           .add(const Duration(days: 1));
     }

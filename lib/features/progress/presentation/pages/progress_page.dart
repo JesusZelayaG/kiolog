@@ -157,19 +157,20 @@ class _ProgressView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
+              // La página del cuerpo en 3D (/body) queda sin entrada por ahora.
               VitalityCard(
-                onTap: () => context.push('/body'),
+                onTap: () => context.push('/rewards'),
                 child: Row(
                   children: [
-                    Icon(Icons.accessibility_new, color: cs.primary, size: 28),
+                    Icon(Icons.emoji_events_outlined, color: cs.primary, size: 28),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Tu cuerpo en 3D', style: theme.textTheme.titleMedium),
+                          Text('Recompensas', style: theme.textTheme.titleMedium),
                           Text(
-                            'Con las medidas de tu última consulta',
+                            'Tu nivel, tus metas del mes y tus premios',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: cs.onSurfaceVariant,
                             ),

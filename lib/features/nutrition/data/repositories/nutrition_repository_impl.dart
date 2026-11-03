@@ -199,9 +199,10 @@ class NutritionRepositoryImpl implements NutritionRepository {
   Future<({int logged, int expected})> getPlanMealCounts(MealPlan plan) async {
     final start = plan.periodStart;
     if (start == null) return (logged: 0, expected: 0);
-    DateTime day(DateTime date) {
-      final utc = date.toUtc();
-      return DateTime.utc(utc.year, utc.month, utc.day);
+    // Inicio y fin del plan son instantes reales: cuentan en el día local.
+    DateTime day(DateTime instant) {
+      final local = instant.toLocal();
+      return DateTime.utc(local.year, local.month, local.day);
     }
 
     // As in the weekly stats, the plan that starts on a day owns that day.

@@ -12,6 +12,7 @@ import 'tables/measurements_tables.dart';
 import 'tables/achievements_tables.dart';
 import 'tables/config_tables.dart';
 import 'tables/user_modules_table.dart';
+import 'tables/rewards_tables.dart';
 
 import '../dao/nutrition_dao.dart';
 import '../dao/exercise_dao.dart';
@@ -21,6 +22,7 @@ import '../dao/config_dao.dart';
 import '../dao/achievements_dao.dart';
 import '../dao/user_profile_dao.dart';
 import '../dao/user_modules_dao.dart';
+import '../dao/rewards_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -55,6 +57,8 @@ part 'app_database.g.dart';
     UserProfiles,
     // Modules
     UserModules,
+    // Rewards
+    MonthlyRewards,
   ],
   daos: [
     NutritionDao,
@@ -65,6 +69,7 @@ part 'app_database.g.dart';
     AchievementsDao,
     UserProfileDao,
     UserModulesDao,
+    RewardsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -73,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration {
@@ -142,6 +147,9 @@ class AppDatabase extends _$AppDatabase {
         if (from < 12) {
           await m.addColumn(exerciseRoutineItems, exerciseRoutineItems.repsLabel);
           await m.addColumn(exerciseRoutineItems, exerciseRoutineItems.notes);
+        }
+        if (from < 13) {
+          await m.createTable(monthlyRewards);
         }
       },
     );

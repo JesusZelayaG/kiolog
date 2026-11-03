@@ -292,4 +292,49 @@ void main() {
       expect(data.exerciseDetail!.weeklyCompliance[1].daysDone, 1);
     });
   });
+
+  group('mealTimes', () {
+    test('counts every plan option and what was eaten off plan', () async {
+      final planId = await db.nutritionDao.insertMealPlan(
+          const MealPlansCompanion(name: Value('Plan'), dailyMealGoal: Value(2)));
+      Future<int> option(String type, int n) => db.nutritionDao.insertMealPlanOption(
+            MealPlanOptionsCompanion(
+              planId: Value(planId),
+              mealType: Value(type),
+              optionNumber: Value(n),
+              description: Value('$type $n'),
+            ),
+          );
+      final breakfast1 = await option('Desayuno', 1);
+      await option('Desayuno', 2);
+      await option('Cena', 1);
+      Future<void> log(int day, String type, {int? optionId, String? text}) =>
+          db.nutritionDao.insertDailyMealLog(DailyMealLogsCompanion(
+            date: Value(DateTime.utc(2026, 6, day)),
+            mealType: Value(type),
+            planOptionId: Value(optionId),
+            freeDescription: Value(text),
+          ));
+      await log(1, 'Desayuno', optionId: breakfast1);
+      await log(2, 'Desayuno', optionId: breakfast1);
+      await log(1, 'Cena', text: 'Pupusas');
+      await log(2, 'Cena', text: 'pupusas ');
+      await log(3, 'Cena');
+
+      final report = await repository.generateReport(
+          DateTime.utc(2026, 6, 1), DateTime.utc(2026, 6, 3));
+      final times = report.nutritionDetail!.mealTimes;
+
+      expect(times.map((t) => t.mealType), ['Desayuno', 'Cena']);
+      expect(times[0].options.map((o) => o.count), [2, 0]);
+      expect(times[0].favorite!.optionNumber, 1);
+      expect(times[1].offPlan, 2);
+      expect(times[1].skipped, 1);
+      expect(times[1].offPlanTop, [('Pupusas', 2)]);
+      expect(report.nutritionDetail!.offPlanMeals, hasLength(2));
+      // "No seguí el plan" no cuenta como comida cumplida.
+      expect(report.mealsLogged, 2);
+      expect(report.days[2].mealsSkipped, 1);
+    });
+  });
 }

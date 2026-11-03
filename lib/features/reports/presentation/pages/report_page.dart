@@ -164,7 +164,7 @@ class _ReportViewState extends State<_ReportView> {
         _MetricCard(
           label: 'Nutrición',
           value: '${(data.nutritionCompliance * 100).toStringAsFixed(0)}%',
-          subtitle: '${data.mealsLogged} / ${data.mealsTotal} comidas',
+          subtitle: '${data.mealsLogged} / ${data.mealsTotal} comidas del plan',
         ),
         _MetricCard(
           label: 'Ejercicio',

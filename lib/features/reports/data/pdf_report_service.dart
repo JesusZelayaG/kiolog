@@ -59,64 +59,78 @@ class PdfReportService {
           pw.SizedBox(height: 14),
           _kpis(summary, data.goals),
           if (dates.isNotEmpty) ...[
-            if (summary.weights.isNotEmpty) ...[
-              _section('Peso'),
-              _weightLine(summary),
-              pw.SizedBox(height: 4),
-              lineChart(
-                dates: dates,
-                series: ChartSeries('Peso', ChartColors.primary,
-                    [for (final d in data.days) d.weightKg]),
-                yFormat: (v) => v.toStringAsFixed(1),
-              ),
-            ],
-            _section('Cumplimiento por semana'),
-            _weeklyTable(data),
-            _section('Alimentación'),
-            _note('Comidas registradas por día. La línea marca la meta del plan '
-                '(${data.goals.mealsPerDay} al día).'),
-            _mealsChart(data, dates),
-            ..._mealFrequencies(data.nutritionDetail),
-            _section('Ejercicio y cardio'),
-            _note('Días con rutina o ejercicio libre, y días con cardio. '
-                'Meta: ${data.goals.routineDaysPerWeek} días de rutina y '
-                '${data.goals.cardioDaysPerWeek} de cardio por semana.'),
-            _activityCalendar(data.days),
+            // Cada título va con su gráfica para que no quede solo al pie.
+            if (summary.weights.isNotEmpty)
+              _keepTogether([
+                _section('Peso'),
+                _weightLine(summary),
+                pw.SizedBox(height: 4),
+                lineChart(
+                  dates: dates,
+                  series: ChartSeries('Peso', ChartColors.primary,
+                      [for (final d in data.days) d.weightKg]),
+                  yFormat: (v) => v.toStringAsFixed(1),
+                ),
+              ]),
+            _keepTogether([
+              _section('Cumplimiento por semana'),
+              _weeklyTable(data),
+            ]),
+            _keepTogether([
+              _section('Alimentación'),
+              _note('Comidas registradas por día. La línea marca la meta del plan '
+                  '(${data.goals.mealsPerDay} al día).'),
+              _mealsChart(data, dates),
+            ]),
+            ..._mealChoices(data.nutritionDetail),
+            _keepTogether([
+              _section('Ejercicio y cardio'),
+              _note('Días con rutina o ejercicio libre, y días con cardio. '
+                  'Meta: ${data.goals.routineDaysPerWeek} días de rutina y '
+                  '${data.goals.cardioDaysPerWeek} de cardio por semana.'),
+              _activityCalendar(data.days),
+            ]),
             pw.SizedBox(height: 10),
-            _note('Minutos de cardio por día. La línea marca la meta por sesión.'),
-            barChart(
-              dates: dates,
-              series: [
-                ChartSeries('Cardio', ChartColors.primary,
-                    [for (final d in data.days) d.cardioMinutes.toDouble()]),
-              ],
-              goal: data.goals.cardioMinutes.toDouble(),
-              goalLabel: 'Meta ${data.goals.cardioMinutes} min',
-              height: 110,
-            ),
+            _keepTogether([
+              _note('Minutos de cardio por día. La línea marca la meta por sesión.'),
+              barChart(
+                dates: dates,
+                series: [
+                  ChartSeries('Cardio', ChartColors.primary,
+                      [for (final d in data.days) d.cardioMinutes.toDouble()]),
+                ],
+                goal: data.goals.cardioMinutes.toDouble(),
+                goalLabel: 'Meta ${data.goals.cardioMinutes} min',
+                height: 110,
+              ),
+            ]),
             ..._cardioTable(data.cardioLogs),
-            _section('Agua'),
-            _note('Litros por día.'),
-            barChart(
-              dates: dates,
-              series: [
-                ChartSeries('Agua', ChartColors.primary,
-                    [for (final d in data.days) d.waterMl / 1000]),
-              ],
-              goal: data.goals.waterMl / 1000,
-              goalLabel: 'Meta ${_liters(data.goals.waterMl)} L',
-              height: 110,
-            ),
-            _section('Sueño'),
-            _note('Horas dormidas por noche.'),
-            barChart(
-              dates: dates,
-              series: [
-                ChartSeries('Sueño', ChartColors.primary,
-                    [for (final d in data.days) d.sleepHours]),
-              ],
-              height: 110,
-            ),
+            _keepTogether([
+              _section('Agua'),
+              _note('Litros por día.'),
+              barChart(
+                dates: dates,
+                series: [
+                  ChartSeries('Agua', ChartColors.primary,
+                      [for (final d in data.days) d.waterMl / 1000]),
+                ],
+                goal: data.goals.waterMl / 1000,
+                goalLabel: 'Meta ${_liters(data.goals.waterMl)} L',
+                height: 110,
+              ),
+            ]),
+            _keepTogether([
+              _section('Sueño'),
+              _note('Horas dormidas por noche.'),
+              barChart(
+                dates: dates,
+                series: [
+                  ChartSeries('Sueño', ChartColors.primary,
+                      [for (final d in data.days) d.sleepHours]),
+                ],
+                height: 110,
+              ),
+            ]),
             _section('Bitácora diaria'),
             _dailyTable(data),
           ] else
@@ -170,8 +184,9 @@ class PdfReportService {
     final change = s.weightChange;
     final weights = s.weights;
     final tiles = [
-      _tile('Alimentación', pct(s.meals, s.mealsExpected),
-          '${s.meals} de ${s.mealsExpected} comidas · ${s.mealsFromPlan} del plan'),
+      _tile('Alimentación', pct(s.mealsFromPlan, s.mealsExpected),
+          '${s.mealsFromPlan} de ${s.mealsExpected} del plan · ${s.mealsOffPlan} fuera'
+          ' · ${s.mealsSkipped} sin seguir'),
       _tile('Ejercicio', pct(s.exerciseDays, s.exerciseDaysExpected),
           '${s.exerciseDays} días · meta ${s.exerciseDaysExpected}'),
       _tile('Cardio', pct(s.cardioDays, s.cardioDaysExpected),
@@ -256,7 +271,7 @@ class PdfReportService {
     final series = [
       ChartSeries('Del plan', ChartColors.primary,
           [for (final d in data.days) d.mealsFromPlan.toDouble()]),
-      ChartSeries('Fuera del plan', ChartColors.secondary,
+      ChartSeries('Fuera del plan o sin seguirlo', ChartColors.secondary,
           [for (final d in data.days) (d.meals - d.mealsFromPlan).toDouble()]),
     ];
     return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
@@ -272,21 +287,139 @@ class PdfReportService {
     ]);
   }
 
-  static List<pw.Widget> _mealFrequencies(NutritionReportData? detail) {
-    if (detail == null || detail.mealFrequencies.isEmpty) return const [];
+  /// Qué opción del plan se eligió en cada tiempo de comida y qué se comió
+  /// fuera de él.
+  static List<pw.Widget> _mealChoices(NutritionReportData? detail) {
+    if (detail == null || detail.mealTimes.isEmpty) return const [];
+    final times = detail.mealTimes;
+    // Cada título va junto a su contenido para que no quede solo al pie.
     return [
-      pw.SizedBox(height: 8),
-      _note('Opciones del plan que más se eligieron.'),
+      _keepTogether([
+      _subheading('Lo que más se repitió'),
+      _note('La opción del plan más elegida en cada tiempo de comida.'),
       _table(
-        ['Tiempo', 'Opción', 'Veces'],
+        ['Tiempo', 'Opción más elegida', 'Veces', 'Del plan', 'Fuera', 'Sin seguir'],
         [
-          for (final e in detail.mealFrequencies)
-            [_capitalize(e.mealType), e.description, '${e.count}'],
+          for (final t in times)
+            [
+              t.mealType,
+              t.favorite == null
+                  ? 'Ninguna'
+                  : 'Opción ${t.favorite!.optionNumber}: ${t.favorite!.description}',
+              t.favorite == null ? '-' : '${t.favorite!.count}',
+              '${t.fromPlan}',
+              '${t.offPlan}',
+              '${t.skipped}',
+            ],
         ],
-        widths: const {0: 80, 2: 40},
+        widths: const {0: 62, 2: 36, 3: 42, 4: 36, 5: 48},
       ),
+      ]),
+      for (final t in times) _keepTogether(_mealTimeBars(t)),
+      if (detail.offPlanMeals.isNotEmpty) ...[
+        _subheading('Comidas fuera del plan'),
+        _table(
+          ['Fecha', 'Tiempo', 'Qué se comió'],
+          [
+            for (final m in detail.offPlanMeals)
+              [
+                _capitalize(DateFormat('EEE d MMM', 'es').format(m.date)),
+                m.mealType,
+                m.description,
+              ],
+          ],
+          widths: const {0: 80, 1: 70},
+        ),
+      ],
     ];
   }
+
+  /// Una barra por opción del plan, también las que no se eligieron.
+  static List<pw.Widget> _mealTimeBars(MealTimeBreakdown t) {
+    if (t.options.isEmpty && t.logged == 0) return const [];
+    final top = t.options.fold(0, (m, o) => o.count > m ? o.count : m);
+    final favorite = t.favorite;
+    const barWidth = 150.0;
+    final extras = [
+      if (t.offPlan > 0)
+        'Fuera del plan: ${t.offPlan}'
+            '${t.offPlanTop.isEmpty ? '' : ' (${t.offPlanTop.map((e) => '${e.$1} ${e.$2}x').join(', ')})'}',
+      if (t.skipped > 0) 'Sin seguir el plan: ${t.skipped}',
+    ];
+    return [
+      pw.Padding(
+        padding: const pw.EdgeInsets.only(top: 10, bottom: 3),
+        child: pw.Text(
+          '${t.mealType} · ${t.logged} ${t.logged == 1 ? 'registro' : 'registros'}',
+          style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, color: _heading),
+        ),
+      ),
+      for (final o in t.options)
+        pw.Padding(
+          padding: const pw.EdgeInsets.symmetric(vertical: 2),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              pw.Expanded(
+                child: pw.Text('${o.optionNumber}. ${o.description}',
+                    style: pw.TextStyle(fontSize: 7.5, color: _body)),
+              ),
+              pw.SizedBox(width: 8),
+              pw.Container(
+                width: barWidth,
+                height: 8,
+                alignment: pw.Alignment.centerLeft,
+                child: o.count == 0
+                    ? null
+                    : pw.Container(
+                        width: barWidth * o.count / top,
+                        height: 8,
+                        decoration: pw.BoxDecoration(
+                          color: ChartColors.primary,
+                          borderRadius: const pw.BorderRadius.only(
+                            topRight: pw.Radius.circular(2),
+                            bottomRight: pw.Radius.circular(2),
+                          ),
+                        ),
+                      ),
+              ),
+              pw.SizedBox(
+                width: 70,
+                child: pw.Text(
+                  o.count == 0
+                      ? '  0'
+                      : '  ${o.count}${identical(o, favorite) ? '  más elegida' : ''}',
+                  style: pw.TextStyle(
+                    fontSize: 7.5,
+                    color: o.count == 0 ? _muted : _heading,
+                    fontWeight: identical(o, favorite) ? pw.FontWeight.bold : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      if (extras.isNotEmpty)
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 2),
+          child: pw.Text(extras.join('  ·  '), style: pw.TextStyle(fontSize: 7.5, color: _muted)),
+        ),
+    ];
+  }
+
+  /// Mantiene un título con su contenido en la misma página.
+  static pw.Widget _keepTogether(List<pw.Widget> children) => pw.Inseparable(
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: children,
+        ),
+      );
+
+  static pw.Widget _subheading(String text) => pw.Padding(
+        padding: const pw.EdgeInsets.only(top: 12, bottom: 3),
+        child: pw.Text(text,
+            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: _heading)),
+      );
 
   /// Una fila por semana con un cuadro por día: hecho, no hecho o sin llegar.
   static pw.Widget _activityCalendar(List<ReportDay> days) {
@@ -379,7 +512,7 @@ class PdfReportService {
         week.length == 1
             ? fmt.format(week.first.date)
             : '${fmt.format(week.first.date)} al ${fmt.format(week.last.date)}',
-        ratio(s.meals, s.mealsExpected),
+        ratio(s.mealsFromPlan, s.mealsExpected),
         ratio(s.exerciseDays, s.exerciseDaysExpected),
         '${ratio(s.cardioDays, s.cardioDaysExpected)} · ${s.cardioMinutes} min',
         ratio(s.waterGoalDays, s.dayCount),
@@ -388,7 +521,8 @@ class PdfReportService {
       ]);
     }
     return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-      _note('Hecho / esperado. Agua: días que se llegó a la meta. Peso: promedio de la semana.'),
+      _note('Hecho / esperado. Comidas: las del plan. Agua: días que se llegó a la meta. '
+          'Peso: promedio de la semana.'),
       _table(
         ['Semana', 'Comidas', 'Ejercicio', 'Cardio', 'Agua', 'Sueño', 'Peso'],
         rows,
@@ -404,7 +538,8 @@ class PdfReportService {
         for (final d in data.days)
           [
             _capitalize(fmt.format(d.date)),
-            '${d.meals}/${data.goals.mealsPerDay}',
+            '${d.mealsFromPlan}/${data.goals.mealsPerDay}'
+                '${d.meals > d.mealsFromPlan ? ' +${d.meals - d.mealsFromPlan} fuera' : ''}',
             d.waterMl == 0 ? '-' : '${_liters(d.waterMl)} L',
             d.exercised ? 'Sí' : '-',
             d.cardioMinutes == 0 ? '-' : '${d.cardioMinutes} min',

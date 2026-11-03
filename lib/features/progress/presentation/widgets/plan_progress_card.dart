@@ -21,8 +21,9 @@ class PlanProgressCard extends StatelessWidget {
     final theme = Theme.of(context);
     final dates = DateFormat('dd/MM/yy');
     final plan = progress.plan;
-    final start = dates.format((plan.periodStart ?? plan.createdAt).toUtc());
-    final end = plan.periodEnd == null ? 'hoy' : dates.format(plan.periodEnd!.toUtc());
+    // Inicio y fin del plan son instantes reales: se muestran en hora local.
+    final start = dates.format((plan.periodStart ?? plan.createdAt).toLocal());
+    final end = plan.periodEnd == null ? 'hoy' : dates.format(plan.periodEnd!.toLocal());
     final percent = progress.adherencePercent;
     final baseline = progress.baseline;
     final latest = progress.latest;

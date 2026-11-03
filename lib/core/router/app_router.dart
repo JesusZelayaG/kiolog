@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import '../../features/achievements/presentation/pages/achievements_page.dart';
+import '../../features/rewards/presentation/rewards_page.dart';
 import '../../features/exercise/presentation/pages/exercise_config_page.dart';
 import '../../features/history/presentation/pages/day_detail_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
@@ -81,6 +82,10 @@ GoRouter createRouter({String initialLocation = '/'}) => GoRouter(
         GoRoute(
           path: '/body',
           builder: (context, state) => const BodyPage(),
+        ),
+        GoRoute(
+          path: '/rewards',
+          builder: (context, state) => const RewardsPage(),
         ),
         GoRoute(
           path: '/achievements',

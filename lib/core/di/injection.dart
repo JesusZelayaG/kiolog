@@ -48,6 +48,7 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton(() => getIt<AppDatabase>().achievementsDao);
   getIt.registerLazySingleton(() => getIt<AppDatabase>().userProfileDao);
   getIt.registerLazySingleton(() => getIt<AppDatabase>().userModulesDao);
+  getIt.registerLazySingleton(() => getIt<AppDatabase>().rewardsDao);
   getIt.registerLazySingleton<ModulesCubit>(
     () => ModulesCubit(getIt<UserModulesDao>()),
   );

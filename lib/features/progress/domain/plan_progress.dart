@@ -68,6 +68,11 @@ class PlanProgress extends Equatable {
   List<Object?> get props => [plan, mealsLogged, mealsExpected, baseline, latest];
 }
 
+DateTime _localDay(DateTime instant) {
+  final local = instant.toLocal();
+  return DateTime.utc(local.year, local.month, local.day);
+}
+
 DateTime _day(DateTime date) {
   final utc = date.toUtc();
   return DateTime.utc(utc.year, utc.month, utc.day);
@@ -81,8 +86,9 @@ PlanProgress planProgressFor(
   required int mealsLogged,
   required int mealsExpected,
 }) {
-  final start = _day(plan.periodStart ?? plan.createdAt);
-  final end = plan.periodEnd == null ? null : _day(plan.periodEnd!);
+  // El plan guarda instantes reales; las consultas, medianoche UTC del día.
+  final start = _localDay(plan.periodStart ?? plan.createdAt);
+  final end = plan.periodEnd == null ? null : _localDay(plan.periodEnd!);
   final sorted = [...consultations]..sort((a, b) {
       final byDate = a.date.compareTo(b.date);
       return byDate != 0 ? byDate : a.id.compareTo(b.id);

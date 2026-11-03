@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:kiolog/core/domain/day.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/exercise/domain/repositories/exercise_repository.dart';
 import 'package:kiolog/features/nutrition/domain/repositories/nutrition_repository.dart';
@@ -120,7 +121,7 @@ class ProgressOverviewCubit extends Cubit<ProgressOverviewState> {
           await _progressOf(plan, measurements),
       ]..sort((a, b) => b.plan.periodStart!.compareTo(a.plan.periodStart!));
       final current = plans.where((p) => p.plan.isActive).firstOrNull?.plan;
-      final currentWeek = current == null ? null : _mondayOf(current.periodStart!);
+      final currentWeek = current == null ? null : _mondayOf(utcDayOf(current.periodStart!.toLocal()));
 
       final sleepHours = <String, double>{};
       for (final log in sleepLogs) {
