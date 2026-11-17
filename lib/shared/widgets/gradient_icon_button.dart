@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kiolog/core/theme/app_theme.dart';
 
-/// Botón redondo de acción secundaria, con lavado menta.
+/// Botón redondo de acción secundaria, con el lavado del tema.
 class GradientIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
@@ -17,7 +17,7 @@ class GradientIconButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Material(
-        color: Tropical.mintWash,
+        color: context.kc.waterWash,
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

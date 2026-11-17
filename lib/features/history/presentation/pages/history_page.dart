@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -134,9 +135,9 @@ class _DayCell extends StatelessWidget {
                 runSpacing: 2,
                 alignment: WrapAlignment.center,
                 children: [
-                  if (day.hasWater) const _MiniDot(color: Color(0xFF2E7D68)),
-                  if (day.hasMeals) const _MiniDot(color: Color(0xFFFDB574)),
-                  if (day.hasExercise) const _MiniDot(color: Color(0xFFF48B71)),
+                  if (day.hasWater) _MiniDot(color: context.kc.waterInk),
+                  if (day.hasMeals) _MiniDot(color: context.kc.foodAccent),
+                  if (day.hasExercise) _MiniDot(color: context.kc.gymInk),
                 ],
               ),
             ],
@@ -188,29 +189,29 @@ class _ComplianceSection extends StatelessWidget {
             const SizedBox(height: 10),
             _SegmentRow(
               icon: '💧',
-              iconBackground: const Color(0xFFD7EFE6),
+              iconBackground: context.kc.waterWash,
               label: 'Agua',
               value: compliance.water,
-              barColor: const Color(0xFF2E7D68),
-              valueColor: const Color(0xFF2E7D68),
+              barColor: context.kc.waterInk,
+              valueColor: context.kc.waterInk,
             ),
             const SizedBox(height: 8),
             _SegmentRow(
               icon: '🍽️',
-              iconBackground: const Color(0xFFFDEFE3),
+              iconBackground: context.kc.foodWash,
               label: 'Comida',
               value: compliance.meals,
-              barColor: const Color(0xFFFDB574),
-              valueColor: const Color(0xFF804B13),
+              barColor: context.kc.foodAccent,
+              valueColor: context.kc.foodInk,
             ),
             const SizedBox(height: 8),
             _SegmentRow(
               icon: '🏋️',
-              iconBackground: const Color(0xFFFFDAD2),
+              iconBackground: context.kc.gymWash,
               label: 'Ejercicio',
               value: compliance.exercise,
-              barColor: const Color(0xFFF48B71),
-              valueColor: const Color(0xFF9A4530),
+              barColor: context.kc.gymInk,
+              valueColor: context.kc.gymInk,
             ),
           ],
         ),

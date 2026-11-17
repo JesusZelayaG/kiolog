@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/di/injection.dart';
@@ -66,7 +67,7 @@ class _DayDetailView extends StatelessWidget {
               ),
               _SegmentCard(
                 icon: '💧',
-                iconBackground: const Color(0xFFD7EFE6),
+                iconBackground: context.kc.waterWash,
                 title: 'Agua',
                 hasData: state.hasWater,
                 child: _WaterContent(state: state),
@@ -74,7 +75,7 @@ class _DayDetailView extends StatelessWidget {
               const SizedBox(height: 8),
               _SegmentCard(
                 icon: '🍽️',
-                iconBackground: const Color(0xFFFDEFE3),
+                iconBackground: context.kc.foodWash,
                 title: 'Nutrición',
                 hasData: state.hasMeals,
                 child: _NutritionContent(state: state),
@@ -82,7 +83,7 @@ class _DayDetailView extends StatelessWidget {
               const SizedBox(height: 8),
               _SegmentCard(
                 icon: '🏋️',
-                iconBackground: const Color(0xFFFFDAD2),
+                iconBackground: context.kc.gymWash,
                 title: 'Ejercicio',
                 hasData: state.hasExercise,
                 child: _ExerciseContent(state: state),
@@ -146,7 +147,7 @@ class _SegmentCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: hasData
-                        ? const Color(0xFFD7EFE6)
+                        ? context.kc.waterWash
                         : theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(99),
                   ),
@@ -154,7 +155,7 @@ class _SegmentCard extends StatelessWidget {
                     hasData ? 'Cumplido' : 'Sin registro',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: hasData
-                          ? const Color(0xFF2E7D68)
+                          ? context.kc.waterInk
                           : theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
@@ -193,7 +194,7 @@ class _WaterContent extends StatelessWidget {
               '${state.totalWaterMl} ml',
               style: theme.textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF2E7D68),
+                color: context.kc.waterInk,
               ),
             ),
           ],
@@ -207,13 +208,13 @@ class _WaterContent extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFFD7EFE6),
+                color: context.kc.waterWash,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 '$time · ${log.amountMl} ml',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: const Color(0xFF076450),
+                  color: context.kc.waterInk,
                 ),
               ),
             );
@@ -272,7 +273,7 @@ class _NutritionContent extends StatelessWidget {
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: log != null
-                      ? const Color(0xFF804B13)
+                      ? context.kc.foodInk
                       : theme.colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -324,7 +325,7 @@ class _ExerciseContent extends StatelessWidget {
                 '$arrived – $left',
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF9A4530),
+                  color: context.kc.gymInk,
                 ),
               ),
             ],

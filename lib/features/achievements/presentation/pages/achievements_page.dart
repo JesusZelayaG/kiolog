@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kiolog/core/dao/achievements_dao.dart';
@@ -92,7 +93,7 @@ class _AchievementTile extends StatelessWidget {
       child: ListTile(
         leading: Icon(
           isUnlocked ? Icons.emoji_events : Icons.emoji_events_outlined,
-          color: isUnlocked ? Colors.amber : theme.colorScheme.onSurfaceVariant,
+          color: isUnlocked ? context.kc.gold : theme.colorScheme.onSurfaceVariant,
         ),
         title: Text(achievement.title),
         subtitle: Text(achievement.description),

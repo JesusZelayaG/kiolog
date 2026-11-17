@@ -24,7 +24,7 @@ class VitalityCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: radius,
-        boxShadow: const [Tropical.softShadow],
+        boxShadow: [context.kc.shadow],
       ),
       child: Material(
         color: color ?? cs.surfaceContainerLowest,

@@ -1,4 +1,6 @@
 // lib/shared/widgets/app_scaffold.dart
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +9,7 @@ import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
 import 'package:kiolog/core/theme/app_theme.dart';
+import 'package:kiolog/shared/widgets/kiolog_glyphs.dart';
 
 class AppScaffold extends StatelessWidget {
   final Widget child;
@@ -68,65 +71,72 @@ class _CustomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    _NavIcon iconax(IconData idle, IconData active) =>
+        _NavIcon((color, selected) => Icon(selected ? active : idle, size: 22, color: color));
+    _NavIcon glyph(KiologGlyphKind kind) =>
+        _NavIcon((color, selected) => KiologGlyph(kind, size: 22, color: color, filled: selected));
     final items = [
+      _NavItem(icon: iconax(IconsaxPlusLinear.home_2, IconsaxPlusBold.home_2), label: 'Inicio', index: 0),
       _NavItem(
-        icon: selectedIndex == 0 ? IconsaxPlusBold.home_2 : IconsaxPlusLinear.home_2,
-        label: 'Inicio',
-        index: 0,
-      ),
-      _NavItem(
-        icon: selectedIndex == 1 ? IconsaxPlusBold.reserve : IconsaxPlusLinear.reserve,
+        icon: glyph(KiologGlyphKind.bowl),
         label: 'Nutrición',
         index: 1,
         locked: !modulesState.isEnabled(AppModule.nutrition),
       ),
       _NavItem(
-        icon: selectedIndex == 2 ? IconsaxPlusBold.flash : IconsaxPlusLinear.flash,
+        icon: glyph(KiologGlyphKind.dumbbell),
         label: 'Ejercicio',
         index: 2,
         locked: !modulesState.isEnabled(AppModule.exercise),
       ),
-      _NavItem(
-        icon: selectedIndex == 3 ? IconsaxPlusBold.status_up : IconsaxPlusLinear.status_up,
-        label: 'Progreso',
-        index: 3,
-      ),
-      _NavItem(
-        icon: selectedIndex == 4 ? IconsaxPlusBold.setting_2 : IconsaxPlusLinear.setting_2,
-        label: 'Ajustes',
-        index: 4,
-      ),
+      _NavItem(icon: iconax(IconsaxPlusLinear.status_up, IconsaxPlusBold.status_up), label: 'Progreso', index: 3),
+      _NavItem(icon: iconax(IconsaxPlusLinear.setting_2, IconsaxPlusBold.setting_2), label: 'Ajustes', index: 4),
     ];
 
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Container(
-        height: 68,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+      minimum: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(34),
-          boxShadow: const [Tropical.softShadow],
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: [context.kc.shadow],
         ),
-        child: Row(
-          children: items
-              .map((item) => Expanded(
-                    child: _NavTile(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              height: 68,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              color: theme.colorScheme.surfaceContainerLowest.withValues(alpha: 0.88),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  for (final item in items)
+                    _NavTile(
                       item: item,
                       selected: selectedIndex == item.index,
                       onTap: () => onTap(item.index),
                     ),
-                  ))
-              .toList(),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
+/// Dibuja el ícono con el color y el estado que le da la pestaña.
+class _NavIcon {
+  const _NavIcon(this.build);
+
+  final Widget Function(Color color, bool selected) build;
+}
+
 class _NavItem {
-  final IconData icon;
+  final _NavIcon icon;
   final String label;
   final int index;
   final bool locked;
@@ -153,29 +163,30 @@ class _NavTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final color = selected
-        ? Colors.white
-        : cs.onSurfaceVariant.withValues(alpha: item.locked ? 0.4 : 1);
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Center(
+    final color = selected ? Colors.white : cs.onSurfaceVariant.withValues(alpha: item.locked ? 0.4 : 1);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: item.label,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 1),
+          duration: const Duration(milliseconds: 350),
+          curve: const Cubic(.3, 1.3, .5, 1),
+          height: 48,
+          padding: EdgeInsets.symmetric(horizontal: selected ? 16 : 12),
           decoration: BoxDecoration(
-            color: selected ? cs.primaryContainer : Colors.transparent,
-            borderRadius: BorderRadius.circular(28),
+            gradient: selected ? context.kc.brandGradient : null,
+            borderRadius: BorderRadius.circular(18),
           ),
-          child: Column(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Icon(item.icon, size: 22, color: color),
+                  item.icon.build(color, selected),
                   if (item.locked)
                     Positioned(
                       right: -4,
@@ -184,13 +195,19 @@ class _NavTile extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.fade,
-                softWrap: false,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                child: selected
+                    ? Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: Text(
+                          item.label,
+                          maxLines: 1,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
             ],
           ),

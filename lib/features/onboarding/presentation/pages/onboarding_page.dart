@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/shared/widgets/theme_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kiolog/core/dao/user_profile_dao.dart';
 import 'package:kiolog/core/di/injection.dart';
@@ -524,6 +525,18 @@ class _OnboardingViewState extends State<_OnboardingView> {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+          Text(
+            'ELIGE TU TEMA',
+            style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.primary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Puedes cambiarlo cuando quieras en Ajustes.',
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          const ThemePicker(),
           _buildNavFooter(theme),
           _buildRestoreCard(theme),
         ],

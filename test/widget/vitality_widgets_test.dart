@@ -9,7 +9,7 @@ import 'package:kiolog/shared/widgets/module_icon_badge.dart';
 import 'package:kiolog/shared/widgets/stat_chip.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: AppTheme.light,
+      theme: AppTheme.of(KiologThemeId.claro),
       home: Scaffold(body: Center(child: child)),
     );
 

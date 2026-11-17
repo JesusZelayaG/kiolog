@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
+import 'package:kiolog/core/theme/theme_cubit.dart';
 import 'package:kiolog/features/settings/presentation/pages/settings_page.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,8 +18,11 @@ Widget _wrap(ModulesState state) {
   when(() => cubit.state).thenReturn(state);
   whenListen(cubit, Stream.value(state));
   when(() => cubit.setModuleEnabled(any(), any())).thenAnswer((_) async {});
-  return BlocProvider<ModulesCubit>.value(
-    value: cubit,
+  return MultiBlocProvider(
+    providers: [
+      BlocProvider<ModulesCubit>.value(value: cubit),
+      BlocProvider(create: (_) => ThemeCubit(KiologThemeId.fallback)),
+    ],
     child: const MaterialApp(home: SettingsPage()),
   );
 }

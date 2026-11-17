@@ -10,7 +10,12 @@ import '../bloc/progress_overview_cubit.dart';
 import 'plan_progress_card.dart';
 
 // Checked with the dataviz palette validator: passes CVD and contrast on cream.
-const _seriesColors = [Color(0xFF00785A), Color(0xFFD97B1E)];
+// Verde y naranja: se distinguen también por luminosidad. En oscuro, más claros.
+const _seriesLight = [Color(0xFF00785A), Color(0xFFD97B1E)];
+const _seriesDark = [Color(0xFF5FB98A), Color(0xFFF0A14A)];
+
+List<Color> _seriesColors(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark ? _seriesDark : _seriesLight;
 const _chartHeight = 150.0;
 const _labelHeight = 20.0;
 const _barGap = 2.0;
@@ -184,7 +189,7 @@ class _BarChartCardState extends State<BarChartCard> {
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: _seriesColors[i],
+                      color: _seriesColors(context)[i],
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
@@ -215,6 +220,7 @@ class _BarChartCardState extends State<BarChartCard> {
                     axis: cs.surfaceContainerHigh,
                     ink: cs.onSurfaceVariant,
                     accent: cs.onSurface,
+                    series: _seriesColors(context),
                   ),
                 ),
               ),
@@ -237,6 +243,7 @@ class _BarChartPainter extends CustomPainter {
     required this.axis,
     required this.ink,
     required this.accent,
+    required this.series,
   });
 
   final List<ChartBar> bars;
@@ -246,6 +253,7 @@ class _BarChartPainter extends CustomPainter {
   final Color axis;
   final Color ink;
   final Color accent;
+  final List<Color> series;
 
   void _text(Canvas canvas, String text, Offset center, Color color, FontWeight weight) {
     final painter = TextPainter(
@@ -303,7 +311,7 @@ class _BarChartPainter extends CustomPainter {
         final height = values[s] * scale;
         if (height <= 0) continue;
         final rect = Rect.fromLTWH(left, bottom - height, barWidth, height);
-        final color = _seriesColors[s % _seriesColors.length];
+        final color = series[s % series.length];
         canvas.drawRRect(
           RRect.fromRectAndCorners(
             rect,
@@ -326,5 +334,5 @@ class _BarChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BarChartPainter old) =>
-      old.bars != bars || old.selected != selected || old.goal != goal;
+      old.bars != bars || old.selected != selected || old.goal != goal || old.series != series;
 }

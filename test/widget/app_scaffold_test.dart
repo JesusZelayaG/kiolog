@@ -82,7 +82,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: createRouter(),
-        theme: AppTheme.light,
+        theme: AppTheme.of(KiologThemeId.claro),
       ),
     );
 
@@ -98,7 +98,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: createRouter(),
-        theme: AppTheme.light,
+        theme: AppTheme.of(KiologThemeId.claro),
       ),
     );
 

@@ -5,6 +5,7 @@ import 'package:kiolog/core/dao/user_profile_dao.dart';
 import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/notifications/consultation_reminders.dart';
 import 'package:kiolog/core/notifications/notification_service.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 
 /// Cuántos días faltan, contando días de calendario.
@@ -26,7 +27,11 @@ class NextConsultationCard extends StatefulWidget {
     super.key,
     this.hideWhenEmpty = false,
     this.margin = EdgeInsets.zero,
+    this.compact = false,
   });
+
+  /// Una franja corta (Home): tocar edita, mantener presionado la quita.
+  final bool compact;
 
   /// En Inicio no se muestra nada si no hay cita.
   final bool hideWhenEmpty;
@@ -95,6 +100,7 @@ class _NextConsultationCardState extends State<NextConsultationCard> {
     final upcoming = at != null && at.isAfter(DateTime.now());
     if (widget.hideWhenEmpty && !upcoming) return const SizedBox.shrink();
     final theme = Theme.of(context);
+    if (widget.compact && at != null) return _buildCompact(context, at);
 
     return Padding(
       padding: widget.margin,
@@ -120,6 +126,64 @@ class _NextConsultationCardState extends State<NextConsultationCard> {
                   onPressed: () => _save(null),
                 ),
           onTap: _edit,
+        ),
+      ),
+    );
+  }
+}
+
+extension on _NextConsultationCardState {
+  Widget _buildCompact(BuildContext context, DateTime at) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final days = daysUntilLabel(at, DateTime.now()).replaceFirst('faltan ', '');
+    return Padding(
+      padding: widget.margin,
+      child: Material(
+        color: cs.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(22),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: _edit,
+          onLongPress: () => _save(null),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: context.kc.waterWash,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(IconsaxPlusBold.calendar_tick, size: 22, color: cs.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Próxima consulta',
+                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(
+                        _capitalize(DateFormat("EEE d MMM · h:mm a", 'es').format(at).replaceAll('.', '')),
+                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: ShapeDecoration(color: context.kc.waterWash, shape: const StadiumBorder()),
+                  child: Text(
+                    days,
+                    style: theme.textTheme.labelMedium?.copyWith(color: cs.primary, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

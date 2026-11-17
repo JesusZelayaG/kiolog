@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -276,9 +277,7 @@ class _SleepLogTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: isMain
-                    ? const Color(0xFF2E7D68).withValues(alpha: 0.2)
-                    : Colors.amber.withValues(alpha: 0.2),
+                color: (isMain ? cs.primary : context.kc.warning).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -286,7 +285,7 @@ class _SleepLogTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: isMain ? const Color(0xFF2E7D68) : Colors.amber,
+                  color: isMain ? cs.primary : context.kc.warning,
                 ),
               ),
             ),
@@ -493,7 +492,7 @@ class _WeeklyChart extends StatelessWidget {
   Color _barColor(BuildContext context, double hours) {
     final cs = Theme.of(context).colorScheme;
     if (hours >= 7) return cs.primary;
-    if (hours >= 5) return Colors.amber;
+    if (hours >= 5) return context.kc.warning;
     return cs.error;
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
@@ -462,8 +463,8 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
 
       // Guardar / check
       isReadonly
-          ? const Center(
-              child: Icon(Icons.check_circle, color: Colors.green, size: 20),
+          ? Center(
+              child: Icon(Icons.check_circle, color: context.kc.success, size: 20),
             )
           : TextButton(
               onPressed: canSave

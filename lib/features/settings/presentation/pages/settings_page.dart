@@ -10,6 +10,9 @@ import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
 import 'package:kiolog/core/theme/app_theme.dart';
+import 'package:kiolog/core/theme/theme_cubit.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:kiolog/shared/widgets/theme_picker.dart';
 import 'package:kiolog/features/exercise/presentation/pages/exercise_config_page.dart';
 import 'package:kiolog/features/nutrition/presentation/pages/nutrition_config_page.dart';
 import 'package:kiolog/features/water/presentation/pages/water_config_page.dart';
@@ -139,6 +142,19 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
+                const _SectionLabel('Apariencia'),
+                VitalityCard(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: BlocBuilder<ThemeCubit, KiologThemeId>(
+                    builder: (context, themeId) => _ToolTile(
+                      icon: IconsaxPlusLinear.brush_2,
+                      title: 'Tema',
+                      subtitle: themeId.label,
+                      onTap: () => _chooseTheme(context),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
                 const _SectionLabel('Herramientas y datos'),
                 VitalityCard(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -191,6 +207,26 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
+
+Future<void> _chooseTheme(BuildContext context) => showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Tema', style: Theme.of(sheetContext).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              const ThemePicker(),
+            ],
+          ),
+        ),
+      ),
+    );
 
 enum _BackupTarget { phone, share }
 
@@ -332,7 +368,7 @@ class _ModuleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return SwitchListTile(
       secondary: _TileIcon(
-        background: Tropical.mintWash,
+        background: context.kc.waterWash,
         icon: switch (module) {
           AppModule.nutrition => Icons.restaurant_outlined,
           AppModule.water => Icons.water_drop_outlined,

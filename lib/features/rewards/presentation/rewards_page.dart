@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/dao/rewards_dao.dart';
 import 'package:kiolog/core/dao/user_profile_dao.dart';
@@ -109,7 +110,7 @@ class _TrophiesCard extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               leading: Icon(
                 progress.isUnlocked(trophy) ? Icons.emoji_events : Icons.lock_outline,
-                color: progress.isUnlocked(trophy) ? const Color(0xFFD9A21E) : cs.onSurfaceVariant,
+                color: progress.isUnlocked(trophy) ? context.kc.gold : cs.onSurfaceVariant,
               ),
               title: Text(trophy.name),
               subtitle: progress.isUnlocked(trophy) ? null : Text(progress.requirement(trophy)),

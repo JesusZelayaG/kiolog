@@ -11,6 +11,7 @@ import 'core/notifications/consultation_reminders.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,8 +21,9 @@ void main() async {
 
   final onboardingComplete =
       await getIt<UserProfileDao>().isOnboardingComplete();
+  final themeCubit = await ThemeCubit.load();
 
-  runApp(KiologApp(onboardingComplete: onboardingComplete));
+  runApp(KiologApp(onboardingComplete: onboardingComplete, themeCubit: themeCubit));
   _scheduleAutoBackups();
   _restoreConsultationReminders();
 }
@@ -49,22 +51,37 @@ void _scheduleAutoBackups() {
   AppLifecycleListener(onResume: backup);
 }
 
-class KiologApp extends StatelessWidget {
+class KiologApp extends StatefulWidget {
   final bool onboardingComplete;
+  final ThemeCubit? themeCubit;
 
-  const KiologApp({super.key, required this.onboardingComplete});
+  const KiologApp({super.key, required this.onboardingComplete, this.themeCubit});
+
+  @override
+  State<KiologApp> createState() => _KiologAppState();
+}
+
+class _KiologAppState extends State<KiologApp> {
+  late final _themeCubit = widget.themeCubit ?? ThemeCubit(KiologThemeId.fallback);
+  // El router se crea una vez: cambiar de tema no debe reiniciar la navegación.
+  late final _router = createRouter(
+    initialLocation: widget.onboardingComplete ? '/' : '/onboarding',
+  );
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ModulesCubit>.value(
-      value: getIt<ModulesCubit>(),
-      child: MaterialApp.router(
-        title: 'Kiolog',
-        theme: AppTheme.light,
-        routerConfig: createRouter(
-          initialLocation: onboardingComplete ? '/' : '/onboarding',
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ModulesCubit>.value(value: getIt<ModulesCubit>()),
+        BlocProvider<ThemeCubit>.value(value: _themeCubit),
+      ],
+      child: BlocBuilder<ThemeCubit, KiologThemeId>(
+        builder: (context, themeId) => MaterialApp.router(
+          title: 'Kiolog',
+          theme: AppTheme.of(themeId),
+          routerConfig: _router,
+          debugShowCheckedModeBanner: false,
         ),
-        debugShowCheckedModeBanner: false,
       ),
     );
   }
