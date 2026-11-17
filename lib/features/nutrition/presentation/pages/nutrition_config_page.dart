@@ -1,4 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
+import 'package:kiolog/shared/widgets/meal_icons.dart';
+import 'package:kiolog/shared/widgets/meal_photo.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 import 'package:kiolog/core/di/injection.dart';
@@ -24,6 +30,9 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
       TextEditingController(text: widget.plan?.name ?? 'Mi Plan');
   final List<_MealTimeEntry> _mealTimes = [_MealTimeEntry()];
   final Map<TextEditingController, int> _optionIds = {};
+
+  /// La foto de cada plato: la que ya tenía (id) o una nueva (bytes).
+  final Map<TextEditingController, _PhotoDraft> _photos = {};
   bool _saving = false;
 
   @override
@@ -41,11 +50,13 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
       final entry = byType.putIfAbsent(option.mealType, () {
         final created = _MealTimeEntry()..options.clear();
         created.nameController.text = option.mealType;
+        created.icon = option.mealIcon;
         return created;
       });
       final controller = TextEditingController(text: option.description);
       entry.options.add(controller);
       _optionIds[controller] = option.id;
+      if (option.photoId != null) _photos[controller] = _PhotoDraft(id: option.photoId);
     }
     setState(() {
       _mealTimes
@@ -70,7 +81,8 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
 
   Future<void> _save() async {
     final name = _planNameController.text.trim();
-    final drafts = <PlanOptionDraft>[];
+    var drafts = <PlanOptionDraft>[];
+    final draftFields = <TextEditingController>[];
     var mealCount = 0;
     for (final mealTime in _mealTimes) {
       final typeName = mealTime.nameController.text.trim();
@@ -87,7 +99,9 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
           mealType: typeName,
           optionNumber: i + 1,
           description: filled[i].text.trim(),
+          mealIcon: mealTime.icon,
         ));
+        draftFields.add(filled[i]);
       }
     }
     if (name.isEmpty) {
@@ -101,6 +115,25 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
 
     setState(() => _saving = true);
     final nutritionRepo = getIt<NutritionRepository>();
+    // Las fotos nuevas se guardan primero; el plan solo guarda su id.
+    final photoIds = <TextEditingController, int?>{};
+    for (final field in draftFields) {
+      final photo = _photos[field];
+      if (photo == null) continue;
+      final bytes = photo.bytes;
+      photoIds[field] = bytes != null ? await nutritionRepo.savePhoto(bytes) : photo.id;
+    }
+    drafts = [
+      for (var k = 0; k < drafts.length; k++)
+        PlanOptionDraft(
+          id: drafts[k].id,
+          mealType: drafts[k].mealType,
+          optionNumber: drafts[k].optionNumber,
+          description: drafts[k].description,
+          photoId: photoIds[draftFields[k]],
+          mealIcon: drafts[k].mealIcon,
+        ),
+    ];
     final plan = widget.plan;
     if (plan != null) {
       await nutritionRepo.updatePlan(
@@ -117,6 +150,8 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
           mealType: draft.mealType,
           optionNumber: draft.optionNumber,
           description: draft.description,
+          photoId: draft.photoId,
+          mealIcon: draft.mealIcon,
         );
       }
     }
@@ -164,17 +199,40 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
                       child: Row(
                         children: [
-                          Text(
-                            'Tiempo ${index + 1}',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
+                          Builder(builder: (context) {
+                            final current = MealIcon.resolve(mt.icon, mt.nameController.text);
+                            return Tooltip(
+                              message: 'Elegir ícono',
+                              child: Material(
+                                color: context.kc.foodWash,
+                                borderRadius: BorderRadius.circular(14),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: () async {
+                                    final chosen = await pickMealIcon(
+                                      context,
+                                      mealType: mt.nameController.text,
+                                      current: current,
+                                    );
+                                    if (chosen != null) setState(() => mt.icon = chosen.name);
+                                  },
+                                  child: SizedBox(
+                                    width: 44,
+                                    height: 44,
+                                    child: Center(child: current.build(color: context.kc.foodInk)),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
                           const SizedBox(width: 12),
                           Expanded(
                             child: TextField(
                               controller: mt.nameController,
-                              decoration: const InputDecoration(
+                              // El ícono sugerido sigue al nombre mientras no se elija uno.
+                              onChanged: (_) => setState(() {}),
+                              decoration: InputDecoration(
+                                labelText: 'Tiempo ${index + 1}',
                                 hintText: 'Ej: Desayuno',
                                 isDense: true,
                               ),
@@ -205,6 +263,17 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
                               padding: const EdgeInsets.only(bottom: 8),
                               child: Row(
                                 children: [
+                                  _OptionPhotoButton(
+                                    draft: _photos[oe.value],
+                                    onChanged: (draft) => setState(() {
+                                      if (draft == null) {
+                                        _photos.remove(oe.value);
+                                      } else {
+                                        _photos[oe.value] = draft;
+                                      }
+                                    }),
+                                  ),
+                                  const SizedBox(width: 10),
                                   Expanded(
                                     child: TextField(
                                       controller: oe.value,
@@ -279,5 +348,65 @@ class _NutritionConfigPageState extends State<NutritionConfigPage> {
 
 class _MealTimeEntry {
   final nameController = TextEditingController();
+
+  /// El ícono elegido (MealIcon.name); null usa el sugerido por el nombre.
+  String? icon;
   final List<TextEditingController> options = [TextEditingController()];
+}
+
+/// La foto de un plato mientras se edita el plan.
+class _PhotoDraft {
+  const _PhotoDraft({this.id, this.bytes});
+
+  /// La que ya estaba guardada.
+  final int? id;
+
+  /// Una nueva, todavía sin guardar.
+  final Uint8List? bytes;
+}
+
+class _OptionPhotoButton extends StatelessWidget {
+  const _OptionPhotoButton({required this.draft, required this.onChanged});
+
+  final _PhotoDraft? draft;
+  final ValueChanged<_PhotoDraft?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final d = draft;
+    final Widget image;
+    if (d?.bytes != null) {
+      image = ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.memory(d!.bytes!, width: 48, height: 48, fit: BoxFit.cover, cacheWidth: 144),
+      );
+    } else if (d?.id != null) {
+      image = MealPhotoImage(photoId: d!.id!, width: 48, height: 48, radius: 12);
+    } else {
+      image = Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(color: cs.surfaceContainerHigh, borderRadius: BorderRadius.circular(12)),
+        child: Icon(IconsaxPlusLinear.gallery_add, size: 20, color: cs.onSurfaceVariant),
+      );
+    }
+    return Tooltip(
+      message: 'Foto de cómo debería verse',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          final choice = await pickMealPhoto(context, title: 'Cómo debería verse', canRemove: d != null);
+          switch (choice) {
+            case PhotoPicked(:final bytes):
+              onChanged(_PhotoDraft(bytes: bytes));
+            case PhotoRemoved():
+              onChanged(null);
+            case null:
+          }
+        },
+        child: image,
+      ),
+    );
+  }
 }

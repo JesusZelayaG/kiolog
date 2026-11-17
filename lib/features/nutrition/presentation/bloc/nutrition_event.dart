@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 
 abstract class NutritionEvent extends Equatable {
@@ -40,14 +42,51 @@ class NutritionOffPlanMealLogged extends NutritionEvent {
   final String mealType;
   final String? description;
 
+  /// Foto de lo que se comió, ya comprimida.
+  final Uint8List? photo;
+
   const NutritionOffPlanMealLogged({
     required this.date,
     required this.mealType,
     this.description,
+    this.photo,
   });
 
   @override
-  List<Object?> get props => [date, mealType, description];
+  List<Object?> get props => [date, mealType, description, photo];
+}
+
+/// Pone, cambia o quita (null) la foto de referencia de un plato del plan.
+class NutritionOptionPhotoChanged extends NutritionEvent {
+  final int optionId;
+  final Uint8List? photo;
+
+  const NutritionOptionPhotoChanged({required this.optionId, this.photo});
+
+  @override
+  List<Object?> get props => [optionId, photo];
+}
+
+/// Cambia el ícono de un tiempo de comida del plan activo.
+class NutritionMealIconChanged extends NutritionEvent {
+  final String mealType;
+  final String icon;
+
+  const NutritionMealIconChanged({required this.mealType, required this.icon});
+
+  @override
+  List<Object?> get props => [mealType, icon];
+}
+
+/// Pone, cambia o quita (null) la foto de lo que se comió en un registro.
+class NutritionLogPhotoChanged extends NutritionEvent {
+  final int logId;
+  final Uint8List? photo;
+
+  const NutritionLogPhotoChanged({required this.logId, this.photo});
+
+  @override
+  List<Object?> get props => [logId, photo];
 }
 
 class NutritionMealLogRemoved extends NutritionEvent {

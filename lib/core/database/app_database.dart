@@ -32,6 +32,7 @@ part 'app_database.g.dart';
     MealPlans,
     MealPlanOptions,
     DailyMealLogs,
+    MealPhotos,
     // Exercise
     ExercisePlans,
     ExerciseRoutines,
@@ -79,7 +80,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
@@ -154,6 +155,14 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 14) {
           await m.createTable(rewardSettings);
+        }
+        if (from < 15) {
+          await m.createTable(mealPhotos);
+          await m.addColumn(mealPlanOptions, mealPlanOptions.photoId);
+          await m.addColumn(dailyMealLogs, dailyMealLogs.photoId);
+        }
+        if (from < 16) {
+          await m.addColumn(mealPlanOptions, mealPlanOptions.mealIcon);
         }
       },
     );

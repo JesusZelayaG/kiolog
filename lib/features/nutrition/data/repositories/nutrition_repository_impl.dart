@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:kiolog/features/nutrition/domain/models/plan_option_draft.dart';
 import 'package:drift/drift.dart';
 import 'package:kiolog/core/dao/nutrition_dao.dart';
@@ -49,6 +51,8 @@ class NutritionRepositoryImpl implements NutritionRepository {
     required String mealType,
     required int optionNumber,
     required String description,
+    int? photoId,
+    String? mealIcon,
   }) =>
       _nutritionDao.insertMealPlanOption(
         MealPlanOptionsCompanion(
@@ -56,6 +60,8 @@ class NutritionRepositoryImpl implements NutritionRepository {
           mealType: Value(mealType),
           optionNumber: Value(optionNumber),
           description: Value(description),
+          photoId: Value(photoId),
+          mealIcon: Value(mealIcon),
         ),
       );
 
@@ -219,4 +225,22 @@ class NutritionRepositoryImpl implements NutritionRepository {
   @override
   Future<List<OptionFrequencyStat>> getOptionFrequency(int planId) =>
       _nutritionDao.getOptionFrequenciesForPlan(planId);
+
+  @override
+  Future<int> savePhoto(Uint8List bytes) => _nutritionDao.insertPhoto(bytes);
+
+  @override
+  Future<Uint8List?> getPhoto(int photoId) => _nutritionDao.getPhoto(photoId);
+
+  @override
+  Future<void> setOptionPhoto(int optionId, Uint8List? bytes) async =>
+      _nutritionDao.setOptionPhoto(optionId, bytes == null ? null : await savePhoto(bytes));
+
+  @override
+  Future<void> setMealIcon(int planId, String mealType, String icon) =>
+      _nutritionDao.setMealIcon(planId, mealType, icon);
+
+  @override
+  Future<void> setLogPhoto(int logId, Uint8List? bytes) async =>
+      _nutritionDao.setLogPhoto(logId, bytes == null ? null : await savePhoto(bytes));
 }

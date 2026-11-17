@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../models/plan_option_draft.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import '../models/nutrition_weekly_stat.dart';
@@ -26,6 +28,8 @@ abstract class NutritionRepository {
     required String mealType,
     required int optionNumber,
     required String description,
+    int? photoId,
+    String? mealIcon,
   });
 
   Future<List<DailyMealLog>> getDailyLogs(DateTime date);
@@ -48,4 +52,18 @@ abstract class NutritionRepository {
   Future<List<NutritionWeeklyStat>> getWeeklyAdherence({required int weeksBack});
 
   Future<List<OptionFrequencyStat>> getOptionFrequency(int planId);
+
+  /// Guarda una foto de comida ya comprimida y devuelve su id.
+  Future<int> savePhoto(Uint8List bytes);
+
+  Future<Uint8List?> getPhoto(int photoId);
+
+  /// La foto de referencia de un plato del plan; null la quita.
+  Future<void> setOptionPhoto(int optionId, Uint8List? bytes);
+
+  /// La foto de lo que se comió en un registro; null la quita.
+  Future<void> setLogPhoto(int logId, Uint8List? bytes);
+
+  /// El ícono de un tiempo de comida del plan.
+  Future<void> setMealIcon(int planId, String mealType, String icon);
 }

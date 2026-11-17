@@ -7,7 +7,7 @@ import '../database/tables/nutrition_tables.dart';
 
 part 'nutrition_dao.g.dart';
 
-@DriftAccessor(tables: [MealPlans, MealPlanOptions, DailyMealLogs])
+@DriftAccessor(tables: [MealPlans, MealPlanOptions, DailyMealLogs, MealPhotos])
 class NutritionDao extends DatabaseAccessor<AppDatabase>
     with _$NutritionDaoMixin {
   NutritionDao(super.db);
@@ -58,6 +58,8 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
             mealType: Value(draft.mealType),
             optionNumber: Value(draft.optionNumber),
             description: Value(draft.description),
+            photoId: Value(draft.photoId),
+            mealIcon: Value(draft.mealIcon),
           );
           if (id == null) {
             await into(mealPlanOptions).insert(row);
@@ -67,6 +69,7 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
                 .write(DailyMealLogsCompanion(mealType: Value(draft.mealType)));
           }
         }
+        await deleteUnusedPhotos();
       });
 
   /// Borra un plan y las comidas registradas con sus opciones. Si era el
@@ -81,6 +84,7 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
             .go();
         await (delete(mealPlanOptions)..where((t) => t.planId.equals(planId))).go();
         await (delete(mealPlans)..where((t) => t.id.equals(planId))).go();
+        await deleteUnusedPhotos();
         if (!plan.isActive) return;
         final previous = await (select(mealPlans)
               ..orderBy([(t) => OrderingTerm.desc(t.id)])
@@ -157,16 +161,52 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
   Future<int> insertDailyMealLog(DailyMealLogsCompanion log) =>
       into(dailyMealLogs).insert(log);
 
-  Future<void> deleteDailyMealLog(DateTime date, String mealType) {
+  Future<void> deleteDailyMealLog(DateTime date, String mealType) async {
     final start = DateTime.utc(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
-    return (delete(dailyMealLogs)
+    await (delete(dailyMealLogs)
           ..where((t) =>
               t.date.isBiggerOrEqualValue(start) &
               t.date.isSmallerThanValue(end) &
               t.mealType.equals(mealType)))
         .go();
+    await deleteUnusedPhotos();
   }
+
+  // ── Fotos ────────────────────────────────────────────────────────────────
+
+  Future<int> insertPhoto(Uint8List bytes) => into(mealPhotos).insert(
+        MealPhotosCompanion(bytes: Value(bytes), takenAt: Value(DateTime.now().toUtc())),
+      );
+
+  Future<Uint8List?> getPhoto(int id) async =>
+      (await (select(mealPhotos)..where((t) => t.id.equals(id))).getSingleOrNull())?.bytes;
+
+  /// Pone, cambia o quita (null) la foto de referencia de un plato del plan.
+  Future<void> setOptionPhoto(int optionId, int? photoId) async {
+    await (update(mealPlanOptions)..where((t) => t.id.equals(optionId)))
+        .write(MealPlanOptionsCompanion(photoId: Value(photoId)));
+    await deleteUnusedPhotos();
+  }
+
+  /// Pone, cambia o quita (null) la foto de lo que se comió.
+  Future<void> setLogPhoto(int logId, int? photoId) async {
+    await (update(dailyMealLogs)..where((t) => t.id.equals(logId)))
+        .write(DailyMealLogsCompanion(photoId: Value(photoId)));
+    await deleteUnusedPhotos();
+  }
+
+  /// El ícono de un tiempo de comida: se guarda en todas sus opciones.
+  Future<void> setMealIcon(int planId, String mealType, String? icon) =>
+      (update(mealPlanOptions)..where((t) => t.planId.equals(planId) & t.mealType.equals(mealType)))
+          .write(MealPlanOptionsCompanion(mealIcon: Value(icon)));
+
+  /// Borra las fotos que ya no usa ningún plato ni registro.
+  Future<void> deleteUnusedPhotos() => customStatement(
+        'DELETE FROM meal_photos WHERE '
+        'id NOT IN (SELECT photo_id FROM meal_plan_options WHERE photo_id IS NOT NULL) AND '
+        'id NOT IN (SELECT photo_id FROM daily_meal_logs WHERE photo_id IS NOT NULL)',
+      );
 
   Future<List<DailyMealLog>> getDailyMealLogs(DateTime date) {
     // Normalize to UTC midnight to ensure consistent day boundaries.

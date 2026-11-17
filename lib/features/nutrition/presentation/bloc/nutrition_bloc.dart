@@ -19,6 +19,57 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
     on<NutritionPlanCreated>(_onPlanCreated);
     on<NutritionOptionAdded>(_onOptionAdded);
     on<NutritionProgressPlanSelected>(_onProgressPlanSelected);
+    on<NutritionOptionPhotoChanged>(_onOptionPhotoChanged);
+    on<NutritionLogPhotoChanged>(_onLogPhotoChanged);
+    on<NutritionMealIconChanged>(_onMealIconChanged);
+  }
+
+  Future<void> _onMealIconChanged(
+    NutritionMealIconChanged event,
+    Emitter<NutritionState> emit,
+  ) async {
+    final plan = state.activePlan;
+    if (state.status != NutritionStatus.success || plan == null) return;
+    try {
+      await _repository.setMealIcon(plan.id, event.mealType, event.icon);
+      final options = <String, List<MealPlanOption>>{};
+      for (final opt in await _repository.getAllPlanOptions(plan.id)) {
+        options.putIfAbsent(opt.mealType, () => []).add(opt);
+      }
+      emit(state.copyWith(planOptions: options));
+    } catch (e) {
+      emit(state.copyWith(status: NutritionStatus.failure, error: e.toString()));
+    }
+  }
+
+  Future<void> _onOptionPhotoChanged(
+    NutritionOptionPhotoChanged event,
+    Emitter<NutritionState> emit,
+  ) async {
+    if (state.status != NutritionStatus.success || state.activePlan == null) return;
+    try {
+      await _repository.setOptionPhoto(event.optionId, event.photo);
+      final options = <String, List<MealPlanOption>>{};
+      for (final opt in await _repository.getAllPlanOptions(state.activePlan!.id)) {
+        options.putIfAbsent(opt.mealType, () => []).add(opt);
+      }
+      emit(state.copyWith(planOptions: options));
+    } catch (e) {
+      emit(state.copyWith(status: NutritionStatus.failure, error: e.toString()));
+    }
+  }
+
+  Future<void> _onLogPhotoChanged(
+    NutritionLogPhotoChanged event,
+    Emitter<NutritionState> emit,
+  ) async {
+    if (state.status != NutritionStatus.success) return;
+    try {
+      await _repository.setLogPhoto(event.logId, event.photo);
+      emit(state.copyWith(dailyLogs: await _repository.getDailyLogs(DateTime.now())));
+    } catch (e) {
+      emit(state.copyWith(status: NutritionStatus.failure, error: e.toString()));
+    }
   }
 
   Future<void> _onLoaded(
@@ -129,7 +180,13 @@ class NutritionBloc extends Bloc<NutritionEvent, NutritionState> {
         mealType: event.mealType,
         description: event.description,
       );
-      final logs = await _repository.getDailyLogs(event.date);
+      var logs = await _repository.getDailyLogs(event.date);
+      final photo = event.photo;
+      final logged = logs.where((l) => l.mealType == event.mealType).lastOrNull;
+      if (photo != null && logged != null) {
+        await _repository.setLogPhoto(logged.id, photo);
+        logs = await _repository.getDailyLogs(event.date);
+      }
       final adherence = await _repository.getWeeklyAdherence(weeksBack: 8);
       emit(state.copyWith(dailyLogs: logs, weeklyAdherence: adherence));
     } catch (e) {

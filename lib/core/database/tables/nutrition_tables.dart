@@ -18,6 +18,13 @@ class MealPlanOptions extends Table {
   // 1, 2 o 3
   IntColumn get optionNumber => integer()();
   TextColumn get description => text()();
+
+  /// Cómo debería verse el plato; ver [MealPhotos].
+  IntColumn get photoId => integer().nullable().references(MealPhotos, #id)();
+
+  /// Ícono elegido para el tiempo de comida (MealIcon.name). Todas las
+  /// opciones de un tiempo llevan el mismo; null usa el sugerido por el nombre.
+  TextColumn get mealIcon => text().nullable()();
 }
 
 class DailyMealLogs extends Table {
@@ -28,4 +35,16 @@ class DailyMealLogs extends Table {
   IntColumn get planOptionId => integer().nullable().references(MealPlanOptions, #id)();
   TextColumn get freeDescription => text().nullable()();
   TextColumn get photoPath => text().nullable()();
+
+  /// Lo que se comió de verdad; ver [MealPhotos].
+  IntColumn get photoId => integer().nullable().references(MealPhotos, #id)();
+}
+
+/// Fotos de comida, comprimidas en la base para que el respaldo siga siendo
+/// un solo archivo. Van aparte para que leer los registros no cargue imágenes.
+/// Nunca salen en el reporte para la nutricionista.
+class MealPhotos extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  BlobColumn get bytes => blob()();
+  DateTimeColumn get takenAt => dateTime()();
 }
