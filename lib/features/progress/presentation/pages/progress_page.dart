@@ -157,7 +157,6 @@ class _ProgressView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // La página del cuerpo en 3D (/body) queda sin entrada por ahora.
               VitalityCard(
                 onTap: () => context.push('/rewards'),
                 child: Row(

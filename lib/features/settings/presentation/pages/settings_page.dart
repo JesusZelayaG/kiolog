@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kiolog/core/dao/user_profile_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/core/database/backup_service.dart';
 import 'package:kiolog/core/di/injection.dart';
@@ -152,12 +151,6 @@ class SettingsPage extends StatelessWidget {
                         onTap: () => context.push('/report'),
                       ),
                       _ToolTile(
-                        icon: Icons.accessibility_new,
-                        title: 'Sexo del modelo 3D',
-                        subtitle: 'Hombre o mujer',
-                        onTap: () => _chooseBodySex(context),
-                      ),
-                      _ToolTile(
                         icon: Icons.upload_file_outlined,
                         title: 'Crear respaldo',
                         subtitle: 'En el teléfono o en Drive, correo…',
@@ -198,29 +191,6 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
-
-Future<void> _chooseBodySex(BuildContext context) async {
-  final dao = getIt<UserProfileDao>();
-  final messenger = ScaffoldMessenger.of(context);
-  final current = (await dao.getProfile())?.bodySex;
-  if (!context.mounted) return;
-  final chosen = await showDialog<String>(
-    context: context,
-    builder: (dialogContext) => SimpleDialog(
-      title: const Text('Sexo del modelo 3D'),
-      children: [
-        for (final (value, label) in const [('male', 'Hombre'), ('female', 'Mujer')])
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(dialogContext, value),
-            child: Text(value == current ? '$label (actual)' : label),
-          ),
-      ],
-    ),
-  );
-  if (chosen == null) return;
-  await dao.updateBodySex(chosen);
-  messenger.showSnackBar(const SnackBar(content: Text('Guardado')));
-}
 
 enum _BackupTarget { phone, share }
 

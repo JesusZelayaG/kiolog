@@ -47,15 +47,6 @@ class UserProfileDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  Future<void> updateBodySex(String sex) async {
-    final profile = await getProfile();
-    if (profile == null) {
-      await into(userProfiles).insert(UserProfilesCompanion(bodySex: Value(sex)));
-    } else {
-      await update(userProfiles).write(UserProfilesCompanion(bodySex: Value(sex)));
-    }
-  }
-
   /// Guarda la próxima consulta; null la borra.
   Future<void> setNextConsultation(DateTime? at) async {
     if (await getProfile() == null) await createProfile();

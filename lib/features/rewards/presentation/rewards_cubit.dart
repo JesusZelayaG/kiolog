@@ -7,7 +7,6 @@ import 'package:kiolog/core/domain/day.dart';
 import 'package:kiolog/features/reports/domain/repositories/report_repository.dart';
 
 import '../domain/catalog.dart';
-import '../domain/outfit.dart';
 import '../domain/unlocks.dart';
 import '../domain/xp.dart';
 
@@ -19,8 +18,7 @@ class RewardsState {
     this.month = const MonthProgress(earned: 0, possible: 0),
     this.monthLabel = '',
     this.rewards = const {},
-    this.progress = const RewardProgress(level: 1, goals: {}, monthsKept: 0),
-    this.outfit = const Outfit(),
+    this.progress = const RewardProgress(level: 1, monthsKept: 0),
     this.newUnlocks = const [],
   });
 
@@ -33,17 +31,13 @@ class RewardsState {
   /// Recompensa elegida para cada umbral del mes.
   final Map<int, MonthlyReward> rewards;
   final RewardProgress progress;
-  final Outfit outfit;
 
   /// Lo desbloqueado desde la última visita, para anunciarlo una vez.
-  final List<RewardItem> newUnlocks;
-
-  Set<String> get visibleParts => outfit.visibleParts(progress);
+  final List<Trophy> newUnlocks;
 
   RewardsState copyWith({
     Map<int, MonthlyReward>? rewards,
-    Outfit? outfit,
-    List<RewardItem>? newUnlocks,
+    List<Trophy>? newUnlocks,
   }) =>
       RewardsState(
         loading: false,
@@ -53,14 +47,11 @@ class RewardsState {
         monthLabel: monthLabel,
         rewards: rewards ?? this.rewards,
         progress: progress,
-        outfit: outfit ?? this.outfit,
         newUnlocks: newUnlocks ?? this.newUnlocks,
       );
 }
 
 const _seenKey = 'seen.';
-const _slotKey = 'slot.';
-const _hiddenKey = 'hidden.';
 const _initKey = 'seen.init';
 
 class RewardsCubit extends Cubit<RewardsState> {
@@ -91,12 +82,11 @@ class RewardsCubit extends Cubit<RewardsState> {
     final progress = rewardProgress(
       days: report.days,
       goals: goals,
-      cardioSessions: report.cardioLogs.length,
       level: level.number,
     );
     final settings = await _rewards.settings();
-    final unlocked = [...rewardCatalog, ...trophyCatalog].where(progress.isUnlocked).toList();
-    var fresh = <RewardItem>[];
+    final unlocked = trophyCatalog.where(progress.isUnlocked).toList();
+    var fresh = <Trophy>[];
     if (!settings.containsKey(_initKey)) {
       // Primera visita: lo de inicio no se anuncia.
       await _rewards.putSettings({
@@ -115,32 +105,8 @@ class RewardsCubit extends Cubit<RewardsState> {
       monthLabel: DateFormat.MMMM('es').format(now),
       rewards: await _loadRewards(),
       progress: progress,
-      outfit: _outfitFrom(settings),
       newUnlocks: fresh,
     ));
-  }
-
-  Outfit _outfitFrom(Map<String, String> settings) => Outfit(
-        chosen: {
-          for (final slot in RewardSlot.values)
-            if (settings['$_slotKey${slot.name}'] case final value?)
-              slot: value.isEmpty ? null : value,
-        },
-        hiddenExtras: {
-          for (final key in settings.keys)
-            if (key.startsWith(_hiddenKey)) key.substring(_hiddenKey.length),
-        },
-      );
-
-  /// Viste [key] en [slot]; null deja el espacio vacío.
-  Future<void> equip(RewardSlot slot, String? key) async {
-    await _rewards.putSetting('$_slotKey${slot.name}', key ?? '');
-    emit(state.copyWith(outfit: _outfitFrom(await _rewards.settings())));
-  }
-
-  Future<void> toggleExtra(String key, {required bool shown}) async {
-    shown ? await _rewards.removeSetting('$_hiddenKey$key') : await _rewards.putSetting('$_hiddenKey$key', '1');
-    emit(state.copyWith(outfit: _outfitFrom(await _rewards.settings())));
   }
 
   /// Los desbloqueos ya anunciados no se vuelven a mostrar.

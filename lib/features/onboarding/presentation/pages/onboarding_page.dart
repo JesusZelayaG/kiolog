@@ -4,7 +4,6 @@ import 'package:kiolog/core/dao/user_profile_dao.dart';
 import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/features/exercise/domain/repositories/exercise_repository.dart';
 import 'package:kiolog/features/nutrition/domain/repositories/nutrition_repository.dart';
-import 'package:kiolog/features/progress/domain/body_calibration.dart';
 import 'package:kiolog/features/progress/domain/repositories/progress_repository.dart';
 import 'package:kiolog/features/water/domain/repositories/water_repository.dart';
 import 'package:kiolog/shared/widgets/restore_backup.dart';
@@ -56,7 +55,6 @@ class _OnboardingViewState extends State<_OnboardingView> {
   // Step 5: Initial data
   final _weightController = TextEditingController();
   DateTime _startDate = DateTime.now();
-  BodySex? _bodySex;
   bool _finishing = false;
 
 
@@ -111,7 +109,6 @@ class _OnboardingViewState extends State<_OnboardingView> {
 
   bool get _canProceed {
     if (_currentStep == 1) return _activeModules.isNotEmpty;
-    if (_currentStep == _totalSteps - 1) return _bodySex != null;
     return true;
   }
 
@@ -225,7 +222,6 @@ class _OnboardingViewState extends State<_OnboardingView> {
 
     // Mark onboarding complete
     await getIt<UserProfileDao>().completeOnboarding(_startDate);
-    await getIt<UserProfileDao>().updateBodySex(_bodySex!.name);
 
     if (mounted) {
       context.go('/');
@@ -876,29 +872,6 @@ class _OnboardingViewState extends State<_OnboardingView> {
           Text(
             'Estos datos marcan el inicio de tu bitácora. Podrás actualizarlos más adelante.',
             style: theme.textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 24),
-          Text('Sexo', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text(
-            'Define la forma de tu modelo corporal 3D.',
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<BodySex>(
-              segments: const [
-                ButtonSegment(value: BodySex.male, label: Text('Hombre')),
-                ButtonSegment(value: BodySex.female, label: Text('Mujer')),
-              ],
-              emptySelectionAllowed: true,
-              selected: {if (_bodySex != null) _bodySex!},
-              showSelectedIcon: false,
-              onSelectionChanged: (selection) => setState(
-                () => _bodySex = selection.isEmpty ? _bodySex : selection.first,
-              ),
-            ),
           ),
           const SizedBox(height: 24),
           TextField(

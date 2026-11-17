@@ -54,7 +54,6 @@ dependencies:
 
   # HTTP (AI providers)
   http: ^1.2.1
-  thermion_flutter: ^0.5.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -75,11 +74,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/img/
-    - assets/models/anatomy_body.glb
-    - assets/models/anatomy_body.json
-    - assets/models/rewards.glb
 
-# thermion pulls image 4.11.0, which needs a newer archive than its own constraint allows.
+# image 4.11.0 (pulled by pdf) calls an archive API missing from archive 4.0.x.
 dependency_overrides:
   archive: ^4.6.0
   image: ^4.12.0

@@ -10,7 +10,6 @@ import 'package:kiolog/shared/widgets/vitality_card.dart';
 import '../domain/catalog.dart';
 import '../domain/xp.dart';
 import 'rewards_cubit.dart';
-import 'rewards_viewer.dart';
 
 class RewardsPage extends StatelessWidget {
   const RewardsPage({super.key});
@@ -34,17 +33,7 @@ class RewardsPage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: SizedBox(
-                    height: 340,
-                    child: RewardsViewer(visible: state.visibleParts),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 _LevelCard(state.level),
-                const SizedBox(height: 16),
-                _WardrobeCard(state),
                 const SizedBox(height: 16),
                 _TrophiesCard(state),
                 const SizedBox(height: 16),
@@ -66,7 +55,7 @@ Future<void> _announce(BuildContext context, RewardsState state) async {
     context: context,
     builder: (dialogContext) => AlertDialog(
       icon: const Icon(Icons.celebration_outlined, size: 40),
-      title: Text(state.newUnlocks.length == 1 ? '¡Desbloqueaste algo nuevo!' : '¡Desbloqueaste cosas nuevas!'),
+      title: Text(state.newUnlocks.length == 1 ? '¡Ganaste un trofeo!' : '¡Ganaste trofeos!'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,128 +78,6 @@ Future<void> _announce(BuildContext context, RewardsState state) async {
   await cubit.acknowledgeUnlocks();
 }
 
-/// Elegir qué ponerse y cómo decorar el cuarto.
-class _WardrobeCard extends StatelessWidget {
-  const _WardrobeCard(this.state);
-
-  final RewardsState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cubit = context.read<RewardsCubit>();
-    final progress = state.progress;
-    final unlockedCount = rewardCatalog.where(progress.isUnlocked).length;
-
-    Widget slotRow(RewardSlot slot) {
-      final items = rewardCatalog.where((i) => i.slot == slot).toList();
-      final wearing = state.outfit.wearing(slot, progress);
-      return Padding(
-        padding: const EdgeInsets.only(top: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(slot.label, style: theme.textTheme.labelLarge),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                if (slot.optional)
-                  ChoiceChip(
-                    label: const Text('Nada'),
-                    selected: wearing == null,
-                    onSelected: (_) => cubit.equip(slot, null),
-                  ),
-                for (final item in items)
-                  _ItemChip(
-                    item: item,
-                    unlocked: progress.isUnlocked(item),
-                    requirement: progress.requirement(item),
-                    selected: wearing == item.key,
-                    onTap: () => cubit.equip(slot, item.key),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    final extras = rewardCatalog.where((i) => i.slot == RewardSlot.extra).toList();
-    return VitalityCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Armario y cuarto', style: theme.textTheme.titleMedium),
-          Text(
-            '$unlockedCount de ${rewardCatalog.length} desbloqueados. Toca un candado para ver qué falta.',
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          for (final slot in RewardSlot.values)
-            if (slot != RewardSlot.extra) slotRow(slot),
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(RewardSlot.extra.label, style: theme.textTheme.labelLarge),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              for (final item in extras)
-                _ItemChip(
-                  item: item,
-                  unlocked: progress.isUnlocked(item),
-                  requirement: progress.requirement(item),
-                  selected: progress.isUnlocked(item) && !state.outfit.hiddenExtras.contains(item.key),
-                  onTap: () => cubit.toggleExtra(
-                    item.key,
-                    shown: state.outfit.hiddenExtras.contains(item.key),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ItemChip extends StatelessWidget {
-  const _ItemChip({
-    required this.item,
-    required this.unlocked,
-    required this.requirement,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final RewardItem item;
-  final bool unlocked;
-  final String requirement;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!unlocked) {
-      return ActionChip(
-        avatar: const Icon(Icons.lock_outline, size: 16),
-        label: Text(item.name),
-        onPressed: () => ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text('${item.name}: $requirement'))),
-      );
-    }
-    return ChoiceChip(
-      label: Text(item.name),
-      selected: selected,
-      onSelected: (_) => onTap(),
-    );
-  }
-}
-
 class _TrophiesCard extends StatelessWidget {
   const _TrophiesCard(this.state);
 
@@ -222,7 +89,7 @@ class _TrophiesCard extends StatelessWidget {
     final cs = theme.colorScheme;
     final progress = state.progress;
     // Se muestran los ganados y el siguiente por ganar.
-    final shown = <RewardItem>[];
+    final shown = <Trophy>[];
     for (final trophy in trophyCatalog) {
       shown.add(trophy);
       if (!progress.isUnlocked(trophy)) break;
