@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:kiolog/core/dao/user_profile_dao.dart';
 import 'package:kiolog/core/di/injection.dart';
@@ -102,7 +103,7 @@ class _NextConsultationCardState extends State<NextConsultationCard> {
         child: ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: const Icon(Icons.event_available),
+          leading: const Icon(IconsaxPlusBold.calendar_tick),
           title: const Text('Próxima consulta'),
           subtitle: Text(
             at == null
@@ -112,10 +113,10 @@ class _NextConsultationCardState extends State<NextConsultationCard> {
             style: theme.textTheme.bodyMedium,
           ),
           trailing: at == null
-              ? const Icon(Icons.edit_calendar)
+              ? const Icon(IconsaxPlusLinear.calendar_edit)
               : IconButton(
                   tooltip: 'Quitar',
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(IconsaxPlusLinear.close_circle),
                   onPressed: () => _save(null),
                 ),
           onTap: _edit,

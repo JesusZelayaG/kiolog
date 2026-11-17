@@ -1,5 +1,6 @@
 // lib/shared/widgets/app_scaffold.dart
 import 'package:flutter/material.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kiolog/core/domain/app_module.dart';
@@ -69,31 +70,29 @@ class _CustomNavBar extends StatelessWidget {
     final theme = Theme.of(context);
     final items = [
       _NavItem(
-        icon: selectedIndex == 0 ? Icons.wb_sunny : Icons.wb_sunny_outlined,
+        icon: selectedIndex == 0 ? IconsaxPlusBold.home_2 : IconsaxPlusLinear.home_2,
         label: 'Inicio',
         index: 0,
       ),
       _NavItem(
-        icon: selectedIndex == 1 ? Icons.restaurant : Icons.restaurant_outlined,
+        icon: selectedIndex == 1 ? IconsaxPlusBold.reserve : IconsaxPlusLinear.reserve,
         label: 'Nutrición',
         index: 1,
         locked: !modulesState.isEnabled(AppModule.nutrition),
       ),
       _NavItem(
-        icon: selectedIndex == 2
-            ? Icons.fitness_center
-            : Icons.fitness_center_outlined,
+        icon: selectedIndex == 2 ? IconsaxPlusBold.flash : IconsaxPlusLinear.flash,
         label: 'Ejercicio',
         index: 2,
         locked: !modulesState.isEnabled(AppModule.exercise),
       ),
       _NavItem(
-        icon: Icons.query_stats,
+        icon: selectedIndex == 3 ? IconsaxPlusBold.status_up : IconsaxPlusLinear.status_up,
         label: 'Progreso',
         index: 3,
       ),
       _NavItem(
-        icon: selectedIndex == 4 ? Icons.settings : Icons.settings_outlined,
+        icon: selectedIndex == 4 ? IconsaxPlusBold.setting_2 : IconsaxPlusLinear.setting_2,
         label: 'Ajustes',
         index: 4,
       ),
@@ -181,7 +180,7 @@ class _NavTile extends StatelessWidget {
                     Positioned(
                       right: -4,
                       top: -2,
-                      child: Icon(Icons.lock, size: 10, color: cs.outline),
+                      child: Icon(IconsaxPlusBold.lock, size: 10, color: cs.outline),
                     ),
                 ],
               ),

@@ -54,6 +54,7 @@ dependencies:
 
   # HTTP (AI providers)
   http: ^1.2.1
+  iconsax_plus: ^1.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

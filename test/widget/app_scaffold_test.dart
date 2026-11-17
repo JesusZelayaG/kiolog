@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
@@ -121,7 +122,7 @@ void main() {
       });
       await tester.pumpWidget(_wrapWithModules(state));
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.lock), findsOneWidget);
+      expect(find.byIcon(IconsaxPlusBold.lock), findsOneWidget);
     });
 
     testWidgets('shows no lock icon when all modules active', (tester) async {
@@ -132,7 +133,7 @@ void main() {
       });
       await tester.pumpWidget(_wrapWithModules(state));
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.lock), findsNothing);
+      expect(find.byIcon(IconsaxPlusBold.lock), findsNothing);
     });
 
     testWidgets('shows two lock icons when nutrition and exercise inactive',
@@ -144,7 +145,7 @@ void main() {
       });
       await tester.pumpWidget(_wrapWithModules(state));
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.lock), findsNWidgets(2));
+      expect(find.byIcon(IconsaxPlusBold.lock), findsNWidgets(2));
     });
   });
 }

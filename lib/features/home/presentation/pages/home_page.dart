@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:kiolog/features/progress/presentation/widgets/next_consultation_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -136,7 +137,7 @@ class _Summary extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.verified_outlined, size: 18, color: cs.primary),
+                  Icon(IconsaxPlusBold.verify, size: 18, color: cs.primary),
                   const SizedBox(width: 6),
                   Text(
                     '${(overall * 100).round()}% Meta',
@@ -215,7 +216,7 @@ class _WaterCard extends StatelessWidget {
           Row(
             children: [
               _RoundIcon(
-                icon: Icons.water_drop_outlined,
+                icon: IconsaxPlusBold.drop,
                 background: Tropical.mintWash,
                 color: cs.primary,
               ),
@@ -246,7 +247,7 @@ class _WaterCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle),
-                child: Icon(Icons.add, color: cs.onPrimary),
+                child: Icon(IconsaxPlusLinear.add, color: cs.onPrimary),
               ),
             ],
           ),
@@ -348,7 +349,7 @@ class _SleepCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final known = hours;
     return _SmallCard(
-      icon: Icons.nightlight_outlined,
+      icon: IconsaxPlusBold.moon,
       iconBackground: cs.surfaceContainerHigh,
       iconColor: cs.onSurface,
       title: 'SUEÑO',
@@ -371,7 +372,7 @@ class _NutritionCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final pending = state.totalMeals - state.mealsLogged;
     return _SmallCard(
-      icon: Icons.restaurant_outlined,
+      icon: IconsaxPlusBold.reserve,
       iconBackground: const Color(0xFFFFDCC1),
       iconColor: cs.tertiary,
       title: 'NUTRICIÓN',
@@ -406,7 +407,7 @@ class _ExerciseCard extends StatelessWidget {
           Row(
             children: [
               _RoundIcon(
-                icon: Icons.fitness_center,
+                icon: IconsaxPlusBold.flash,
                 background: const Color(0xFFFFDAD2),
                 color: cs.secondary,
               ),
@@ -439,7 +440,7 @@ class _ExerciseCard extends StatelessWidget {
               ),
               ElevatedButton.icon(
                 onPressed: () => context.go('/exercise'),
-                icon: const Icon(Icons.play_arrow),
+                icon: const Icon(IconsaxPlusBold.play),
                 label: const Text('Comenzar'),
               ),
             ],

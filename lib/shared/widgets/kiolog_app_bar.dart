@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:go_router/go_router.dart';
 
 import 'gradient_icon_button.dart';
@@ -47,7 +48,7 @@ class KiologAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         ...actions,
         GradientIconButton(
-          icon: Icons.calendar_today_outlined,
+          icon: IconsaxPlusLinear.calendar_1,
           onPressed: () => context.push('/history'),
         ),
         const SizedBox(width: 12),
