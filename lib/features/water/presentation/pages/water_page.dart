@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:intl/intl.dart';
+import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
+import 'package:kiolog/shared/widgets/entrance.dart';
 import 'package:kiolog/shared/widgets/inactive_module_page.dart';
-import 'package:kiolog/shared/widgets/gradient_icon_button.dart';
+import 'package:kiolog/shared/widgets/themed_page.dart';
+import 'package:kiolog/shared/widgets/water_widgets.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/repositories/water_repository.dart';
 import '../bloc/water_bloc.dart';
 import '../bloc/water_event.dart';
 import '../bloc/water_state.dart';
+
+const _settle = Cubic(.3, .9, .25, 1);
+const _quickAmounts = [250, 500, 750, 1000];
 
 class WaterPage extends StatelessWidget {
   const WaterPage({super.key});
@@ -23,9 +33,7 @@ class WaterPage extends StatelessWidget {
           return const InactiveModulePage(module: AppModule.water);
         }
         return BlocProvider(
-          create: (_) => WaterBloc(getIt<WaterRepository>())
-            ..add(WaterLoaded(date: DateTime.now()))
-            ..add(const WaterConfigLoaded()),
+          create: (_) => WaterBloc(getIt<WaterRepository>())..add(WaterLoaded(date: DateTime.now())),
           child: const _WaterView(),
         );
       },
@@ -33,314 +41,356 @@ class WaterPage extends StatelessWidget {
   }
 }
 
+void _add(BuildContext context, int ml) {
+  HapticFeedback.lightImpact();
+  context.read<WaterBloc>().add(WaterAdded(date: DateTime.now(), amountMl: ml));
+}
+
+Future<void> _addOther(BuildContext context) async {
+  final bloc = context.read<WaterBloc>();
+  final ml = await showWaterAmountSheet(context);
+  if (ml != null) {
+    HapticFeedback.lightImpact();
+    bloc.add(WaterAdded(date: DateTime.now(), amountMl: ml));
+  }
+}
+
+Future<void> _editGoal(BuildContext context) async {
+  final bloc = context.read<WaterBloc>();
+  final ml = await showWaterAmountSheet(
+    context,
+    title: 'Meta diaria de agua',
+    action: 'Guardar',
+    presets: const [2000, 2500, 3000, 3500],
+    initialMl: bloc.state.dailyGoalMl,
+    startInLiters: true,
+  );
+  if (ml != null) bloc.add(WaterGoalUpdated(ml));
+}
+
 class _WaterView extends StatelessWidget {
   const _WaterView();
 
-  String _unitLabel(String unitType) =>
-      unitType == 'bottle' ? 'botella' : 'vaso';
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Agua'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
-        ),
-        actions: [
-          GradientIconButton(
-            icon: Icons.settings_outlined,
-            onPressed: () => _showConfigDialog(context),
-          ),
-        ],
-      ),
-      body: BlocBuilder<WaterBloc, WaterState>(
+    return ThemedPage(
+      child: BlocConsumer<WaterBloc, WaterState>(
+        listenWhen: (before, after) =>
+            before.status == WaterStatus.success &&
+            before.dailyTotalMl < before.dailyGoalMl &&
+            after.dailyTotalMl >= after.dailyGoalMl,
+        listener: (context, state) {
+          HapticFeedback.mediumImpact();
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(const SnackBar(content: Text('¡Meta de agua cumplida!')));
+        },
         builder: (context, state) {
-          if (state.status == WaterStatus.loading) {
-            return const Center(child: CircularProgressIndicator());
-          }
           if (state.status == WaterStatus.failure) {
             return Center(child: Text('Error: ${state.error}'));
           }
-
-          final progress = state.progress.clamp(0.0, 1.0);
-          final liters = (state.dailyTotalMl / 1000).toStringAsFixed(1);
-          final goalLiters = (state.dailyGoalMl / 1000).toStringAsFixed(1);
-          final pct = (progress * 100).round();
-
-          return SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'HIDRATACIÓN DIARIA',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: cs.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$liters / $goalLiters L',
-                    style: theme.textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${state.dailyTotalMl} / ${state.dailyGoalMl} ml',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    height: 200,
-                    width: 200,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 14,
-                          strokeCap: StrokeCap.round,
-                          backgroundColor:
-                              cs.primaryContainer.withValues(alpha: 0.25),
-                        ),
-                        Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.water_drop,
-                                size: 40,
-                                color: cs.primary,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '$pct%',
-                                style:
-                                    theme.textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        shape: const StadiumBorder(),
-                        backgroundColor: cs.primary,
-                        foregroundColor: cs.onPrimary,
-                      ),
-                      onPressed: () {
-                        context.read<WaterBloc>().add(
-                              WaterAdded(
-                                date: DateTime.now(),
-                                amountMl: state.containerMl,
-                              ),
-                            );
-                      },
-                      icon: const Icon(Icons.add),
-                      label: Text(
-                        'Agregar ${_unitLabel(state.unitType)} (${state.containerMl} ml)',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        shape: const StadiumBorder(),
-                        side: BorderSide(
-                          color: cs.outline.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      onPressed: () => _showCustomAmountDialog(context),
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: const Text('Cantidad personalizada'),
-                    ),
-                  ),
-                  if (progress >= 1.0) ...[
-                    const SizedBox(height: 32),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: cs.primaryContainer.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: cs.primary.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.celebration, color: cs.primary),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '¡Meta alcanzada!',
-                                  style:
-                                      theme.textTheme.labelLarge?.copyWith(
-                                    color: cs.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Consumiste $liters litros hoy',
-                                  style:
-                                      theme.textTheme.bodySmall?.copyWith(
-                                    color: cs.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          if (state.status != WaterStatus.success) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final items = <Widget>[
+            const _Header(),
+            _GlassCard(state: state),
+            const _QuickAdd(),
+            _IntakesCard(logs: state.logs),
+          ];
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 32),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 14),
+            itemBuilder: (context, i) => Entrance(index: i, child: items[i]),
           );
         },
       ),
     );
   }
+}
 
-  void _showCustomAmountDialog(BuildContext context) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          'Agregar agua',
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-        ),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Cantidad (ml)',
-            suffixText: 'ml',
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Row(
+      children: [
+        Material(
+          color: cs.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => context.canPop() ? context.pop() : context.go('/'),
+            child: Tooltip(
+              message: 'Volver',
+              child: SizedBox(width: 44, height: 44, child: Icon(IconsaxPlusLinear.arrow_left, color: cs.onSurface)),
+            ),
           ),
-          autofocus: true,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('HIDRATACIÓN', style: theme.textTheme.labelSmall?.copyWith(fontSize: 11, color: cs.primary)),
+              Text('Agua de hoy', style: theme.textTheme.displayMedium?.copyWith(fontSize: 26)),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              final amount = int.tryParse(controller.text);
-              if (amount != null && amount > 0) {
-                context.read<WaterBloc>().add(
-                      WaterCustomAmountAdded(
-                        date: DateTime.now(),
-                        amountMl: amount,
+        ),
+        HeaderIconButton(icon: IconsaxPlusBold.flag, tooltip: 'Meta diaria', onTap: () => _editGoal(context)),
+      ],
+    );
+  }
+}
+
+/// El "vaso": se llena con olas hasta la meta.
+class _GlassCard extends StatefulWidget {
+  const _GlassCard({required this.state});
+
+  final WaterState state;
+
+  @override
+  State<_GlassCard> createState() => _GlassCardState();
+}
+
+class _GlassCardState extends State<_GlassCard> with SingleTickerProviderStateMixin {
+  late final _wave = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat();
+
+  @override
+  void dispose() {
+    _wave.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final kc = context.kc;
+    final hc = context.hc;
+    final s = widget.state;
+    final left = s.dailyGoalMl - s.dailyTotalMl;
+    final met = left <= 0;
+
+    return Material(
+      color: kc.waterWash,
+      borderRadius: BorderRadius.circular(32),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _addOther(context),
+        child: SizedBox(
+          height: 280,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: s.progress.clamp(0.0, 1.0)),
+                  duration: const Duration(milliseconds: 1100),
+                  curve: _settle,
+                  builder: (context, level, _) => AnimatedBuilder(
+                    animation: _wave,
+                    builder: (context, _) => CustomPaint(
+                      painter: WavePainter(level: level, phase: _wave.value, front: hc.waterFill, back: hc.waveBack),
+                    ),
+                  ),
+                ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    );
-              }
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Agregar'),
+                      child: Icon(IconsaxPlusBold.drop, color: kc.waterInk, size: 26),
+                    ),
+                    const SizedBox(height: 12),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: s.dailyTotalMl.toDouble()),
+                      duration: const Duration(milliseconds: 1000),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, v, _) => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(litersLabel(v.round()),
+                              style: theme.textTheme.displayLarge?.copyWith(fontSize: 64, color: hc.waterNumber)),
+                          const SizedBox(width: 6),
+                          Text('/ ${litersLabel(s.dailyGoalMl)} L',
+                              style: theme.textTheme.titleLarge?.copyWith(color: kc.waterInk)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: ShapeDecoration(
+                        color: theme.colorScheme.surfaceContainerLowest.withValues(alpha: 0.8),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: Text(
+                        met
+                            ? '¡Meta cumplida! · ${s.dailyTotalMl} ml'
+                            : '${(s.progress * 100).round()} % · faltan $left ml',
+                        style: theme.textTheme.labelLarge?.copyWith(color: kc.waterInk, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAdd extends StatelessWidget {
+  const _QuickAdd();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final kc = context.kc;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [kc.shadow],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('AGREGAR', style: theme.textTheme.labelSmall?.copyWith(fontSize: 11)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              for (var i = 0; i < _quickAmounts.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: Material(
+                    color: kc.waterWash,
+                    borderRadius: BorderRadius.circular(18),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => _add(context, _quickAmounts[i]),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              height: 26,
+                              child: Center(
+                                child: Icon(IconsaxPlusBold.drop, color: kc.waterInk, size: 14 + i * 3.0),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _quickAmounts[i] >= 1000
+                                  ? '${litersLabel(_quickAmounts[i])} L'
+                                  : '${_quickAmounts[i]} ml',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: kc.waterInk,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 10),
+          PillButton(
+            icon: IconsaxPlusLinear.edit_2,
+            label: 'Otra cantidad (ml o L)',
+            color: cs.primary,
+            onTap: () => _addOther(context),
           ),
         ],
       ),
     );
   }
+}
 
-  void _showConfigDialog(BuildContext context) {
-    final state = context.read<WaterBloc>().state;
-    var unitType = state.unitType;
-    var containerMl = state.containerMl;
-    var dailyGoalMl = state.dailyGoalMl;
+class _IntakesCard extends StatelessWidget {
+  const _IntakesCard({required this.logs});
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(
-            'Configuración de agua',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+  final List<DailyWaterLog> logs;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final kc = context.kc;
+    final time = DateFormat('HH:mm');
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [kc.shadow],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'bottle', label: Text('Botella')),
-                  ButtonSegment(value: 'glass', label: Text('Vaso')),
-                ],
-                selected: {unitType},
-                onSelectionChanged: (set) {
-                  setDialogState(() {
-                    unitType = set.first;
-                    containerMl = unitType == 'bottle' ? 1000 : 250;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Tamaño del contenedor (ml)',
-                ),
-                keyboardType: TextInputType.number,
-                controller: TextEditingController(text: '$containerMl'),
-                onChanged: (v) => containerMl = int.tryParse(v) ?? containerMl,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Meta diaria (ml)',
-                ),
-                keyboardType: TextInputType.number,
-                controller: TextEditingController(text: '$dailyGoalMl'),
-                onChanged: (v) => dailyGoalMl = int.tryParse(v) ?? dailyGoalMl,
-              ),
+              Expanded(child: Text('TOMAS DE HOY', style: theme.textTheme.labelSmall?.copyWith(fontSize: 11))),
+              Text('${logs.length}', style: theme.textTheme.labelLarge?.copyWith(color: kc.waterInk)),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar'),
+          if (logs.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Text('Todavía no registras agua hoy.', style: theme.textTheme.bodyMedium),
             ),
-            ElevatedButton(
-              onPressed: () {
-                context.read<WaterBloc>().add(
-                      WaterConfigUpdated(
-                        unitType: unitType,
-                        containerMl: containerMl,
-                        dailyGoalMl: dailyGoalMl,
-                      ),
-                    );
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Guardar'),
+          for (final log in logs.reversed)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+                decoration: BoxDecoration(color: cs.surfaceContainerLow, borderRadius: BorderRadius.circular(16)),
+                child: Row(
+                  children: [
+                    Icon(IconsaxPlusBold.drop, size: 18, color: kc.waterInk),
+                    const SizedBox(width: 10),
+                    Text(time.format(log.timestamp.toLocal()), style: theme.textTheme.bodyMedium),
+                    const Spacer(),
+                    Text(
+                      log.amountMl >= 1000 ? '${litersLabel(log.amountMl)} L' : '${log.amountMl} ml',
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    IconButton(
+                      tooltip: 'Borrar esta toma',
+                      icon: Icon(IconsaxPlusLinear.trash, size: 18, color: cs.onSurfaceVariant),
+                      onPressed: () {
+                        context.read<WaterBloc>().add(WaterLogDeleted(log.id));
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(const SnackBar(content: Text('Toma borrada')));
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

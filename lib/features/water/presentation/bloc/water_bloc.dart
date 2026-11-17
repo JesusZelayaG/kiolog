@@ -9,23 +9,25 @@ class WaterBloc extends Bloc<WaterEvent, WaterState> {
   WaterBloc(this._repository) : super(const WaterState()) {
     on<WaterLoaded>(_onLoaded);
     on<WaterAdded>(_onAdded);
-    on<WaterCustomAmountAdded>(_onCustomAdded);
-    on<WaterConfigLoaded>(_onConfigLoaded);
-    on<WaterConfigUpdated>(_onConfigUpdated);
+    on<WaterLogDeleted>(_onLogDeleted);
+    on<WaterGoalUpdated>(_onGoalUpdated);
+  }
+
+  Future<WaterState> _today(WaterState from) async {
+    final now = DateTime.now();
+    final logs = await _repository.getDailyLogs(now);
+    return from.copyWith(
+      status: WaterStatus.success,
+      logs: logs,
+      dailyTotalMl: logs.fold<int>(0, (sum, log) => sum + log.amountMl),
+    );
   }
 
   Future<void> _onLoaded(WaterLoaded event, Emitter<WaterState> emit) async {
     emit(state.copyWith(status: WaterStatus.loading));
     try {
-      final total = await _repository.getDailyTotalMl(event.date);
       final config = await _repository.getConfig();
-      emit(state.copyWith(
-        status: WaterStatus.success,
-        dailyTotalMl: total,
-        dailyGoalMl: config?.dailyGoalMl ?? 3000,
-        unitType: config?.unitType ?? 'bottle',
-        containerMl: config?.containerMl ?? 1000,
-      ));
+      emit(await _today(state.copyWith(dailyGoalMl: config?.dailyGoalMl ?? 3000)));
     } catch (e) {
       emit(state.copyWith(status: WaterStatus.failure, error: e.toString()));
     }
@@ -35,60 +37,26 @@ class WaterBloc extends Bloc<WaterEvent, WaterState> {
     if (state.status != WaterStatus.success) return;
     try {
       await _repository.addWater(event.date, event.amountMl);
-      final total = await _repository.getDailyTotalMl(event.date);
-      emit(state.copyWith(dailyTotalMl: total));
+      emit(await _today(state));
     } catch (e) {
       emit(state.copyWith(status: WaterStatus.failure, error: e.toString()));
     }
   }
 
-  Future<void> _onCustomAdded(
-    WaterCustomAmountAdded event,
-    Emitter<WaterState> emit,
-  ) async {
+  Future<void> _onLogDeleted(WaterLogDeleted event, Emitter<WaterState> emit) async {
     if (state.status != WaterStatus.success) return;
     try {
-      await _repository.addWater(event.date, event.amountMl);
-      final total = await _repository.getDailyTotalMl(event.date);
-      emit(state.copyWith(dailyTotalMl: total));
+      await _repository.deleteWaterLog(event.logId);
+      emit(await _today(state));
     } catch (e) {
       emit(state.copyWith(status: WaterStatus.failure, error: e.toString()));
     }
   }
 
-  Future<void> _onConfigLoaded(
-    WaterConfigLoaded event,
-    Emitter<WaterState> emit,
-  ) async {
+  Future<void> _onGoalUpdated(WaterGoalUpdated event, Emitter<WaterState> emit) async {
     try {
-      final config = await _repository.getConfig();
-      if (config != null) {
-        emit(state.copyWith(
-          dailyGoalMl: config.dailyGoalMl,
-          unitType: config.unitType,
-          containerMl: config.containerMl,
-        ));
-      }
-    } catch (e) {
-      emit(state.copyWith(status: WaterStatus.failure, error: e.toString()));
-    }
-  }
-
-  Future<void> _onConfigUpdated(
-    WaterConfigUpdated event,
-    Emitter<WaterState> emit,
-  ) async {
-    try {
-      await _repository.saveConfig(
-        unitType: event.unitType,
-        containerMl: event.containerMl,
-        dailyGoalMl: event.dailyGoalMl,
-      );
-      emit(state.copyWith(
-        unitType: event.unitType,
-        containerMl: event.containerMl,
-        dailyGoalMl: event.dailyGoalMl,
-      ));
+      await _repository.saveGoal(event.dailyGoalMl);
+      emit(state.copyWith(dailyGoalMl: event.dailyGoalMl));
     } catch (e) {
       emit(state.copyWith(status: WaterStatus.failure, error: e.toString()));
     }

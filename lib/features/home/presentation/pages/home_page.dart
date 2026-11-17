@@ -14,6 +14,7 @@ import 'package:kiolog/features/progress/presentation/widgets/next_consultation_
 import 'package:kiolog/features/sleep/domain/repositories/sleep_repository.dart';
 import 'package:kiolog/features/water/domain/repositories/water_repository.dart';
 import 'package:kiolog/shared/widgets/kiolog_glyphs.dart';
+import 'package:kiolog/shared/widgets/water_widgets.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
@@ -541,11 +542,18 @@ class _WaterTileState extends State<_WaterTile> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _add() {
-    HapticFeedback.lightImpact();
+  /// Lo último que se sumó, para la etiqueta que flota.
+  int _lastAdded = 0;
+
+  Future<void> _add() async {
     _bump.forward(from: 0);
+    final bloc = context.read<HomeBloc>();
+    final ml = await showWaterAmountSheet(context);
+    if (ml == null || !mounted) return;
+    HapticFeedback.lightImpact();
+    setState(() => _lastAdded = ml);
     _float.forward(from: 0);
-    context.read<HomeBloc>().add(const HomeWaterAdded());
+    bloc.add(HomeWaterAdded(ml));
   }
 
   @override
@@ -556,13 +564,7 @@ class _WaterTileState extends State<_WaterTile> with TickerProviderStateMixin {
     final hc = context.hc;
     final s = widget.state;
     final left = s.dailyWaterGoalMl - s.dailyWaterTotalMl;
-    final perUnit = s.waterContainerMl > 0 ? s.waterContainerMl : 250;
-    final units = (left / perUnit).ceil();
-    final unit = s.waterContainerLabel;
-    final plural = unit == 'vaso' ? 'vasos' : 'botellas';
-    final remaining = left > 0
-        ? 'Faltan $left ml · ${units == 1 ? '1 $unit' : '$units $plural'}'
-        : 'Meta cumplida hoy';
+    final remaining = left > 0 ? 'Faltan $left ml para tu meta' : 'Meta cumplida hoy';
 
     return Material(
       color: kc.waterWash,
@@ -580,7 +582,7 @@ class _WaterTileState extends State<_WaterTile> with TickerProviderStateMixin {
                 builder: (context, level, _) => AnimatedBuilder(
                   animation: _wave,
                   builder: (context, _) => CustomPaint(
-                    painter: _WavePainter(
+                    painter: WavePainter(
                         level: level,
                         phase: _wave.value,
                         front: hc.waterFill,
@@ -663,7 +665,7 @@ class _WaterTileState extends State<_WaterTile> with TickerProviderStateMixin {
                               scale: _bumpScale,
                               child: Semantics(
                                 button: true,
-                                label: 'Agregar $perUnit ml',
+                                label: 'Agregar agua',
                                 child: GestureDetector(
                                   onTap: _add,
                                   child: Container(
@@ -699,7 +701,7 @@ class _WaterTileState extends State<_WaterTile> with TickerProviderStateMixin {
                                     offset: Offset(0, 6 - 40 * t),
                                     child: Opacity(
                                       opacity: opacity.clamp(0.0, 1.0),
-                                      child: Text('+$perUnit ml',
+                                      child: Text('+$_lastAdded ml',
                                           style: theme.textTheme.titleSmall
                                               ?.copyWith(
                                                   color: hc.waterNumber,
@@ -713,7 +715,7 @@ class _WaterTileState extends State<_WaterTile> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text('1 $unit',
+                      Text('Agregar',
                           style: theme.textTheme.labelSmall
                               ?.copyWith(fontSize: 11, color: kc.waterInk)),
                     ],
@@ -726,55 +728,6 @@ class _WaterTileState extends State<_WaterTile> with TickerProviderStateMixin {
       ),
     );
   }
-}
-
-/// El agua que llena la tarjeta: dos olas desfasadas sobre el nivel.
-class _WavePainter extends CustomPainter {
-  _WavePainter(
-      {required this.level,
-      required this.phase,
-      required this.front,
-      required this.back});
-
-  final double level;
-  final double phase;
-  final List<Color> front;
-  final Color back;
-
-  Path _wave(
-      Size size, double y, double amplitude, double length, double shift) {
-    final path = Path()..moveTo(0, size.height);
-    for (double x = 0; x <= size.width + 4; x += 4) {
-      path.lineTo(
-          x, y + amplitude * math.sin((x / length + shift) * 2 * math.pi));
-    }
-    return path
-      ..lineTo(size.width, size.height)
-      ..close();
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (level <= 0) return;
-    final y = size.height * (1 - level);
-    canvas.drawPath(
-        _wave(size, y - 3, 4, size.width * 0.5, -phase), Paint()..color = back);
-    final paint = Paint()
-      ..shader = LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: front)
-          .createShader(
-              Rect.fromLTWH(0, y, size.width, math.max(1, size.height - y)));
-    canvas.drawPath(_wave(size, y + 1, 5, size.width * 0.66, phase), paint);
-  }
-
-  @override
-  bool shouldRepaint(_WavePainter old) =>
-      old.level != level ||
-      old.phase != phase ||
-      old.front != front ||
-      old.back != back;
 }
 
 /// Doce destellos que salen del botón al cumplir la meta.

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:kiolog/core/database/app_database.dart';
 
 enum WaterStatus { initial, loading, success, failure }
 
@@ -6,16 +7,16 @@ class WaterState extends Equatable {
   final WaterStatus status;
   final int dailyTotalMl;
   final int dailyGoalMl;
-  final String unitType;
-  final int containerMl;
+
+  /// Las tomas de hoy, de la primera a la última.
+  final List<DailyWaterLog> logs;
   final String? error;
 
   const WaterState({
     this.status = WaterStatus.initial,
     this.dailyTotalMl = 0,
     this.dailyGoalMl = 3000,
-    this.unitType = 'bottle',
-    this.containerMl = 1000,
+    this.logs = const [],
     this.error,
   });
 
@@ -25,20 +26,17 @@ class WaterState extends Equatable {
     WaterStatus? status,
     int? dailyTotalMl,
     int? dailyGoalMl,
-    String? unitType,
-    int? containerMl,
+    List<DailyWaterLog>? logs,
     String? error,
   }) =>
       WaterState(
         status: status ?? this.status,
         dailyTotalMl: dailyTotalMl ?? this.dailyTotalMl,
         dailyGoalMl: dailyGoalMl ?? this.dailyGoalMl,
-        unitType: unitType ?? this.unitType,
-        containerMl: containerMl ?? this.containerMl,
+        logs: logs ?? this.logs,
         error: error,
       );
 
   @override
-  List<Object?> get props =>
-      [status, dailyTotalMl, dailyGoalMl, unitType, containerMl, error];
+  List<Object?> get props => [status, dailyTotalMl, dailyGoalMl, logs, error];
 }

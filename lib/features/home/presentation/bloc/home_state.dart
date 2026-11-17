@@ -7,9 +7,6 @@ class HomeState extends Equatable {
   final int dailyWaterTotalMl;
   final int dailyWaterGoalMl;
 
-  /// Lo que suma un toque en "+": el envase configurado.
-  final int waterContainerMl;
-  final String waterContainerLabel;
   final double? sleepHours;
 
   /// Horas dormidas de los últimos 7 días, de hace 6 días a hoy.
@@ -34,8 +31,6 @@ class HomeState extends Equatable {
     this.status = HomeStatus.initial,
     this.dailyWaterTotalMl = 0,
     this.dailyWaterGoalMl = 3000,
-    this.waterContainerMl = 250,
-    this.waterContainerLabel = 'vaso',
     this.sleepHours,
     this.sleepWeek = const [0, 0, 0, 0, 0, 0, 0],
     this.mealsLogged = 0,
@@ -69,8 +64,6 @@ class HomeState extends Equatable {
         status: status ?? this.status,
         dailyWaterTotalMl: dailyWaterTotalMl ?? this.dailyWaterTotalMl,
         dailyWaterGoalMl: dailyWaterGoalMl,
-        waterContainerMl: waterContainerMl,
-        waterContainerLabel: waterContainerLabel,
         sleepHours: sleepHours,
         sleepWeek: sleepWeek,
         mealsLogged: mealsLogged,
@@ -91,8 +84,6 @@ class HomeState extends Equatable {
         status,
         dailyWaterTotalMl,
         dailyWaterGoalMl,
-        waterContainerMl,
-        waterContainerLabel,
         sleepHours,
         sleepWeek,
         mealsLogged,

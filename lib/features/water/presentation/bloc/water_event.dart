@@ -16,6 +16,7 @@ class WaterLoaded extends WaterEvent {
   List<Object?> get props => [date];
 }
 
+/// Una toma de [amountMl], escrita en ml o litros.
 class WaterAdded extends WaterEvent {
   final DateTime date;
   final int amountMl;
@@ -26,31 +27,21 @@ class WaterAdded extends WaterEvent {
   List<Object?> get props => [date, amountMl];
 }
 
-class WaterCustomAmountAdded extends WaterEvent {
-  final DateTime date;
-  final int amountMl;
+/// Quita una toma registrada por error.
+class WaterLogDeleted extends WaterEvent {
+  final int logId;
 
-  const WaterCustomAmountAdded({required this.date, required this.amountMl});
+  const WaterLogDeleted(this.logId);
 
   @override
-  List<Object?> get props => [date, amountMl];
+  List<Object?> get props => [logId];
 }
 
-class WaterConfigLoaded extends WaterEvent {
-  const WaterConfigLoaded();
-}
-
-class WaterConfigUpdated extends WaterEvent {
-  final String unitType;
-  final int containerMl;
+class WaterGoalUpdated extends WaterEvent {
   final int dailyGoalMl;
 
-  const WaterConfigUpdated({
-    required this.unitType,
-    required this.containerMl,
-    required this.dailyGoalMl,
-  });
+  const WaterGoalUpdated(this.dailyGoalMl);
 
   @override
-  List<Object?> get props => [unitType, containerMl, dailyGoalMl];
+  List<Object?> get props => [dailyGoalMl];
 }

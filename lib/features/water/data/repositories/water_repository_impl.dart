@@ -31,16 +31,13 @@ class WaterRepositoryImpl implements WaterRepository {
   Future<WaterConfigData?> getConfig() => _configDao.getWaterConfig();
 
   @override
-  Future<void> saveConfig({
-    required String unitType,
-    required int containerMl,
-    required int dailyGoalMl,
-  }) =>
-      _configDao.upsertWaterConfig(
-        WaterConfigCompanion(
-          unitType: Value(unitType),
-          containerMl: Value(containerMl),
-          dailyGoalMl: Value(dailyGoalMl),
-        ),
-      );
+  Future<void> saveGoal(int dailyGoalMl) =>
+      _configDao.upsertWaterConfig(WaterConfigCompanion(dailyGoalMl: Value(dailyGoalMl)));
+
+  @override
+  Future<List<DailyWaterLog>> getDailyLogs(DateTime date) async =>
+      (await _waterSleepDao.getDailyWaterLogs(_dateOnly(date)))..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+  @override
+  Future<void> deleteWaterLog(int id) => _waterSleepDao.deleteWaterLog(id);
 }

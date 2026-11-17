@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kiolog/shared/widgets/water_goal_picker.dart';
 import 'package:kiolog/shared/widgets/theme_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kiolog/core/dao/user_profile_dao.dart';
@@ -36,13 +37,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
   final Set<AppModule> _activeModules = Set.from(AppModule.values);
 
   // Step 2: Water config
-  String _waterUnit = 'bottle';
-  int _containerMl = 1000;
   int _dailyGoalMl = 3000;
-  late final _containerMlController =
-      TextEditingController(text: '$_containerMl');
-  late final _dailyGoalMlController =
-      TextEditingController(text: '$_dailyGoalMl');
 
   // Step 3: Nutrition
   final _mealPlanNameController = TextEditingController(text: 'Mi Plan');
@@ -62,8 +57,6 @@ class _OnboardingViewState extends State<_OnboardingView> {
   @override
   void dispose() {
     _pageController.dispose();
-    _containerMlController.dispose();
-    _dailyGoalMlController.dispose();
     _mealPlanNameController.dispose();
     _exercisePlanNameController.dispose();
     _weightController.dispose();
@@ -141,11 +134,7 @@ class _OnboardingViewState extends State<_OnboardingView> {
     setState(() => _finishing = true);
     // Save water config (only if active)
     if (_activeModules.contains(AppModule.water)) {
-      await getIt<WaterRepository>().saveConfig(
-        unitType: _waterUnit,
-        containerMl: _containerMl,
-        dailyGoalMl: _dailyGoalMl,
-      );
+      await getIt<WaterRepository>().saveGoal(_dailyGoalMl);
     }
 
     // Save nutrition plan (only if active)
@@ -586,54 +575,15 @@ class _OnboardingViewState extends State<_OnboardingView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Configuración de Agua', style: theme.textTheme.headlineMedium),
+          Text('Agua', style: theme.textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
-            '¿Cómo vas a medir tu ingesta de agua?',
+            '¿Cuánta agua quieres tomar al día? Cada vez que tomes, escribes la cantidad en ml o litros.',
             style: theme.textTheme.bodyLarge,
           ),
           const SizedBox(height: 24),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'bottle', label: Text('Botella')),
-              ButtonSegment(value: 'glass', label: Text('Vaso')),
-            ],
-            selected: {_waterUnit},
-            onSelectionChanged: (set) {
-              setState(() {
-                _waterUnit = set.first;
-                _containerMl = _waterUnit == 'bottle' ? 1000 : 250;
-                _containerMlController.text = '$_containerMl';
-              });
-            },
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            decoration: const InputDecoration(
-              labelText: 'Tamaño del contenedor (ml)',
-              suffixText: 'ml',
-            ),
-            keyboardType: TextInputType.number,
-            controller: _containerMlController,
-            onChanged: (v) => _containerMl = int.tryParse(v) ?? _containerMl,
-          ),
+          WaterGoalPicker(goalMl: _dailyGoalMl, onChanged: (ml) => setState(() => _dailyGoalMl = ml)),
           const SizedBox(height: 16),
-          TextField(
-            decoration: const InputDecoration(
-              labelText: 'Meta diaria de agua (ml)',
-              suffixText: 'ml',
-            ),
-            keyboardType: TextInputType.number,
-            controller: _dailyGoalMlController,
-            onChanged: (v) => _dailyGoalMl = int.tryParse(v) ?? _dailyGoalMl,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Eso equivale a aproximadamente ${_dailyGoalMl ~/ _containerMl} ${_waterUnit == 'bottle' ? 'botellas' : 'vasos'} al día.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-          ),
           _buildNavFooter(theme),
         ],
       ),

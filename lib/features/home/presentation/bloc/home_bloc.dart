@@ -42,7 +42,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   Future<void> _onWaterAdded(HomeWaterAdded event, Emitter<HomeState> emit) async {
     final now = DateTime.now();
-    await _waterRepository.addWater(now, state.waterContainerMl);
+    await _waterRepository.addWater(now, event.amountMl);
     final total = await _waterRepository.getDailyTotalMl(now);
     emit(state.copyWith(dailyWaterTotalMl: total));
   }
@@ -67,8 +67,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       status: HomeStatus.success,
       dailyWaterTotalMl: waterTotal,
       dailyWaterGoalMl: waterConfig?.dailyGoalMl ?? 3000,
-      waterContainerMl: waterConfig?.containerMl ?? 250,
-      waterContainerLabel: waterConfig?.unitType == 'glass' ? 'vaso' : 'botella',
       sleepHours: sleepLogs.firstOrNull?.hoursCalculated,
       sleepWeek: sleepWeek,
       mealsLogged: meals.logged,

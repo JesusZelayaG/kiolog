@@ -16,7 +16,12 @@ class HomeLoaded extends HomeEvent {
   List<Object?> get props => [date];
 }
 
-/// Suma un envase de agua desde el Home y recarga sin pantalla de carga.
+/// Suma [amountMl] de agua desde el Home y recarga sin pantalla de carga.
 class HomeWaterAdded extends HomeEvent {
-  const HomeWaterAdded();
+  final int amountMl;
+
+  const HomeWaterAdded(this.amountMl);
+
+  @override
+  List<Object?> get props => [amountMl];
 }

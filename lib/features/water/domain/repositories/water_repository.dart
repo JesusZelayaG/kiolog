@@ -4,9 +4,12 @@ abstract class WaterRepository {
   Future<int> getDailyTotalMl(DateTime date);
   Future<void> addWater(DateTime date, int amountMl);
   Future<WaterConfigData?> getConfig();
-  Future<void> saveConfig({
-    required String unitType,
-    required int containerMl,
-    required int dailyGoalMl,
-  });
+
+  /// La meta diaria es lo único que se configura del agua.
+  Future<void> saveGoal(int dailyGoalMl);
+
+  /// Las tomas del día, de la primera a la última.
+  Future<List<DailyWaterLog>> getDailyLogs(DateTime date);
+
+  Future<void> deleteWaterLog(int id);
 }

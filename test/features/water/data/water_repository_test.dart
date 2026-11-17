@@ -33,17 +33,22 @@ void main() {
       expect(total, 750);
     });
 
-    test('saveConfig and getConfig roundtrip', () async {
-      await repository.saveConfig(
-        unitType: 'glass',
-        containerMl: 250,
-        dailyGoalMl: 2000,
-      );
+    test('saveGoal guarda solo la meta diaria', () async {
+      await repository.saveGoal(2500);
 
-      final config = await repository.getConfig();
-      expect(config?.unitType, 'glass');
-      expect(config?.containerMl, 250);
-      expect(config?.dailyGoalMl, 2000);
+      expect((await repository.getConfig())?.dailyGoalMl, 2500);
+    });
+
+    test('las tomas del día se listan en orden y se pueden borrar', () async {
+      final date = DateTime(2026, 6, 8);
+      await repository.addWater(date, 500);
+      await repository.addWater(date, 250);
+
+      final logs = await repository.getDailyLogs(date);
+      expect(logs.map((l) => l.amountMl), [500, 250]);
+
+      await repository.deleteWaterLog(logs.first.id);
+      expect(await repository.getDailyTotalMl(date), 250);
     });
   });
 }

@@ -22,6 +22,9 @@ class WaterSleepDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  Future<void> deleteWaterLog(int id) =>
+      (delete(dailyWaterLogs)..where((t) => t.id.equals(id))).go();
+
   Future<int> getDailyWaterTotalMl(DateTime date) async {
     final logs = await getDailyWaterLogs(date);
     return logs.fold<int>(0, (sum, log) => sum + log.amountMl);
