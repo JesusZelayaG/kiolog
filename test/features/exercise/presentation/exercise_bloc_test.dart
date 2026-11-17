@@ -142,6 +142,10 @@ void main() {
         when(() => repository.endSession(any())).thenAnswer((_) async {});
         when(() => repository.getSession(any())).thenAnswer((_) async => session);
         when(() => repository.getWeeklyStats(weeksBack: any(named: 'weeksBack'))).thenAnswer((_) async => []);
+        when(() => repository.getCompletedRoutineSessionsForWeek(any()))
+            .thenAnswer((_) async => [session]);
+        when(() => repository.getSessionsForDate(any()))
+            .thenAnswer((_) async => [session]);
         return ExerciseBloc(repository)
           ..emit(ExerciseState(
             status: ExerciseStatus.success,
@@ -153,17 +157,23 @@ void main() {
           ));
       },
       act: (bloc) => bloc.add(const ExerciseSessionEnded(sessionId: 1)),
-      expect: () => [
-        ExerciseState(
-          status: ExerciseStatus.success,
-          activeSession: ExerciseSessionLog(
-            id: 1,
-            date: DateTime(2026, 6, 8),
-            gymArrivedAt: DateTime(2026, 6, 8, 10, 0),
-            gymLeftAt: DateTime(2026, 6, 8, 11, 0),
+      expect: () {
+        final ended = ExerciseSessionLog(
+          id: 1,
+          date: DateTime(2026, 6, 8),
+          gymArrivedAt: DateTime(2026, 6, 8, 10, 0),
+          gymLeftAt: DateTime(2026, 6, 8, 11, 0),
+        );
+        // La semana se recarga para que el día quede marcado al terminar.
+        return [
+          ExerciseState(
+            status: ExerciseStatus.success,
+            activeSession: ended,
+            recentSessions: [ended],
+            completedRoutineSessionsThisWeek: [ended],
           ),
-        ),
-      ],
+        ];
+      },
     );
 
     blocTest<ExerciseBloc, ExerciseState>(

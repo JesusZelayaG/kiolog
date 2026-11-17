@@ -31,7 +31,7 @@ class _HistoryView extends StatelessWidget {
         title: const Text('Historial'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
       ),
       body: BlocBuilder<HistoryBloc, HistoryState>(

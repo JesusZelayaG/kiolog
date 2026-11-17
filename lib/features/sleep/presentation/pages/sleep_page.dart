@@ -45,7 +45,7 @@ class _SleepView extends StatelessWidget {
         title: const Text('Sueño'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => context.go('/'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
       ),
       body: BlocBuilder<SleepBloc, SleepState>(

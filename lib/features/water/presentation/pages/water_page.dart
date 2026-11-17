@@ -49,7 +49,7 @@ class _WaterView extends StatelessWidget {
         title: const Text('Agua'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => context.go('/'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         actions: [
           GradientIconButton(

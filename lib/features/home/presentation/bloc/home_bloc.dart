@@ -26,7 +26,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _onLoaded(HomeLoaded event, Emitter<HomeState> emit) async {
-    emit(state.copyWith(status: HomeStatus.loading));
+    // Al recargar se dejan los datos actuales en pantalla, sin parpadeo.
+    if (state.status != HomeStatus.success) {
+      emit(state.copyWith(status: HomeStatus.loading));
+    }
     try {
       final waterTotal = await _waterRepository.getDailyTotalMl(event.date);
       final waterConfig = await _waterRepository.getConfig();
@@ -45,8 +48,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         dailyWaterGoalMl: waterConfig?.dailyGoalMl ?? 3000,
         sleepHours: sleepLog?.hoursCalculated,
         mealsLogged: mealLogs.length,
-        exerciseRoutineDone: dailyExercise?.completed ?? false,
-        hasGymSession: sessions.isNotEmpty,
+        exerciseRoutineDone: (dailyExercise?.completed ?? false) ||
+            sessions.any((s) => s.routineId != null && s.gymLeftAt != null),
+        hasGymSession: sessions.any((s) => s.gymLeftAt == null),
       ));
     } catch (e) {
       emit(state.copyWith(status: HomeStatus.failure, error: e.toString()));

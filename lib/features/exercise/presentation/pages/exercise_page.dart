@@ -1,3 +1,4 @@
+import 'package:kiolog/core/domain/day.dart';
 import 'package:flutter/material.dart';
 import 'package:kiolog/features/exercise/domain/reps.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -684,7 +685,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
 
   Widget _buildCardioItem(BuildContext context, CardioLog log) {
     final theme = Theme.of(context);
-    final weekday = _weekdayName(log.date.weekday);
+    final weekday = _weekdayName(storedDay(log.date).weekday);
     final icon = _cardioIcon(log.cardioType);
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -843,7 +844,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
     final theme = Theme.of(context);
     final weightStr =
         log.weightKg != null ? ' @ ${log.weightKg}$weightUnit' : '';
-    final weekday = _weekdayName(log.date.weekday);
+    final weekday = _weekdayName(storedDay(log.date).weekday);
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: VitalityCard(
@@ -1041,10 +1042,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
 
     final completedDates = state.completedRoutineSessionsThisWeek
         .where((s) => s.gymLeftAt != null)
-        .map((s) {
-          final d = s.date.toLocal();
-          return DateTime(d.year, d.month, d.day);
-        })
+        .map((s) => storedDay(s.date))
         .toSet();
 
     return Row(

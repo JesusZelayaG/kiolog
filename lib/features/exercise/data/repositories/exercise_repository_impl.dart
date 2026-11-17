@@ -312,11 +312,11 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
       stats.add(WeeklyStat(
         weekStart: weekStart,
         routineDaysDone: routineSessions
-            .map((s) => DateTime.utc(s.date.year, s.date.month, s.date.day))
+            .map((s) => utcDayOf(storedDay(s.date)))
             .toSet()
             .length,
         cardioDaysDone: cardioLogs
-            .map((l) => DateTime.utc(l.date.year, l.date.month, l.date.day))
+            .map((l) => utcDayOf(storedDay(l.date)))
             .toSet()
             .length,
       ));

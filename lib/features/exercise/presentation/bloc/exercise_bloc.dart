@@ -278,9 +278,15 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
     try {
       await _repository.endSession(event.sessionId);
       final session = await _repository.getSession(event.sessionId);
+      final monday = _mondayOf(todayUtcDay());
+      final completedSessions =
+          await _repository.getCompletedRoutineSessionsForWeek(monday);
+      final sessions = await _repository.getSessionsForDate(DateTime.now());
       final weeklyStats = await _repository.getWeeklyStats(weeksBack: 8);
       emit(state.copyWith(
         activeSession: session,
+        recentSessions: sessions,
+        completedRoutineSessionsThisWeek: completedSessions,
         completedRoutineItemIds: {},
         sessionSetDefs: const {},
         sessionHistorical: const {},
@@ -455,10 +461,26 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
 
       final sets = await _repository.getSessionSets(event.sessionId);
 
+      // Lo marcado en memoria se pierde si la pantalla de Ejercicio se
+      // reconstruye; un ejercicio con todas sus series guardadas sigue
+      // contando como hecho.
+      final completed = Set<int>.from(state.completedRoutineItemIds);
+      for (final item in items) {
+        final planned = setDefs[item.id]!.isNotEmpty
+            ? setDefs[item.id]!.where((d) => d.dropOfSetNumber == null).length
+            : item.sets;
+        final saved = sets
+            .where((s) =>
+                s.exerciseName == item.exerciseName && s.setType != 'drop')
+            .length;
+        if (planned > 0 && saved >= planned) completed.add(item.id);
+      }
+
       emit(state.copyWith(
         sessionSetDefs: setDefs,
         sessionHistorical: historical,
         sessionSets: sets,
+        completedRoutineItemIds: completed,
       ));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));

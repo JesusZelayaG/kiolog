@@ -43,6 +43,14 @@ class HomePage extends StatelessWidget {
 
 const _waterSegments = 6;
 
+/// Abre una pantalla encima del Home y recarga el resumen al volver,
+/// para que el agua o el sueño recién registrados aparezcan.
+Future<void> _openAndReload(BuildContext context, String route) async {
+  final bloc = context.read<HomeBloc>();
+  await context.push(route);
+  bloc.add(HomeLoaded(date: DateTime.now()));
+}
+
 class _HomeView extends StatelessWidget {
   const _HomeView();
 
@@ -201,7 +209,7 @@ class _WaterCard extends StatelessWidget {
     final cs = theme.colorScheme;
     final filled = (state.waterProgress.clamp(0.0, 1.0) * _waterSegments).round();
     return VitalityCard(
-      onTap: () => context.push('/water'),
+      onTap: () => _openAndReload(context, '/water'),
       child: Column(
         children: [
           Row(
@@ -348,7 +356,7 @@ class _SleepCard extends StatelessWidget {
       caption: known != null ? 'Última noche' : 'Sin registro',
       titleColor: cs.onSurfaceVariant,
       background: cs.surfaceContainerLow,
-      onTap: () => context.push('/sleep'),
+      onTap: () => _openAndReload(context, '/sleep'),
     );
   }
 }

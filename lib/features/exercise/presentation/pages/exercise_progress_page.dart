@@ -233,11 +233,11 @@ class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
       ExerciseState state) {
     if (_weekOffset == 0) {
       final routineDays = state.completedRoutineSessionsThisWeek
-          .map((s) => DateTime.utc(s.date.year, s.date.month, s.date.day))
+          .map((s) => storedDay(s.date))
           .toSet()
           .length;
       final cardioDays = state.weeklyCardioLogs
-          .map((c) => DateTime.utc(c.date.year, c.date.month, c.date.day))
+          .map((c) => storedDay(c.date))
           .toSet()
           .length;
       final sessions = state.completedRoutineSessionsThisWeek.length +

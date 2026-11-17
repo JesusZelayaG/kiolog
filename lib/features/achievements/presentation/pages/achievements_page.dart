@@ -30,7 +30,7 @@ class _AchievementsView extends StatelessWidget {
         title: const Text('Logros'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
       ),
       body: BlocBuilder<AchievementsBloc, AchievementsState>(
