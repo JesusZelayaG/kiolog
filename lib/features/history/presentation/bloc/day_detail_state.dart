@@ -1,3 +1,4 @@
+import 'package:kiolog/features/reports/domain/repositories/report_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:kiolog/core/database/app_database.dart';
 
@@ -11,6 +12,10 @@ class DayDetailState extends Equatable {
   final Map<int, MealPlanOption> mealOptions;
   final List<ExerciseSessionLog> exerciseSessions;
   final DailyExerciseLog? exerciseLog;
+
+  /// El día medido contra las metas, como en el reporte; null sin reporte.
+  final ReportDay? summary;
+  final ReportGoals goals;
   final String? error;
 
   const DayDetailState({
@@ -21,6 +26,8 @@ class DayDetailState extends Equatable {
     this.mealOptions = const {},
     this.exerciseSessions = const [],
     this.exerciseLog,
+    this.summary,
+    this.goals = const ReportGoals(),
     this.error,
   });
 
@@ -44,6 +51,8 @@ class DayDetailState extends Equatable {
     List<ExerciseSessionLog>? exerciseSessions,
     DailyExerciseLog? exerciseLog,
     bool clearExerciseLog = false,
+    ReportDay? summary,
+    ReportGoals? goals,
     String? error,
   }) =>
       DayDetailState(
@@ -54,6 +63,8 @@ class DayDetailState extends Equatable {
         mealOptions: mealOptions ?? this.mealOptions,
         exerciseSessions: exerciseSessions ?? this.exerciseSessions,
         exerciseLog: clearExerciseLog ? null : (exerciseLog ?? this.exerciseLog),
+        summary: summary ?? this.summary,
+        goals: goals ?? this.goals,
         error: error ?? this.error,
       );
 
@@ -66,6 +77,8 @@ class DayDetailState extends Equatable {
         mealOptions,
         exerciseSessions,
         exerciseLog,
+        summary,
+        goals,
         error,
       ];
 }

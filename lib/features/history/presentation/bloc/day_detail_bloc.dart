@@ -1,3 +1,4 @@
+import 'package:kiolog/features/reports/domain/repositories/report_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/dao/exercise_dao.dart';
 import 'package:kiolog/core/dao/nutrition_dao.dart';
@@ -10,8 +11,12 @@ class DayDetailBloc extends Bloc<DayDetailEvent, DayDetailState> {
   final NutritionDao _nutritionDao;
   final ExerciseDao _exerciseDao;
 
-  DayDetailBloc(this._waterSleepDao, this._nutritionDao, this._exerciseDao)
-      : super(DayDetailState(date: DateTime.utc(0))) {
+  /// Sin [reports] el día no se mide contra las metas.
+  final ReportRepository? _reports;
+
+  DayDetailBloc(this._waterSleepDao, this._nutritionDao, this._exerciseDao, {ReportRepository? reports})
+      : _reports = reports,
+        super(DayDetailState(date: DateTime.utc(0))) {
     on<DayDetailLoaded>(_onLoaded);
   }
 
@@ -33,6 +38,9 @@ class DayDetailBloc extends Bloc<DayDetailEvent, DayDetailState> {
       final options = await _nutritionDao.getMealPlanOptionsByIds(optionIds);
       final mealOptions = {for (final o in options) o.id: o};
 
+      final day = DateTime(event.date.year, event.date.month, event.date.day);
+      final report = await _reports?.generateReport(day, day.add(const Duration(hours: 23, minutes: 59)));
+
       emit(state.copyWith(
         status: DayDetailStatus.success,
         date: event.date,
@@ -42,6 +50,8 @@ class DayDetailBloc extends Bloc<DayDetailEvent, DayDetailState> {
         exerciseSessions: sessions,
         exerciseLog: exerciseLog,
         clearExerciseLog: exerciseLog == null,
+        summary: report?.days.firstOrNull,
+        goals: report?.goals,
         error: null,
       ));
     } catch (e) {
