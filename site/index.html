@@ -180,16 +180,48 @@
     .checks small { display: block; color: var(--muted); font-size: 15px; line-height: 1.5; margin-top: 2px; }
 
     /* Report */
-    .report {
-      display: grid; grid-template-columns: 1fr 1.1fr; gap: 48px; align-items: center;
-      background: var(--surface); border: 1px solid var(--line); border-radius: 36px; padding: 48px;
+    .report-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+    .report-hero > *, .pages > * { min-width: 0; }
+    .periods { display: flex; flex-wrap: wrap; gap: 8px; margin: -20px 0 24px; }
+    .period { padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 14px; font-weight: 600; color: var(--muted); }
+    .period.on { background: #1B3329; border-color: #2E8A55; color: #A8DDB9; }
+    .report-facts { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .report-facts li { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; }
+    .report-facts b { display: block; font-size: 22px; letter-spacing: -0.02em; color: var(--gold); }
+    .report-facts span { display: block; color: var(--muted); font-size: 13.5px; line-height: 1.4; margin-top: 2px; }
+    .btn-gold { background: linear-gradient(135deg, #C98A2B, #E5B04A); color: #1A1305; box-shadow: 0 10px 30px -12px rgba(229,176,74,.6); }
+
+    .paper-stack { position: relative; height: 620px; }
+    .paper {
+      position: absolute; top: 0; left: 50%; width: 400px; padding: 0; border: 0; cursor: zoom-in;
+      background: #fff; border-radius: 10px; overflow: hidden;
+      box-shadow: 0 30px 60px -20px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.06);
+      transition: transform .3s ease;
     }
-    .report > * { min-width: 0; }
-    .report-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .report-item { background: var(--surface-2); border-radius: 18px; padding: 16px 18px; border: 1px solid var(--line); }
-    .report-item strong { display: block; font-size: 15.5px; }
-    .report-item span { color: var(--muted); font-size: 14px; line-height: 1.45; display: block; margin-top: 2px; }
-    .report-item::before { content: ""; display: block; width: 26px; height: 4px; border-radius: 2px; background: var(--gold); margin-bottom: 10px; }
+    .paper img { width: 100%; }
+    .paper.front { transform: translateX(-50%) rotate(-2deg); z-index: 3; }
+    .paper.back1 { transform: translateX(-28%) translateY(18px) rotate(5deg); z-index: 2; }
+    .paper.back2 { transform: translateX(-72%) translateY(30px) rotate(-8deg); z-index: 1; opacity: .9; }
+    .paper-stack:hover .paper.front { transform: translateX(-50%) translateY(-8px) rotate(-1deg); }
+
+    .pages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 72px; }
+    .page-card { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 16px 16px 20px; }
+    .thumb { display: block; width: 100%; padding: 0; border: 0; border-radius: 8px; overflow: hidden; background: #fff; cursor: zoom-in; box-shadow: 0 12px 24px -14px rgba(0,0,0,.8); transition: transform .2s ease; }
+    .thumb:hover { transform: translateY(-3px); }
+    .thumb img { width: 100%; }
+    .page-num { margin: 16px 0 4px; color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+    .page-card h3 { margin: 0 0 10px; font-size: 17px; line-height: 1.3; letter-spacing: -0.01em; }
+    .page-card ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .page-card li { color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .page-card li b { color: var(--text); font-weight: 600; }
+    .pages-note { color: var(--muted); font-size: 14px; margin: 18px 0 0; text-align: center; }
+
+    .viewer { padding: 0; border: 0; background: transparent; max-width: min(92vw, 780px); max-height: 94vh; width: 100%; }
+    .viewer::backdrop { background: rgba(6, 9, 18, .86); backdrop-filter: blur(4px); }
+    .viewer-bar { display: flex; justify-content: space-between; align-items: center; color: var(--text); font-weight: 600; font-size: 15px; padding: 0 2px 10px; }
+    .vbtn { width: 40px; height: 40px; margin-left: 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 20px; line-height: 1; cursor: pointer; }
+    .vbtn:hover { border-color: var(--lime); }
+    .viewer img { width: 100%; border-radius: 8px; background: #fff; max-height: calc(94vh - 60px); object-fit: contain; }
 
     /* Privacy */
     .privacy {
@@ -226,18 +258,32 @@
     .foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; align-items: center; }
 
     @media (max-width: 960px) {
-      .hero-grid, .show, .privacy, .report { grid-template-columns: minmax(0, 1fr); }
+      .hero-grid, .show, .privacy, .report-hero { grid-template-columns: minmax(0, 1fr); }
+      .pages { grid-template-columns: repeat(2, 1fr); }
+      .paper-stack { height: 560px; }
       .show { gap: 36px; }
       .show.flip .show-media { order: 0; }
       .features, .extras { grid-template-columns: 1fr 1fr; }
       .steps { grid-template-columns: 1fr; }
       .hero { padding-top: 48px; }
-      .privacy, .report { padding: 36px 28px; }
+      .privacy { padding: 36px 28px; }
     }
     @media (max-width: 600px) {
       .wrap { padding: 0 16px; }
       .nav-links { display: none; }
-      .features, .extras, .report-list { grid-template-columns: 1fr; }
+      .features, .extras { grid-template-columns: 1fr; }
+      .pages {
+        display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory;
+        margin: 48px -16px 0; padding: 0 16px 12px; scrollbar-width: none;
+      }
+      .pages::-webkit-scrollbar { display: none; }
+      .page-card { flex: 0 0 78%; scroll-snap-align: center; }
+      .pages-note::before { content: "Desliza para ver las 5 páginas. "; }
+      .report-facts { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+      .report-facts li { padding: 12px; }
+      .report-facts b { font-size: 18px; }
+      .paper-stack { height: 112vw; }
+      .paper { width: 68vw; }
       .phones .phone { width: calc(50% - 9px); border-width: 4px; border-radius: 24px; }
       .phones .phone:nth-child(2) { margin-top: 40px; }
       .show-media .phone:nth-child(2) { display: none; }
@@ -481,23 +527,104 @@
 
     <section id="reporte" style="padding-top:24px">
       <div class="wrap">
-        <div class="report">
+        <div class="report-hero">
           <div>
             <div class="eyebrow" style="color:var(--gold)">Reporte para la consulta</div>
-            <h2>Tu mes, en un PDF.</h2>
-            <p class="section-lead" style="margin-bottom:0">En vez de intentar recordar cómo te fue, llegas a la cita con un documento claro. Lo generas desde la app y lo compartes por WhatsApp, correo o como prefieras.</p>
+            <h2>Tu mes, en un PDF listo para tu nutricionista.</h2>
+            <p class="section-lead">En vez de intentar recordar cómo te fue, llegas a la cita con un documento claro. Kiolog lo arma con todo lo que registraste, en formato A4, y lo compartes por WhatsApp, correo o como prefieras.</p>
+            <div class="periods" aria-label="Períodos disponibles">
+              <span class="period">Este mes</span>
+              <span class="period">Últimos 7 días</span>
+              <span class="period on">Últimos 30 días</span>
+              <span class="period">Período a tu medida</span>
+            </div>
+            <ul class="report-facts">
+              <li><b>A4</b><span>listo para imprimir o leer en pantalla</span></li>
+              <li><b>5 páginas</b><span>en un período de 30 días</span></li>
+              <li><b>0 fotos</b><span>tus fotos nunca van en el reporte</span></li>
+            </ul>
+            <div class="cta" style="margin-top:28px">
+              <a class="btn btn-gold" href="reporte-ejemplo.pdf" download>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+                Descargar PDF de ejemplo
+              </a>
+            </div>
           </div>
-          <div class="report-list">
-            <div class="report-item"><strong>Cumplimiento</strong><span>Agua, comidas, sueño y rutina en porcentajes del periodo.</span></div>
-            <div class="report-item"><strong>Gráficas diarias</strong><span>Cada día comparado con tu meta.</span></div>
-            <div class="report-item"><strong>Tabla semanal</strong><span>Cómo evolucionó cada semana.</span></div>
-            <div class="report-item"><strong>Comidas</strong><span>Tu opción favorita por tiempo de comida y lo que comiste fuera del plan.</span></div>
-            <div class="report-item"><strong>Calendario de ejercicio</strong><span>Días de rutina y de cardio.</span></div>
-            <div class="report-item"><strong>Consultas</strong><span>Tus medidas de cada cita.</span></div>
+          <div class="paper-stack">
+            <button class="paper back2" data-page="3" aria-label="Ver página 3"><img src="img/reporte-3.webp" alt="" width="1000" height="1413" loading="lazy"></button>
+            <button class="paper back1" data-page="2" aria-label="Ver página 2"><img src="img/reporte-2.webp" alt="" width="1000" height="1413" loading="lazy"></button>
+            <button class="paper front" data-page="1" aria-label="Ver página 1"><img src="img/reporte-1.webp" alt="Primera página del reporte: tarjetas de cumplimiento, gráfica de peso, tabla semanal y alimentación por día" width="1000" height="1413" loading="lazy"></button>
           </div>
         </div>
+
+        <div class="pages">
+          <article class="page-card">
+            <button class="thumb" data-page="1" aria-label="Ampliar página 1"><img src="img/reporte-1.webp" alt="Página 1 del reporte" width="1000" height="1413" loading="lazy"></button>
+            <div class="page-num">Página 1</div>
+            <h3>El resumen del período</h3>
+            <ul>
+              <li><b>Encabezado</b> con tu nombre, tu plan, tu rutina y el período.</li>
+              <li><b>Seis tarjetas</b>: alimentación, ejercicio, cardio, agua, sueño y peso, cada una con su porcentaje y su barra.</li>
+              <li><b>Gráfica de peso</b> con mínimo, máximo y promedio.</li>
+              <li><b>Cumplimiento por semana</b>: comidas, ejercicio, cardio, agua, sueño y peso promedio.</li>
+              <li><b>Alimentación por día</b>: comidas del plan y fuera del plan contra la meta diaria.</li>
+            </ul>
+          </article>
+          <article class="page-card">
+            <button class="thumb" data-page="2" aria-label="Ampliar página 2"><img src="img/reporte-2.webp" alt="Página 2 del reporte" width="1000" height="1413" loading="lazy"></button>
+            <div class="page-num">Página 2</div>
+            <h3>Cómo seguiste el plan</h3>
+            <ul>
+              <li><b>Lo que más se repitió</b>: la opción favorita de cada tiempo de comida, con cuántas veces fue del plan, fuera del plan o sin seguir.</li>
+              <li><b>Detalle por tiempo de comida</b>: cada opción del plan con una barra de cuántas veces la elegiste.</li>
+              <li><b>Comidas fuera del plan</b>: qué comiste, en qué día y en qué tiempo.</li>
+            </ul>
+          </article>
+          <article class="page-card">
+            <button class="thumb" data-page="3" aria-label="Ampliar página 3"><img src="img/reporte-3.webp" alt="Página 3 del reporte" width="1000" height="1413" loading="lazy"></button>
+            <div class="page-num">Página 3</div>
+            <h3>Ejercicio y cardio</h3>
+            <ul>
+              <li><b>Calendario semanal</b> con los días de rutina y de cardio, contra tu meta.</li>
+              <li><b>Minutos de cardio por día</b> con la meta por sesión.</li>
+              <li><b>Sesiones de cardio</b>: fecha, tipo, minutos y notas.</li>
+            </ul>
+          </article>
+          <article class="page-card">
+            <button class="thumb" data-page="4" aria-label="Ampliar página 4"><img src="img/reporte-4.webp" alt="Página 4 del reporte" width="1000" height="1413" loading="lazy"></button>
+            <div class="page-num">Página 4</div>
+            <h3>Agua, sueño y bitácora</h3>
+            <ul>
+              <li><b>Litros de agua por día</b> con la línea de tu meta.</li>
+              <li><b>Horas de sueño por noche.</b></li>
+              <li><b>Bitácora diaria</b>: comidas, agua, ejercicio, cardio, sueño y peso de cada día, en una sola tabla.</li>
+            </ul>
+          </article>
+          <article class="page-card">
+            <button class="thumb" data-page="5" aria-label="Ampliar página 5"><img src="img/reporte-5.webp" alt="Página 5 del reporte" width="1000" height="1413" loading="lazy"></button>
+            <div class="page-num">Página 5</div>
+            <h3>Evolución por consulta</h3>
+            <ul>
+              <li><b>Medidas de cada cita</b>: peso, cintura, cadera, muslo, brazo y % de grasa.</li>
+              <li><b>Cambio total</b> entre la primera y la última consulta del período.</li>
+            </ul>
+          </article>
+        </div>
+        <p class="pages-note">El ejemplo usa datos de demostración de 30 días. El número de páginas cambia según el período y lo que hayas registrado.</p>
       </div>
     </section>
+
+    <dialog class="viewer" id="viewer" aria-label="Página del reporte">
+      <div class="viewer-bar">
+        <span id="viewer-title">Página 1 de 5</span>
+        <div>
+          <button class="vbtn" id="v-prev" aria-label="Página anterior">‹</button>
+          <button class="vbtn" id="v-next" aria-label="Página siguiente">›</button>
+          <button class="vbtn" id="v-close" aria-label="Cerrar">✕</button>
+        </div>
+      </div>
+      <img id="viewer-img" src="img/reporte-1.webp" alt="" width="1000" height="1413">
+    </dialog>
 
     <section id="privacidad" style="padding-top:0">
       <div class="wrap">
@@ -555,5 +682,32 @@
       <a href="https://github.com/JesusZelayaG/kiolog">github.com/JesusZelayaG/kiolog</a>
     </div>
   </footer>
+  <script>
+    (function () {
+      var dlg = document.getElementById('viewer');
+      if (!dlg || !dlg.showModal) return;
+      var img = document.getElementById('viewer-img');
+      var title = document.getElementById('viewer-title');
+      var total = 5, page = 1;
+      function show(n) {
+        page = (n - 1 + total) % total + 1;
+        img.src = 'img/reporte-' + page + '.webp';
+        img.alt = 'Página ' + page + ' del reporte';
+        title.textContent = 'Página ' + page + ' de ' + total;
+      }
+      document.querySelectorAll('[data-page]').forEach(function (el) {
+        el.addEventListener('click', function () { show(+el.dataset.page); dlg.showModal(); });
+      });
+      document.getElementById('v-prev').onclick = function () { show(page - 1); };
+      document.getElementById('v-next').onclick = function () { show(page + 1); };
+      document.getElementById('v-close').onclick = function () { dlg.close(); };
+      dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+      document.addEventListener('keydown', function (e) {
+        if (!dlg.open) return;
+        if (e.key === 'ArrowLeft') show(page - 1);
+        if (e.key === 'ArrowRight') show(page + 1);
+      });
+    })();
+  </script>
 </body>
 </html>
