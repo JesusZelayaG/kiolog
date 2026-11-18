@@ -12,7 +12,7 @@ import 'package:kiolog/core/domain/day.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/core/modules/cubit/modules_state.dart';
 import 'package:kiolog/core/theme/app_theme.dart';
-import 'package:kiolog/features/exercise/domain/reps.dart';
+import 'package:kiolog/features/exercise/domain/set_plan.dart';
 import 'package:kiolog/shared/widgets/entrance.dart';
 import 'package:kiolog/shared/widgets/exercise_reference.dart';
 import 'package:kiolog/shared/widgets/inactive_module_page.dart';
@@ -29,6 +29,7 @@ import '../cubit/exercise_weight_unit_cubit.dart';
 import 'exercise_config_page.dart';
 import 'exercise_progress_page.dart';
 import 'exercise_session_page.dart';
+import '../widgets/set_plan_editor.dart';
 
 const _settle = Cubic(.3, .9, .25, 1);
 
@@ -410,6 +411,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
             _RoutineTile(
               routine: routine,
               items: state.routineItemsByRoutine[routine.id] ?? const [],
+              setDefs: state.planSetDefs,
               done: doneIds.contains(routine.id),
               expanded: _expandedRoutineId == routine.id,
               onToggle: () => setState(
@@ -581,24 +583,23 @@ class _ExerciseViewState extends State<_ExerciseView> {
     );
   }
 
-  void _showExerciseDialog(
+  Future<void> _showExerciseDialog(
     BuildContext context,
     ExerciseState state, {
     ExerciseRoutineItem? item,
     required int routineId,
-  }) {
+  }) async {
     final weightUnit = context.read<ExerciseWeightUnitCubit>().state;
     final nameCtrl = TextEditingController(text: item?.exerciseName ?? '');
-    final setsCtrl =
-        TextEditingController(text: item != null ? '${item.sets}' : '');
-    final repsCtrl = TextEditingController(
-        text: item != null ? item.repsLabel ?? '${item.reps}' : '');
     final notesCtrl = TextEditingController(text: item?.notes ?? '');
-    final weightCtrl = TextEditingController(
-        text: item?.weightKg != null ? '${item!.weightKg}' : '');
+    // Las series por separado (pirámide y drops) se leen antes de abrir.
+    final plan = item == null
+        ? SetPlanDraft(sets: '', reps: '')
+        : SetPlanDraft.fromItem(item, state.planSetDefs[item.id] ?? const []);
     final reference = ReferenceDraft(link: item?.referenceUrl, mediaId: item?.mediaId);
 
-    showDialog(
+    if (!context.mounted) return;
+    await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(item == null ? 'Agregar ejercicio' : 'Editar ejercicio'),
@@ -612,35 +613,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                 autofocus: item == null,
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: setsCtrl,
-                      decoration:
-                          const InputDecoration(labelText: 'Series *'),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: repsCtrl,
-                      decoration: const InputDecoration(
-                          labelText: 'Reps *', hintText: '8 o 6-8'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: weightCtrl,
-                      decoration: InputDecoration(labelText: weightUnit),
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                    ),
-                  ),
-                ],
-              ),
+              SetPlanEditor(draft: plan, unit: weightUnit),
               const SizedBox(height: 8),
               TextField(
                 controller: notesCtrl,
@@ -661,28 +634,26 @@ class _ExerciseViewState extends State<_ExerciseView> {
           ElevatedButton(
             onPressed: () async {
               final name = nameCtrl.text.trim();
-              final sets = int.tryParse(setsCtrl.text);
-              final parsed = parseReps(repsCtrl.text);
-              if (name.isEmpty || sets == null || parsed == null) return;
+              final result = plan.build();
+              if (name.isEmpty || result == null) return;
               final bloc = context.read<ExerciseBloc>();
               final navigator = Navigator.of(dialogContext);
               final mediaId = await reference.saveMedia();
-              final (reps, repsLabel) = parsed;
               final notes = notesCtrl.text.trim().isEmpty
                   ? null
                   : notesCtrl.text.trim();
-              final weight =
-                  double.tryParse(weightCtrl.text.replaceAll(',', '.'));
 
               if (item == null) {
                 bloc.add(
                       ExerciseRoutineItemAdded(
                         routineId: routineId,
                         exerciseName: name,
-                        sets: sets,
-                        reps: reps,
-                        weightKg: weight,
-                        repsLabel: repsLabel,
+                        sets: result.sets,
+                        reps: result.reps,
+                        weightKg: result.weight,
+                        setType: result.setType,
+                        setDefs: result.defs,
+                        repsLabel: result.repsLabel,
                         notes: notes,
                         referenceUrl: reference.url,
                         mediaId: mediaId,
@@ -693,10 +664,13 @@ class _ExerciseViewState extends State<_ExerciseView> {
                       ExerciseRoutineItemUpdated(
                         itemId: item.id,
                         exerciseName: name,
-                        sets: sets,
-                        reps: reps,
-                        weightKg: weight,
-                        repsLabel: (value: repsLabel),
+                        sets: result.sets,
+                        reps: result.reps,
+                        weightKg: result.weight,
+                        setType: result.setType,
+                        // Vacío borra las series por separado de antes.
+                        setDefs: result.defs,
+                        repsLabel: (value: result.repsLabel),
                         notes: (value: notes),
                         referenceUrl: (value: reference.url),
                         mediaId: (value: mediaId),
@@ -1272,6 +1246,7 @@ class _RoutineTile extends StatelessWidget {
   const _RoutineTile({
     required this.routine,
     required this.items,
+    required this.setDefs,
     required this.done,
     required this.expanded,
     required this.onToggle,
@@ -1282,6 +1257,7 @@ class _RoutineTile extends StatelessWidget {
 
   final ExerciseRoutine routine;
   final List<ExerciseRoutineItem> items;
+  final Map<int, List<ExerciseRoutineSetDef>> setDefs;
   final bool done;
   final bool expanded;
   final VoidCallback onToggle;
@@ -1376,9 +1352,26 @@ class _RoutineTile extends StatelessWidget {
                                         children: [
                                           Text(item.exerciseName,
                                               style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                                          if (item.setType != 'normal')
+                                            Text(
+                                              switch (item.setType) {
+                                                'pyramid' => 'PIRÁMIDE',
+                                                'drop' => 'CON DROP',
+                                                _ => 'PIRÁMIDE + DROP',
+                                              },
+                                              style: theme.textTheme.labelSmall?.copyWith(
+                                                fontSize: 10,
+                                                color: context.kc.warning,
+                                              ),
+                                            ),
                                           Text(
-                                            '${item.sets} × ${item.repsLabel ?? item.reps}'
-                                            '${item.weightKg != null ? ' · ${item.weightKg} $unit' : ''}',
+                                            setPlanSummary(
+                                              (setDefs[item.id] ?? const []).isEmpty
+                                                  ? uniformSets(item)
+                                                  : fromSetDefs(setDefs[item.id]!),
+                                              unit,
+                                              repsLabel: item.repsLabel,
+                                            ),
                                             style: theme.textTheme.bodySmall,
                                           ),
                                           if (item.notes != null)

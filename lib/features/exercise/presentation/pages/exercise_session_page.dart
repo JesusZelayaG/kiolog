@@ -231,7 +231,11 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
             : null;
         rows.add(_SetRowData(
           displayNumber: def.setNumber,
-          setType: def.dropOfSetNumber != null ? 'drop' : 'normal',
+          setType: def.dropOfSetNumber != null
+              ? 'drop'
+              : item.setType.startsWith('pyramid')
+                  ? 'pyramid'
+                  : 'normal',
           parentSetNumber: def.dropOfSetNumber,
           repsCtrl: TextEditingController(
             text: saved != null
@@ -322,18 +326,35 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
     });
   }
 
+  /// Un drop sale de la última serie guardada; si aún no hay ninguna, se
+  /// explica en vez de dejar el botón apagado.
   void _addDropRow(ExerciseRoutineItem item, List<_SetRowData> rows) {
-    final savedRows = rows.where((r) => r.saved).toList();
-    if (savedRows.isEmpty) return; // guard — botón debería estar deshabilitado
-    final lastSaved = savedRows.last;
+    final savedRows = rows.where((r) => r.saved && r.setType != 'drop').toList();
+    if (savedRows.isEmpty) {
+      final first = rows.firstWhere((r) => r.setType != 'drop');
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          content: Text('Primero guarda la serie ${first.displayNumber}: el drop sale de ella.'),
+        ));
+      return;
+    }
+    final parent = savedRows.last;
+    // El drop sigue al último drop de esa serie, o a la serie misma.
+    final previous = rows.lastWhere((r) => r == parent || r.parentSetNumber == parent.displayNumber);
+    final previousReps = int.tryParse(previous.repsCtrl.text);
+    final previousWeight = double.tryParse(previous.weightCtrl.text.replaceAll(',', '.'));
     final nextNumber = rows.last.displayNumber + 1;
     setState(() {
       rows.add(_SetRowData(
         displayNumber: nextNumber,
         setType: 'drop',
-        parentSetNumber: lastSaved.displayNumber,
-        repsCtrl: TextEditingController(),
-        weightCtrl: TextEditingController(),
+        parentSetNumber: parent.displayNumber,
+        // Sugerencia: más reps con ~25 % menos peso; se corrige al hacerlo.
+        repsCtrl: TextEditingController(text: previousReps == null ? '' : '${previousReps + 3}'),
+        weightCtrl: TextEditingController(
+          text: previousWeight == null ? '' : (previousWeight * 0.75).toStringAsFixed(1).replaceAll('.0', ''),
+        ),
       ));
     });
   }
@@ -585,7 +606,7 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
               ),
               const SizedBox(width: 8),
               OutlinedButton.icon(
-                onPressed: rows.any((r) => r.saved)
+                onPressed: rows.any((r) => r.setType != 'drop')
                     ? () => _addDropRow(item, rows)
                     : null,
                 icon: const Icon(Icons.arrow_downward, size: 16),

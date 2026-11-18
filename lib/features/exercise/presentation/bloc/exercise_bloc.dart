@@ -45,10 +45,14 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
 
       List<ExerciseRoutine> routines = [];
       final Map<int, List<ExerciseRoutineItem>> itemsByRoutine = {};
+      final Map<int, List<ExerciseRoutineSetDef>> setDefs = {};
       if (plan != null) {
         routines = await _repository.getRoutinesForPlan(plan.id);
         for (final r in routines) {
           itemsByRoutine[r.id] = await _repository.getRoutineItemsOrdered(r.id);
+          for (final item in itemsByRoutine[r.id]!) {
+            if (item.setType != 'normal') setDefs[item.id] = await _repository.getRoutineSetDefs(item.id);
+          }
         }
       }
 
@@ -81,6 +85,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         dailyLog: dailyLog,
         routines: routines,
         routineItemsByRoutine: itemsByRoutine,
+        planSetDefs: setDefs,
         activeSession: activeSession,
         sessionSets: sets,
         recentSessions: sessions,
@@ -202,7 +207,10 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
       final updatedMap =
           Map<int, List<ExerciseRoutineItem>>.from(state.routineItemsByRoutine)
             ..[event.routineId] = updatedItems;
-      emit(state.copyWith(routineItemsByRoutine: updatedMap));
+      emit(state.copyWith(
+        routineItemsByRoutine: updatedMap,
+        planSetDefs: {...state.planSetDefs, itemId: await _repository.getRoutineSetDefs(itemId)},
+      ));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
     }
@@ -234,7 +242,10 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         updatedMap[routineId] =
             await _repository.getRoutineItemsOrdered(routineId);
       }
-      emit(state.copyWith(routineItemsByRoutine: updatedMap));
+      emit(state.copyWith(
+        routineItemsByRoutine: updatedMap,
+        planSetDefs: {...state.planSetDefs, event.itemId: await _repository.getRoutineSetDefs(event.itemId)},
+      ));
     } catch (e) {
       emit(state.copyWith(status: ExerciseStatus.failure, error: e.toString()));
     }

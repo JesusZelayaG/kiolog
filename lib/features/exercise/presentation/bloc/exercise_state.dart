@@ -12,6 +12,9 @@ class ExerciseState extends Equatable {
   final List<ExercisePlan> allPlans;
   final List<ExerciseRoutine> routines;
   final Map<int, List<ExerciseRoutineItem>> routineItemsByRoutine;
+
+  /// Las series por separado de cada ejercicio del plan (pirámides y drops).
+  final Map<int, List<ExerciseRoutineSetDef>> planSetDefs;
   final DailyExerciseLog? dailyLog;
   final ExerciseSessionLog? activeSession;
   final List<ExerciseSetLog> sessionSets;
@@ -35,6 +38,7 @@ class ExerciseState extends Equatable {
     this.allPlans = const [],
     this.routines = const [],
     this.routineItemsByRoutine = const {},
+    this.planSetDefs = const {},
     this.dailyLog,
     this.activeSession,
     this.sessionSets = const [],
@@ -80,6 +84,7 @@ class ExerciseState extends Equatable {
     List<ExercisePlan>? allPlans,
     List<ExerciseRoutine>? routines,
     Map<int, List<ExerciseRoutineItem>>? routineItemsByRoutine,
+    Map<int, List<ExerciseRoutineSetDef>>? planSetDefs,
     DailyExerciseLog? dailyLog,
     ExerciseSessionLog? activeSession,
     List<ExerciseSetLog>? sessionSets,
@@ -104,6 +109,7 @@ class ExerciseState extends Equatable {
         routines: routines ?? this.routines,
         routineItemsByRoutine:
             routineItemsByRoutine ?? this.routineItemsByRoutine,
+        planSetDefs: planSetDefs ?? this.planSetDefs,
         dailyLog: dailyLog ?? this.dailyLog,
         activeSession: activeSession ?? this.activeSession,
         sessionSets: sessionSets ?? this.sessionSets,
@@ -132,6 +138,7 @@ class ExerciseState extends Equatable {
         allPlans,
         routines,
         routineItemsByRoutine,
+        planSetDefs,
         dailyLog,
         activeSession,
         sessionSets,

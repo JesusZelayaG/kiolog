@@ -4,6 +4,8 @@ import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/features/exercise/domain/repositories/exercise_repository.dart';
+import 'package:kiolog/features/exercise/domain/set_plan.dart';
+import 'package:kiolog/features/exercise/presentation/widgets/set_plan_editor.dart';
 import 'package:kiolog/shared/widgets/exercise_reference.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 
@@ -88,11 +90,11 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
         final day = _RoutineDayLocal();
         day.nameController.text = routine.routineName;
         for (final item in items) {
-          final entry = _ExerciseEntryLocal();
+          final entry = _ExerciseEntryLocal(
+            plan: SetPlanDraft.fromItem(item, await repo.getRoutineSetDefs(item.id)),
+          );
           entry.name.text = item.exerciseName;
-          entry.sets.text = '${item.sets}';
-          entry.reps.text = '${item.reps}';
-          if (item.weightKg != null) entry.weight.text = '${item.weightKg}';
+          entry.notes = item.notes;
           entry.reference.link.text = item.referenceUrl ?? '';
           entry.reference.mediaId = item.mediaId;
           day.exercises.add(entry);
@@ -139,19 +141,24 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
         routineName: routineName,
       );
       for (final ex in day.exercises) {
-        final sets = int.tryParse(ex.sets.text) ?? 3;
-        final reps = int.tryParse(ex.reps.text) ?? 10;
-        final weight = double.tryParse(ex.weight.text);
-        if (ex.name.text.isNotEmpty) {
-          await exerciseRepo.addRoutineItem(
-            routineId: routineId,
-            exerciseName: ex.name.text,
-            sets: sets,
-            reps: reps,
-            weightKg: weight,
-            referenceUrl: ex.reference.url,
-            mediaId: await ex.reference.saveMedia(),
-          );
+        if (ex.name.text.isEmpty) continue;
+        // Si faltan series o reps, 3 × 10 como antes.
+        final plan = ex.plan.build() ??
+            (sets: 3, reps: 10, weight: null, repsLabel: null, setType: 'normal', defs: const <SetDef>[]);
+        final itemId = await exerciseRepo.addRoutineItem(
+          routineId: routineId,
+          exerciseName: ex.name.text,
+          sets: plan.sets,
+          reps: plan.reps,
+          weightKg: plan.weight,
+          setType: plan.setType,
+          repsLabel: plan.repsLabel,
+          notes: ex.notes,
+          referenceUrl: ex.reference.url,
+          mediaId: await ex.reference.saveMedia(),
+        );
+        if (plan.defs.isNotEmpty) {
+          await exerciseRepo.replaceRoutineSetDefs(routineItemId: itemId, defs: plan.defs);
         }
       }
     }
@@ -294,19 +301,22 @@ class _RoutineDayLocal {
 }
 
 class _ExerciseEntryLocal {
+  _ExerciseEntryLocal({SetPlanDraft? plan}) : plan = plan ?? SetPlanDraft();
+
   final name = TextEditingController();
-  final sets = TextEditingController(text: '3');
-  final reps = TextEditingController(text: '10');
-  final weight = TextEditingController();
+
+  /// Series iguales o pirámide, con drops.
+  final SetPlanDraft plan;
+
+  /// Indicaciones del entrenador, copiadas del plan base.
+  String? notes;
 
   /// Enlace y multimedia de referencia.
   final reference = ReferenceDraft();
 
   void dispose() {
     name.dispose();
-    sets.dispose();
-    reps.dispose();
-    weight.dispose();
+    plan.dispose();
     reference.dispose();
   }
 }
@@ -346,45 +356,7 @@ class _ExerciseRowLocal extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: entry.sets,
-                  decoration: const InputDecoration(
-                    labelText: 'Series',
-                    isDense: true,
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: entry.reps,
-                  decoration: const InputDecoration(
-                    labelText: 'Reps',
-                    isDense: true,
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: entry.weight,
-                  decoration: InputDecoration(
-                    labelText: 'Peso',
-                    suffixText: weightUnit,
-                    isDense: true,
-                  ),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          SetPlanEditor(draft: entry.plan, unit: weightUnit, dense: true),
           const SizedBox(height: 8),
           ReferenceEditor(draft: entry.reference, dense: true),
           const Divider(height: 24),
