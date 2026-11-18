@@ -1,23 +1,61 @@
+<div align="center">
+
+<img src="site/img/logo.png" alt="Logo de Kiolog" width="128">
+
 # Kiolog
 
-Bitácora personal de salud para Android. Kiolog lleva el registro diario del plan alimenticio que indica la nutricionista, el entrenamiento, el agua, el sueño y las medidas corporales, y genera un reporte PDF para llevar a cada consulta.
+**Tu salud, un día a la vez.**
 
-La app es **offline first**: todos los datos viven en el teléfono, en una base SQLite local. No hay cuentas ni servidor.
+Bitácora personal de salud para Android: plan alimenticio, ejercicio, agua, sueño y medidas,<br>
+con el reporte para tu nutricionista listo antes de cada consulta.
 
-## Funciones
+![Versión](https://img.shields.io/badge/versión-0.7.1-6DAE3E?style=flat-square)
+![Plataforma](https://img.shields.io/badge/plataforma-Android-3FAE6A?style=flat-square&logo=android&logoColor=white)
+![Flutter](https://img.shields.io/badge/Flutter-3.47-1E7A4C?style=flat-square&logo=flutter&logoColor=white)
+![Offline first](https://img.shields.io/badge/offline-first-8BBF3F?style=flat-square)
 
-- **Nutrición**: plan alimenticio por tiempos de comida (desayuno, almuerzo, refacción, cena) con varias opciones por tiempo. Se registra qué opción se comió, las comidas fuera del plan y los días en que no se siguió el plan. Cada comida puede llevar una foto.
-- **Ejercicio**: planes de entrenamiento por días, con series, rangos de repeticiones, series en pirámide y drop sets, notas del entrenador y un video o imagen de referencia por ejercicio. También registra sesiones de cardio.
-- **Agua y sueño**: registro en ml o litros contra una meta diaria, y varias tomas de sueño por día.
-- **Progreso**: peso y medidas antropométricas, gráficas contra las metas, un álbum de comidas y un álbum diario de progreso (hasta 3 fotos o videos cortos por día).
-- **Historial**: vistas por mes y por día, comparadas con las metas.
-- **Consultas**: fecha de la próxima consulta, con recordatorios la noche anterior y 2 horas antes.
-- **Reporte para la nutricionista**: un PDF con el cumplimiento, gráficas diarias, una tabla semanal, el calendario de ejercicio y cardio, el registro diario y las consultas.
-- **Logros**: logros por el progreso personal.
-- **Respaldos**: un respaldo automático diario en `Download/Kiolog` (se guardan los últimos 7), más respaldo y restauración manual.
-- **Módulos opcionales y temas**: cada módulo se puede activar o desactivar, y la interfaz tiene varios temas a elegir.
+<img src="site/img/inicio.webp" alt="Inicio" width="200">&nbsp;
+<img src="site/img/nutricion.webp" alt="Nutrición" width="200">&nbsp;
+<img src="site/img/ejercicio.webp" alt="Ejercicio" width="200">&nbsp;
+<img src="site/img/progreso.webp" alt="Progreso" width="200">
 
-## Stack
+<sub>Las capturas usan datos de demostración.</sub>
+
+</div>
+
+---
+
+## 🌱 Por qué nació
+
+Kiolog nació de una necesidad personal. Después de cada consulta, la nutricionista entrega un plan con varias opciones por tiempo de comida, una rutina de gimnasio y metas de agua y cardio. Entre una cita y la siguiente, todo eso quedaba repartido entre papeles, notas y fotos sueltas, y al llegar a la consulta era difícil contestar algo tan simple como *"¿cómo te fue con el plan este mes?"*.
+
+Las apps de salud que existen están hechas para contar calorías, no para seguir **el plan que te dio tu nutricionista**. Kiolog parte de ese plan: te dice qué comida sigue, te deja marcar qué opción comiste (y también lo que comiste fuera del plan, sin culpas) y, al final del mes, arma un PDF con todo para compartirlo en la consulta.
+
+Y como son datos de salud, se quedan en el teléfono: sin cuentas, sin servidores y sin depender de internet.
+
+## ✨ Funciones
+
+| | Módulo | Qué hace |
+|:-:|---|---|
+| 🥗 | **Nutrición** | El plan por tiempos de comida (desayuno, almuerzo, refacción y cena) con sus opciones. Registra la opción del plan, lo que comiste fuera del plan o "no seguí el plan", con foto del platillo. |
+| 🏋️ | **Ejercicio** | Rutinas por día con series, rangos de repeticiones, pirámides, drop sets, notas del entrenador y un video o imagen de referencia por ejercicio. También registra cardio. Peso en kg o lb. |
+| 💧 | **Agua** | Registro en ml o litros contra la meta diaria. |
+| 🌙 | **Sueño** | Hora de dormir y de despertar, con varias tomas por día (siestas incluidas). |
+| 📈 | **Progreso** | Gráfica de peso, medidas antropométricas de cada consulta, un álbum de comidas y un álbum diario de progreso (hasta 3 fotos o videos cortos por día). |
+| 📅 | **Historial** | Vistas por mes y por día comparadas con tus metas, con días seguidos y días sobre el 70 %. |
+| 🩺 | **Consultas** | Próxima cita con recordatorio la noche anterior y 2 horas antes. |
+| 📄 | **Reporte PDF** | Cumplimiento, gráficas diarias, tabla semanal, calendario de ejercicio y cardio, registro diario y consultas. Listo para compartir con tu nutricionista. |
+| 🏆 | **Logros** | Reconocimientos por tu constancia. |
+| 💾 | **Respaldos** | Copia automática diaria en `Download/Kiolog` (guarda las últimas 7), más respaldo y restauración manual. |
+| 🎨 | **A tu manera** | Cada módulo se enciende o apaga, y hay tres temas: Kiolog noche, Kiolog claro y Salvia. |
+
+## 🔒 Privacidad
+
+- 📵 **Sin cuentas ni servidores.** Todo vive en una base SQLite dentro del teléfono.
+- ✈️ **Funciona sin internet.** El registro diario es completamente local.
+- 🤝 **Tú decides qué compartir.** El reporte PDF sale solo cuando tú lo compartes.
+
+## 🛠️ Stack
 
 | Capa | Tecnología |
 |---|---|
@@ -37,11 +75,11 @@ lib/
 ├── features/    # nutrition, exercise, water, sleep, progress, history,
 │                # reports, achievements, onboarding, settings, home
 └── shared/      # widgets compartidos
+site/            # página del proyecto (GitHub Pages)
+docs/superpowers # especificaciones y planes de diseño
 ```
 
-Las especificaciones y planes de diseño están en `docs/superpowers/`.
-
-## Desarrollo
+## 🚀 Desarrollo
 
 Requisitos: Flutter 3.47 o superior y el SDK de Android.
 
@@ -51,12 +89,21 @@ dart run build_runner build --delete-conflicting-outputs   # genera el código d
 flutter test
 ```
 
-Para compilar e instalar en un teléfono arm64:
+Compilar e instalar en un teléfono arm64:
 
 ```bash
 flutter build apk --profile --target-platform android-arm64
 adb install -r build/app/outputs/flutter-apk/app-profile.apk
 ```
 
-> **Cuidado con la base de datos**: no instales en el teléfono una versión con un schema más viejo que el que ya tiene. Antes de instalar, respalda la base del teléfono:
-> `adb exec-out run-as com.kiolog.kiolog cat app_flutter/kiolog.sqlite > kiolog-backup.sqlite`
+> [!WARNING]
+> No instales en el teléfono una versión con un schema más viejo que el que ya tiene. Antes de instalar, respalda la base:
+> ```bash
+> adb exec-out run-as com.kiolog.kiolog cat app_flutter/kiolog.sqlite > kiolog-backup.sqlite
+> ```
+
+---
+
+<div align="center">
+<sub>Hecho con 💚 y Flutter · <a href="https://jesuszelayag.github.io/kiolog/">jesuszelayag.github.io/kiolog</a></sub>
+</div>
