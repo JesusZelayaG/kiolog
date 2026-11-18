@@ -56,6 +56,8 @@ Y como son datos de salud, se quedan en el teléfono: sin cuentas, sin servidore
 - ✈️ **Funciona sin internet.** El registro diario es completamente local.
 - 🤝 **Tú decides qué compartir.** El reporte PDF sale solo cuando tú lo compartes.
 
+Lee la [política de privacidad](https://jesuszelayag.github.io/kiolog/privacidad.html) completa.
+
 ## ⚕️ Aviso médico
 
 > [!IMPORTANT]
