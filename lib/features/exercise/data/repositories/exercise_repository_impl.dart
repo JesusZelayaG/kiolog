@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:kiolog/core/domain/day.dart';
 import 'package:drift/drift.dart';
 import 'package:kiolog/core/dao/exercise_dao.dart';
@@ -80,6 +82,8 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
     int orderIndex = 0,
     String? repsLabel,
     String? notes,
+    String? referenceUrl,
+    int? mediaId,
   }) =>
       _dao.insertExerciseRoutineItem(ExerciseRoutineItemsCompanion(
         routineId: Value(routineId),
@@ -91,6 +95,8 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
         orderIndex: Value(orderIndex),
         repsLabel: Value(repsLabel),
         notes: Value(notes),
+        referenceUrl: Value(referenceUrl),
+        mediaId: Value(mediaId),
       ));
 
   @override
@@ -104,6 +110,8 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
     int? orderIndex,
     ({String? value})? repsLabel,
     ({String? value})? notes,
+    ({String? value})? referenceUrl,
+    ({int? value})? mediaId,
   }) =>
       _dao.updateRoutineItem(
         itemId,
@@ -120,11 +128,20 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
           repsLabel:
               repsLabel != null ? Value(repsLabel.value) : const Value.absent(),
           notes: notes != null ? Value(notes.value) : const Value.absent(),
+          referenceUrl: referenceUrl != null ? Value(referenceUrl.value) : const Value.absent(),
+          mediaId: mediaId != null ? Value(mediaId.value) : const Value.absent(),
         ),
       );
 
   @override
   Future<void> deleteRoutineItem(int itemId) => _dao.deleteRoutineItem(itemId);
+
+  @override
+  Future<int> saveMedia({required Uint8List bytes, required String kind, required String extension}) =>
+      _dao.insertMedia(bytes: bytes, kind: kind, extension: extension);
+
+  @override
+  Future<ExerciseMediaData?> getMedia(int mediaId) => _dao.getMedia(mediaId);
 
   @override
   Future<List<ExerciseRoutineSetDef>> getRoutineSetDefs(int routineItemId) =>

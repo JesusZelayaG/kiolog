@@ -37,6 +37,7 @@ part 'app_database.g.dart';
     ExercisePlans,
     ExerciseRoutines,
     ExerciseRoutineItems,
+    ExerciseMedia,
     ExerciseRoutineSetDefs,
     DailyExerciseLogs,
     ExerciseSessionLogs,
@@ -80,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration {
@@ -163,6 +164,13 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 16) {
           await m.addColumn(mealPlanOptions, mealPlanOptions.mealIcon);
+        }
+        if (from < 17) {
+          await m.addColumn(exerciseRoutineItems, exerciseRoutineItems.referenceUrl);
+        }
+        if (from < 18) {
+          await m.createTable(exerciseMedia);
+          await m.addColumn(exerciseRoutineItems, exerciseRoutineItems.mediaId);
         }
       },
     );

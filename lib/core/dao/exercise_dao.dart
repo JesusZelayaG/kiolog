@@ -9,6 +9,7 @@ part 'exercise_dao.g.dart';
   ExerciseRoutines,
   ExerciseRoutineItems,
   ExerciseRoutineSetDefs,
+  ExerciseMedia,
   DailyExerciseLogs,
   ExerciseSessionLogs,
   ExerciseSetLogs,
@@ -108,12 +109,34 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
   Future<void> updateRoutineItem(
     int itemId,
     ExerciseRoutineItemsCompanion data,
-  ) =>
-      (update(exerciseRoutineItems)..where((t) => t.id.equals(itemId)))
-          .write(data);
+  ) async {
+    await (update(exerciseRoutineItems)..where((t) => t.id.equals(itemId))).write(data);
+    if (data.mediaId.present) await deleteUnusedMedia();
+  }
 
-  Future<void> deleteRoutineItem(int itemId) =>
-      (delete(exerciseRoutineItems)..where((t) => t.id.equals(itemId))).go();
+  Future<void> deleteRoutineItem(int itemId) async {
+    await (delete(exerciseRoutineItems)..where((t) => t.id.equals(itemId))).go();
+    await deleteUnusedMedia();
+  }
+
+  // ── Multimedia de referencia ─────────────────────────────────────────────
+
+  Future<int> insertMedia({required Uint8List bytes, required String kind, required String extension}) =>
+      into(exerciseMedia).insert(ExerciseMediaCompanion(
+        bytes: Value(bytes),
+        kind: Value(kind),
+        extension: Value(extension),
+        createdAt: Value(DateTime.now().toUtc()),
+      ));
+
+  Future<ExerciseMediaData?> getMedia(int id) =>
+      (select(exerciseMedia)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  /// Borra lo multimedia que ya no usa ningún ejercicio.
+  Future<void> deleteUnusedMedia() => customStatement(
+        'DELETE FROM exercise_media WHERE id NOT IN '
+        '(SELECT media_id FROM exercise_routine_items WHERE media_id IS NOT NULL)',
+      );
 
   // ── Routine Set Defs ──────────────────────────────────────────────────────
 

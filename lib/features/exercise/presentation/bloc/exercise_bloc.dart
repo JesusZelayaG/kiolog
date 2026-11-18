@@ -188,6 +188,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         orderIndex: event.orderIndex,
         repsLabel: event.repsLabel,
         notes: event.notes,
+        referenceUrl: event.referenceUrl,
+        mediaId: event.mediaId,
       );
       if (event.setDefs.isNotEmpty) {
         await _repository.replaceRoutineSetDefs(
@@ -218,6 +220,8 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
         setType: event.setType,
         repsLabel: event.repsLabel,
         notes: event.notes,
+        referenceUrl: event.referenceUrl,
+        mediaId: event.mediaId,
       );
       if (event.setDefs != null) {
         await _repository.replaceRoutineSetDefs(

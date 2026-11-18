@@ -70,6 +70,12 @@ class ExerciseRoutineItemAdded extends ExerciseEvent {
   final String? repsLabel;
   final String? notes;
 
+  /// Enlace al video o imagen de referencia.
+  final String? referenceUrl;
+
+  /// Foto, GIF o video de la galería, ya guardado.
+  final int? mediaId;
+
   const ExerciseRoutineItemAdded({
     required this.routineId,
     required this.exerciseName,
@@ -81,11 +87,13 @@ class ExerciseRoutineItemAdded extends ExerciseEvent {
     this.setDefs = const [],
     this.repsLabel,
     this.notes,
+    this.referenceUrl,
+    this.mediaId,
   });
 
   @override
   List<Object?> get props =>
-      [routineId, exerciseName, sets, reps, weightKg, setType, orderIndex];
+      [routineId, exerciseName, sets, reps, weightKg, setType, orderIndex, referenceUrl, mediaId];
 }
 
 class ExerciseRoutineItemUpdated extends ExerciseEvent {
@@ -99,6 +107,8 @@ class ExerciseRoutineItemUpdated extends ExerciseEvent {
       setDefs;
   final ({String? value})? repsLabel;
   final ({String? value})? notes;
+  final ({String? value})? referenceUrl;
+  final ({int? value})? mediaId;
 
   const ExerciseRoutineItemUpdated({
     required this.itemId,
@@ -110,11 +120,13 @@ class ExerciseRoutineItemUpdated extends ExerciseEvent {
     this.setDefs,
     this.repsLabel,
     this.notes,
+    this.referenceUrl,
+    this.mediaId,
   });
 
   @override
   List<Object?> get props =>
-      [itemId, exerciseName, sets, reps, weightKg, setType, repsLabel, notes];
+      [itemId, exerciseName, sets, reps, weightKg, setType, repsLabel, notes, referenceUrl, mediaId];
 }
 
 class ExerciseRoutineItemDeleted extends ExerciseEvent {

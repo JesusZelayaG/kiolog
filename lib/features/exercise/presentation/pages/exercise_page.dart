@@ -14,6 +14,7 @@ import 'package:kiolog/core/modules/cubit/modules_state.dart';
 import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:kiolog/features/exercise/domain/reps.dart';
 import 'package:kiolog/shared/widgets/entrance.dart';
+import 'package:kiolog/shared/widgets/exercise_reference.dart';
 import 'package:kiolog/shared/widgets/inactive_module_page.dart';
 import 'package:kiolog/shared/widgets/kiolog_glyphs.dart';
 import 'package:kiolog/shared/widgets/themed_page.dart';
@@ -595,6 +596,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
     final notesCtrl = TextEditingController(text: item?.notes ?? '');
     final weightCtrl = TextEditingController(
         text: item?.weightKg != null ? '${item!.weightKg}' : '');
+    final reference = ReferenceDraft(link: item?.referenceUrl, mediaId: item?.mediaId);
 
     showDialog(
       context: context,
@@ -646,6 +648,8 @@ class _ExerciseViewState extends State<_ExerciseView> {
                 minLines: 1,
                 maxLines: 4,
               ),
+              const SizedBox(height: 8),
+              ReferenceEditor(draft: reference),
             ],
           ),
         ),
@@ -655,11 +659,14 @@ class _ExerciseViewState extends State<_ExerciseView> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final name = nameCtrl.text.trim();
               final sets = int.tryParse(setsCtrl.text);
               final parsed = parseReps(repsCtrl.text);
               if (name.isEmpty || sets == null || parsed == null) return;
+              final bloc = context.read<ExerciseBloc>();
+              final navigator = Navigator.of(dialogContext);
+              final mediaId = await reference.saveMedia();
               final (reps, repsLabel) = parsed;
               final notes = notesCtrl.text.trim().isEmpty
                   ? null
@@ -668,7 +675,7 @@ class _ExerciseViewState extends State<_ExerciseView> {
                   double.tryParse(weightCtrl.text.replaceAll(',', '.'));
 
               if (item == null) {
-                context.read<ExerciseBloc>().add(
+                bloc.add(
                       ExerciseRoutineItemAdded(
                         routineId: routineId,
                         exerciseName: name,
@@ -677,10 +684,12 @@ class _ExerciseViewState extends State<_ExerciseView> {
                         weightKg: weight,
                         repsLabel: repsLabel,
                         notes: notes,
+                        referenceUrl: reference.url,
+                        mediaId: mediaId,
                       ),
                     );
               } else {
-                context.read<ExerciseBloc>().add(
+                bloc.add(
                       ExerciseRoutineItemUpdated(
                         itemId: item.id,
                         exerciseName: name,
@@ -689,10 +698,12 @@ class _ExerciseViewState extends State<_ExerciseView> {
                         weightKg: weight,
                         repsLabel: (value: repsLabel),
                         notes: (value: notes),
+                        referenceUrl: (value: reference.url),
+                        mediaId: (value: mediaId),
                       ),
                     );
               }
-              Navigator.pop(dialogContext);
+              navigator.pop();
             },
             child: const Text('Guardar'),
           ),
@@ -1376,6 +1387,18 @@ class _RoutineTile extends StatelessWidget {
                                         ],
                                       ),
                                     ),
+                                    if (item.referenceUrl != null || item.mediaId != null)
+                                      IconButton(
+                                        tooltip: 'Ver referencia',
+                                        visualDensity: VisualDensity.compact,
+                                        icon: Icon(IconsaxPlusBold.video_play, size: 18, color: cs.primary),
+                                        onPressed: () => showReferenceSheet(
+                                          context,
+                                          item.exerciseName,
+                                          url: item.referenceUrl,
+                                          mediaId: item.mediaId,
+                                        ),
+                                      ),
                                     IconButton(
                                       tooltip: 'Editar',
                                       visualDensity: VisualDensity.compact,

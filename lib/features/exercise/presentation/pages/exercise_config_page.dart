@@ -4,6 +4,7 @@ import 'package:kiolog/core/di/injection.dart';
 import 'package:kiolog/core/domain/app_module.dart';
 import 'package:kiolog/core/modules/cubit/modules_cubit.dart';
 import 'package:kiolog/features/exercise/domain/repositories/exercise_repository.dart';
+import 'package:kiolog/shared/widgets/exercise_reference.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 
 class ExerciseConfigPage extends StatefulWidget {
@@ -40,10 +41,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
     for (final day in _routineDays) {
       day.nameController.dispose();
       for (final e in day.exercises) {
-        e.name.dispose();
-        e.sets.dispose();
-        e.reps.dispose();
-        e.weight.dispose();
+        e.dispose();
       }
     }
     super.dispose();
@@ -95,6 +93,8 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
           entry.sets.text = '${item.sets}';
           entry.reps.text = '${item.reps}';
           if (item.weightKg != null) entry.weight.text = '${item.weightKg}';
+          entry.reference.link.text = item.referenceUrl ?? '';
+          entry.reference.mediaId = item.mediaId;
           day.exercises.add(entry);
         }
         newDays.add(day);
@@ -104,10 +104,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
       for (final day in _routineDays) {
         day.nameController.dispose();
         for (final e in day.exercises) {
-          e.name.dispose();
-          e.sets.dispose();
-          e.reps.dispose();
-          e.weight.dispose();
+          e.dispose();
         }
       }
 
@@ -152,6 +149,8 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
             sets: sets,
             reps: reps,
             weightKg: weight,
+            referenceUrl: ex.reference.url,
+            mediaId: await ex.reference.saveMedia(),
           );
         }
       }
@@ -225,10 +224,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
                           final removed = _routineDays.removeAt(index);
                           removed.nameController.dispose();
                           for (final e in removed.exercises) {
-                            e.name.dispose();
-                            e.sets.dispose();
-                            e.reps.dispose();
-                            e.weight.dispose();
+                            e.dispose();
                           }
                         });
                       },
@@ -252,10 +248,7 @@ class _ExerciseConfigPageState extends State<ExerciseConfigPage> {
                           onDelete: () {
                             setState(() {
                               final removed = day.exercises.removeAt(e.key);
-                              removed.name.dispose();
-                              removed.sets.dispose();
-                              removed.reps.dispose();
-                              removed.weight.dispose();
+                              removed.dispose();
                             });
                           },
                         );
@@ -305,6 +298,17 @@ class _ExerciseEntryLocal {
   final sets = TextEditingController(text: '3');
   final reps = TextEditingController(text: '10');
   final weight = TextEditingController();
+
+  /// Enlace y multimedia de referencia.
+  final reference = ReferenceDraft();
+
+  void dispose() {
+    name.dispose();
+    sets.dispose();
+    reps.dispose();
+    weight.dispose();
+    reference.dispose();
+  }
 }
 
 class _ExerciseRowLocal extends StatelessWidget {
@@ -381,6 +385,8 @@ class _ExerciseRowLocal extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          ReferenceEditor(draft: entry.reference, dense: true),
           const Divider(height: 24),
         ],
       ),

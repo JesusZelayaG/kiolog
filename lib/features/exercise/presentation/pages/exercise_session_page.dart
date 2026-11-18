@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kiolog/core/database/app_database.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:kiolog/shared/widgets/exercise_reference.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 import 'package:kiolog/shared/widgets/vitality_progress_bar.dart';
 import '../bloc/exercise_bloc.dart';
@@ -158,6 +160,18 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
                   '${item.notes == null ? '' : '\n${item.notes}'}',
                 ),
               ),
+              trailing: (item.referenceUrl == null && item.mediaId == null) || isExpanded
+                  ? null
+                  : IconButton(
+                      tooltip: 'Ver cómo se hace',
+                      icon: Icon(IconsaxPlusBold.video_play, color: Theme.of(context).colorScheme.primary),
+                      onPressed: () => showReferenceSheet(
+                        context,
+                        item.exerciseName,
+                        url: item.referenceUrl,
+                        mediaId: item.mediaId,
+                      ),
+                    ),
               onTap: isCompleted
                   ? null
                   : () {
@@ -491,6 +505,12 @@ class _ExerciseSessionPageState extends State<ExerciseSessionPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Cómo se hace: el video o la imagen que puso el usuario ──
+          if (item.referenceUrl != null || item.mediaId != null) ...[
+            const SizedBox(height: 4),
+            ExerciseReference(url: item.referenceUrl, mediaId: item.mediaId),
+            const SizedBox(height: 8),
+          ],
           // ── Referencia histórica ──────────────────────────────────────
           BlocBuilder<ExerciseWeightUnitCubit, String>(
             builder: (ctx, unit) => Column(

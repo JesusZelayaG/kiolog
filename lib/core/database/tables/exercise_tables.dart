@@ -39,6 +39,26 @@ class ExerciseRoutineItems extends Table {
 
   /// Indicaciones del entrenador para este ejercicio.
   TextColumn get notes => text().nullable()();
+
+  /// Enlace a un video o imagen de cómo se hace, que pone el usuario.
+  TextColumn get referenceUrl => text().nullable()();
+
+  /// Foto, GIF o video de referencia cargado de la galería; ver [ExerciseMedia].
+  IntColumn get mediaId => integer().nullable().references(ExerciseMedia, #id)();
+}
+
+/// Lo multimedia de referencia de los ejercicios, dentro de la base para que
+/// el respaldo siga siendo un solo archivo.
+class ExerciseMedia extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  BlobColumn get bytes => blob()();
+
+  /// image | video
+  TextColumn get kind => text()();
+
+  /// La extensión original (jpg, gif, mp4…), para reproducir el video.
+  TextColumn get extension => text()();
+  DateTimeColumn get createdAt => dateTime()();
 }
 
 /// Definiciones opcionales por serie de un ítem de rutina.

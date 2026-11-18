@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:kiolog/core/database/app_database.dart';
 import '../models/independent_exercise_log.dart';
 import '../models/plan_compliance_stat.dart';
@@ -33,6 +35,8 @@ abstract class ExerciseRepository {
     int orderIndex = 0,
     String? repsLabel,
     String? notes,
+    String? referenceUrl,
+    int? mediaId,
   });
 
   /// [repsLabel] y [notes]: null no los toca; un registro con null los borra.
@@ -46,8 +50,15 @@ abstract class ExerciseRepository {
     int? orderIndex,
     ({String? value})? repsLabel,
     ({String? value})? notes,
+    ({String? value})? referenceUrl,
+    ({int? value})? mediaId,
   });
   Future<void> deleteRoutineItem(int itemId);
+
+  /// Guarda una foto, GIF o video de referencia y devuelve su id.
+  Future<int> saveMedia({required Uint8List bytes, required String kind, required String extension});
+
+  Future<ExerciseMediaData?> getMedia(int mediaId);
 
   // ── Routine Set Defs ───────────────────────────────────────────────────
   Future<List<ExerciseRoutineSetDef>> getRoutineSetDefs(int routineItemId);
