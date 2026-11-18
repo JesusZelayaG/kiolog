@@ -131,7 +131,7 @@ class _MonthCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              _RoundButton(icon: IconsaxPlusLinear.arrow_left_3, tooltip: 'Mes anterior', onTap: cubit.previous),
+              _RoundButton(icon: IconsaxPlusLinear.arrow_right_3, flip: true, tooltip: 'Mes anterior', onTap: cubit.previous),
               Expanded(
                 child: Text(
                   label[0].toUpperCase() + label.substring(1),
@@ -229,9 +229,12 @@ class _MonthCard extends StatelessWidget {
 }
 
 class _RoundButton extends StatelessWidget {
-  const _RoundButton({required this.icon, required this.tooltip, required this.onTap});
+  const _RoundButton({required this.icon, required this.tooltip, required this.onTap, this.flip = false});
 
   final IconData icon;
+
+  /// Voltea el ícono: la flecha izquierda de Iconsax no hace juego con la derecha.
+  final bool flip;
   final String tooltip;
   final VoidCallback? onTap;
 
@@ -249,7 +252,10 @@ class _RoundButton extends StatelessWidget {
           child: SizedBox(
             width: 40,
             height: 40,
-            child: Icon(icon, size: 18, color: onTap == null ? cs.outline : cs.onSurface),
+            child: Transform.flip(
+              flipX: flip,
+              child: Icon(icon, size: 18, color: onTap == null ? cs.outline : cs.onSurface),
+            ),
           ),
         ),
       ),

@@ -5,7 +5,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:kiolog/core/database/app_database.dart';
@@ -159,11 +158,13 @@ class _NutritionView extends StatelessWidget {
 
   void _showPlansDialog(BuildContext context) {
     context.read<NutritionBloc>().add(const NutritionPlanLoaded());
-    showDialog<void>(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (dialogContext) => BlocProvider.value(
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => BlocProvider.value(
         value: context.read<NutritionBloc>(),
-        child: const _PlansDialog(),
+        child: const _PlansSheet(),
       ),
     );
   }
@@ -202,11 +203,6 @@ class _Header extends StatelessWidget {
         ),
         HeaderIconButton(icon: IconsaxPlusBold.chart_2, tooltip: 'Progreso', onTap: onProgress),
         HeaderIconButton(icon: IconsaxPlusBold.book_1, tooltip: 'Planes', onTap: onPlans),
-        HeaderIconButton(
-          icon: IconsaxPlusBold.calendar_1,
-          tooltip: 'Historial',
-          onTap: () => context.push('/history'),
-        ),
       ],
     );
   }
@@ -455,87 +451,148 @@ class _EmptyPlanCard extends StatelessWidget {
 
 // ── Diálogo de planes ────────────────────────────────────────────────────────
 
-class _PlansDialog extends StatelessWidget {
-  const _PlansDialog();
+class _PlansSheet extends StatelessWidget {
+  const _PlansSheet();
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return AlertDialog(
-      title: const Text('Planes alimenticios'),
-      content: SizedBox(
-        width: double.maxFinite,
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.8),
         child: BlocBuilder<NutritionBloc, NutritionState>(
           builder: (context, state) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
+            final plans = [...state.allPlans]..sort((a, b) {
+                if (a.isActive != b.isActive) return a.isActive ? -1 : 1;
+                return (b.periodStart ?? b.createdAt).compareTo(a.periodStart ?? a.createdAt);
+              });
+            return ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
               children: [
-                if (state.allPlans.isEmpty)
-                  const Text('No hay planes registrados.')
-                else
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: state.allPlans.length,
-                      itemBuilder: (context, index) {
-                        final plan = state.allPlans[index];
-                        final isActive = plan.id == state.activePlan?.id;
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Container(
-                            width: 40,
-                            height: 40,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: isActive ? context.kc.foodWash : cs.surfaceContainerHigh,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Icon(
-                              isActive ? IconsaxPlusBold.book_1 : IconsaxPlusLinear.book_1,
-                              size: 20,
-                              color: isActive ? context.kc.foodInk : cs.onSurfaceVariant,
-                            ),
-                          ),
-                          title: Text(plan.name),
-                          subtitle: Text(
-                            '${plan.isActive ? 'Plan actual' : 'Plan anterior'}'
-                            ' · ${DateFormat('dd/MM/yy').format((plan.periodStart ?? plan.createdAt).toLocal())}',
-                          ),
-                          trailing: PopupMenuButton<_PlanAction>(
-                            icon: const Icon(IconsaxPlusLinear.more),
-                            onSelected: (action) => _onPlanAction(context, action, plan),
-                            itemBuilder: (_) => [
-                              if (!isActive)
-                                const PopupMenuItem(value: _PlanAction.activate, child: Text('Activar')),
-                              const PopupMenuItem(value: _PlanAction.edit, child: Text('Editar')),
-                              const PopupMenuItem(value: _PlanAction.delete, child: Text('Borrar')),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                PillButton(
-                  icon: IconsaxPlusLinear.add,
-                  label: 'Nuevo plan',
-                  onTap: () {
+                Text('Tus planes', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 4),
+                Text(
+                  'Cada consulta trae un plan nuevo. Activa uno para registrar con él.',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 14),
+                if (plans.isEmpty) Text('No hay planes registrados.', style: theme.textTheme.bodyMedium),
+                for (final plan in plans) _PlanCard(plan: plan),
+                const SizedBox(height: 6),
+                ElevatedButton.icon(
+                  onPressed: () {
                     final bloc = context.read<NutritionBloc>();
                     Navigator.pop(context);
                     _pushPlanForm(context, bloc);
                   },
+                  icon: const Icon(IconsaxPlusLinear.add),
+                  label: const Text('Nuevo plan'),
                 ),
               ],
             );
           },
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cerrar'),
+    );
+  }
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({required this.plan});
+
+  final MealPlan plan;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final kc = context.kc;
+    final f = DateFormat('d MMM yyyy', 'es');
+    final start = (plan.periodStart ?? plan.createdAt).toLocal();
+    final end = plan.periodEnd?.toLocal();
+    final dates = end == null ? 'Desde el ${f.format(start)}' : '${f.format(start)} – ${f.format(end)}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: plan.isActive ? kc.foodWash : cs.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: plan.isActive ? cs.primary.withValues(alpha: 0.5) : Colors.transparent),
         ),
-      ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(
+                    plan.isActive ? IconsaxPlusBold.book_1 : IconsaxPlusLinear.book_1,
+                    size: 20,
+                    color: plan.isActive ? kc.foodInk : cs.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(plan.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                      Text(dates, style: theme.textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+                if (plan.isActive)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: ShapeDecoration(gradient: kc.brandGradient, shape: const StadiumBorder()),
+                    child: Text('Activo', style: theme.textTheme.labelSmall?.copyWith(color: Colors.white, fontSize: 11)),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (!plan.isActive) ...[
+                  Expanded(
+                    child: PillButton(
+                      icon: IconsaxPlusLinear.tick_circle,
+                      label: 'Activar',
+                      color: cs.primary,
+                      onTap: () => _onPlanAction(context, _PlanAction.activate, plan),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: PillButton(
+                    icon: IconsaxPlusLinear.edit_2,
+                    label: 'Editar',
+                    onTap: () => _onPlanAction(context, _PlanAction.edit, plan),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: PillButton(
+                    icon: IconsaxPlusLinear.trash,
+                    label: 'Borrar',
+                    color: cs.error,
+                    onTap: () => _onPlanAction(context, _PlanAction.delete, plan),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

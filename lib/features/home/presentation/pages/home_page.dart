@@ -164,7 +164,7 @@ class _HomeViewState extends State<_HomeView>
                     ),
                     _RoutineCard(state: state),
                     const NextConsultationCard(
-                        compact: true, hideWhenEmpty: true),
+                        compact: true),
                   ];
                   return RefreshIndicator(
                     onRefresh: () async => context

@@ -8,6 +8,10 @@ import 'package:kiolog/core/notifications/notification_service.dart';
 import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 
+/// "9:30 a.m.": intl escribe "a. m.", que se ve cortado en una línea.
+String consultationTime(DateTime at) =>
+    '${DateFormat('h:mm', 'es').format(at)} ${at.hour < 12 ? 'a.m.' : 'p.m.'}';
+
 /// Cuántos días faltan, contando días de calendario.
 String daysUntilLabel(DateTime at, DateTime now) {
   final days = DateTime(at.year, at.month, at.day)
@@ -30,7 +34,8 @@ class NextConsultationCard extends StatefulWidget {
     this.compact = false,
   });
 
-  /// Una franja corta (Home): tocar edita, mantener presionado la quita.
+  /// Una franja corta (Home): agenda si no hay consulta y, si la hay,
+  /// abre una hoja para re-agendarla o cancelarla.
   final bool compact;
 
   /// En Inicio no se muestra nada si no hay cita.
@@ -63,7 +68,8 @@ class _NextConsultationCardState extends State<NextConsultationCard> {
     });
   }
 
-  Future<void> _edit() async {
+  /// Pide fecha y hora y la guarda; devuelve la nueva, o null si se canceló.
+  Future<DateTime?> _edit() async {
     final now = DateTime.now();
     final initial = _at != null && _at!.isAfter(now)
         ? _at!
@@ -75,15 +81,16 @@ class _NextConsultationCardState extends State<NextConsultationCard> {
       lastDate: now.add(const Duration(days: 365)),
       helpText: 'Fecha de la consulta',
     );
-    if (date == null || !mounted) return;
+    if (date == null || !mounted) return null;
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initial),
       helpText: 'Hora de la consulta',
     );
-    if (time == null) return;
-    await _save(
-        DateTime(date.year, date.month, date.day, time.hour, time.minute));
+    if (time == null) return null;
+    final at = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    await _save(at);
+    return at;
   }
 
   Future<void> _save(DateTime? at) async {
@@ -98,9 +105,9 @@ class _NextConsultationCardState extends State<NextConsultationCard> {
     if (!_loaded) return const SizedBox.shrink();
     final at = _at;
     final upcoming = at != null && at.isAfter(DateTime.now());
+    if (widget.compact) return _buildCompact(context, upcoming ? at : null, past: at != null && !upcoming);
     if (widget.hideWhenEmpty && !upcoming) return const SizedBox.shrink();
     final theme = Theme.of(context);
-    if (widget.compact && at != null) return _buildCompact(context, at);
 
     return Padding(
       padding: widget.margin,
@@ -114,7 +121,7 @@ class _NextConsultationCardState extends State<NextConsultationCard> {
           subtitle: Text(
             at == null
                 ? 'Toca para agendarla y recibir un aviso'
-                : '${_capitalize(DateFormat("EEEE d 'de' MMMM, h:mm a", 'es').format(at))}'
+                : '${_capitalize(DateFormat("EEEE d 'de' MMMM", 'es').format(at))}, ${consultationTime(at)}'
                     ' · ${daysUntilLabel(at, DateTime.now())}',
             style: theme.textTheme.bodyMedium,
           ),
@@ -133,10 +140,122 @@ class _NextConsultationCardState extends State<NextConsultationCard> {
 }
 
 extension on _NextConsultationCardState {
-  Widget _buildCompact(BuildContext context, DateTime at) {
+  String _when(DateTime at) =>
+      '${_capitalize(DateFormat("EEEE d 'de' MMMM", 'es').format(at))} · ${consultationTime(at)}';
+
+  void _toast(String text) => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(text)));
+
+  Future<void> _schedule() async {
+    final at = await _edit();
+    if (at != null && mounted) _toast('Consulta agendada: ${_when(at)}. Te aviso antes.');
+  }
+
+  Future<void> _reschedule() async {
+    final at = await _edit();
+    if (at != null && mounted) _toast('Consulta re-agendada: ${_when(at)}');
+  }
+
+  Future<void> _cancel() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancelar consulta'),
+        content: const Text('Se quitan la fecha y sus avisos. Puedes agendarla de nuevo cuando quieras.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Volver')),
+          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Cancelar consulta')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await _save(null);
+    if (mounted) _toast('Consulta cancelada');
+  }
+
+  /// La hoja con la consulta agendada y qué hacer con ella.
+  Future<void> _openSheet(DateTime at) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final cs = theme.colorScheme;
+        final kc = sheetContext.kc;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: kc.waterWash, borderRadius: BorderRadius.circular(16)),
+                      child: Icon(IconsaxPlusBold.calendar_tick, color: cs.primary, size: 26),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Próxima consulta', style: theme.textTheme.labelSmall?.copyWith(color: cs.primary)),
+                          Text(_when(at), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                          Text(_capitalize(daysUntilLabel(at, DateTime.now())), style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Te aviso la noche anterior y 2 horas antes.',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 18),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(sheetContext, 'reschedule'),
+                  icon: const Icon(IconsaxPlusLinear.calendar_edit),
+                  label: const Text('Re-agendar'),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () => Navigator.pop(sheetContext, 'cancel'),
+                  style: TextButton.styleFrom(foregroundColor: cs.error),
+                  icon: const Icon(IconsaxPlusLinear.calendar_remove),
+                  label: const Text('Cancelar consulta'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (!mounted) return;
+    if (action == 'reschedule') await _reschedule();
+    if (action == 'cancel') await _cancel();
+  }
+
+  Widget _buildCompact(BuildContext context, DateTime? at, {required bool past}) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final days = daysUntilLabel(at, DateTime.now()).replaceFirst('faltan ', '');
+    final kc = context.kc;
+    final scheduled = at != null;
+    final title = scheduled
+        ? 'Próxima consulta'
+        : past
+            ? '¿Ya fuiste a tu consulta?'
+            : 'Agenda tu próxima consulta';
+    final subtitle = scheduled
+        ? '${_capitalize(DateFormat('EEE d MMM', 'es').format(at).replaceAll('.', ''))} · ${consultationTime(at)}'
+        : past
+            ? 'Agenda la siguiente y te aviso antes'
+            : 'Te aviso la noche anterior y 2 h antes';
     return Padding(
       padding: widget.margin,
       child: Material(
@@ -144,8 +263,7 @@ extension on _NextConsultationCardState {
         borderRadius: BorderRadius.circular(22),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: _edit,
-          onLongPress: () => _save(null),
+          onTap: scheduled ? () => _openSheet(at) : _schedule,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -154,33 +272,41 @@ extension on _NextConsultationCardState {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: context.kc.waterWash,
+                    color: kc.waterWash,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(IconsaxPlusBold.calendar_tick, size: 22, color: cs.primary),
+                  child: Icon(
+                    scheduled ? IconsaxPlusBold.calendar_tick : IconsaxPlusBold.calendar_add,
+                    size: 22,
+                    color: cs.primary,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Próxima consulta',
-                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                      Text(
-                        _capitalize(DateFormat("EEE d MMM · h:mm a", 'es').format(at).replaceAll('.', '')),
-                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 13),
-                      ),
+                      Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(fontSize: 13)),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: ShapeDecoration(color: context.kc.waterWash, shape: const StadiumBorder()),
-                  child: Text(
-                    days,
-                    style: theme.textTheme.labelMedium?.copyWith(color: cs.primary, fontWeight: FontWeight.w800),
+                if (scheduled)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: ShapeDecoration(color: kc.waterWash, shape: const StadiumBorder()),
+                    child: Text(
+                      daysUntilLabel(at, DateTime.now()).replaceFirst('faltan ', ''),
+                      style: theme.textTheme.labelMedium?.copyWith(color: cs.primary, fontWeight: FontWeight.w800),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(gradient: kc.brandGradient, shape: BoxShape.circle),
+                    child: const Icon(IconsaxPlusLinear.add, color: Colors.white, size: 20),
                   ),
-                ),
               ],
             ),
           ),

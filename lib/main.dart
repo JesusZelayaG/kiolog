@@ -1,6 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/dao/user_profile_dao.dart';
 import 'core/database/app_database.dart';
@@ -78,6 +79,10 @@ class _KiologAppState extends State<KiologApp> {
       child: BlocBuilder<ThemeCubit, KiologThemeId>(
         builder: (context, themeId) => MaterialApp.router(
           title: 'Kiolog',
+          // Calendarios, relojes y botones de Material en español.
+          locale: const Locale('es'),
+          supportedLocales: const [Locale('es')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
           theme: AppTheme.of(themeId),
           routerConfig: _router,
           debugShowCheckedModeBanner: false,
