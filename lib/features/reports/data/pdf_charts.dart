@@ -4,15 +4,20 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-/// Colores de las gráficas. El par pasa el validador de daltonismo sobre
-/// fondo claro; el texto nunca usa el color de una serie.
+/// Colores del reporte: el azul marino y los verdes del logo de Kiolog, y un
+/// color por módulo como en la app. El texto nunca usa el color de una serie.
 abstract final class ChartColors {
-  static final primary = PdfColor.fromHex('#00785A');
-  static final secondary = PdfColor.fromHex('#D97B1E');
-  static final ink = PdfColor.fromHex('#1F2937');
-  static final muted = PdfColor.fromHex('#6B7280');
-  static final grid = PdfColor.fromHex('#E7E5E4');
-  static final goal = PdfColor.fromHex('#78716C');
+  static final navy = PdfColor.fromHex('#0B1123');
+  static final primary = PdfColor.fromHex('#1E7A4C');
+  static final lime = PdfColor.fromHex('#6DAE3E');
+  static final secondary = PdfColor.fromHex('#E0A84A');
+  static final cardio = PdfColor.fromHex('#3A9A78');
+  static final water = PdfColor.fromHex('#3B8FA3');
+  static final sleep = PdfColor.fromHex('#6C78A8');
+  static final ink = PdfColor.fromHex('#1B2A22');
+  static final muted = PdfColor.fromHex('#66756C');
+  static final grid = PdfColor.fromHex('#EEF2EA');
+  static final goal = PdfColor.fromHex('#66756C');
 }
 
 class ChartSeries {
@@ -29,7 +34,7 @@ const _axisWidth = 30.0;
 const _xLabelHeight = 14.0;
 const _topPad = 8.0;
 const _gap = 2.0;
-const _radius = 2.0;
+const _radius = 2.5;
 
 /// Barras por día. Con dos series se apilan (la primera abajo).
 pw.Widget barChart({
@@ -108,23 +113,48 @@ pw.Widget lineChart({
           if (series.values[i] != null)
             PdfPoint(i * slot + slot / 2, (series.values[i]! - min) / (max - min) * h),
       ];
-      canvas
-        ..setStrokeColor(series.color)
-        ..setLineWidth(1.5)
-        ..setLineJoin(PdfLineJoin.round)
-        ..setLineCap(PdfLineCap.round);
-      for (final (i, p) in points.indexed) {
-        i == 0 ? canvas.moveTo(p.x, p.y) : canvas.lineTo(p.x, p.y);
+      if (points.isEmpty) return;
+      // Curva suave entre puntos, como en la app.
+      void trace() {
+        canvas.moveTo(points.first.x, points.first.y);
+        for (var i = 1; i < points.length; i++) {
+          final a = points[i - 1];
+          final b = points[i];
+          final mid = (a.x + b.x) / 2;
+          canvas.curveTo(mid, a.y, mid, b.y, b.x, b.y);
+        }
       }
-      if (points.length > 1) canvas.strokePath();
-      for (final p in points) {
-        // Anillo de superficie para que el punto se lea sobre la línea.
+
+      if (points.length > 1) {
+        // Relleno tenue bajo la línea.
+        canvas
+          ..saveContext()
+          ..setGraphicState(const PdfGraphicState(fillOpacity: 0.16))
+          ..setFillColor(ChartColors.lime);
+        trace();
+        canvas
+          ..lineTo(points.last.x, 0)
+          ..lineTo(points.first.x, 0)
+          ..closePath()
+          ..fillPath()
+          ..restoreContext();
+        canvas
+          ..setStrokeColor(series.color)
+          ..setLineWidth(2)
+          ..setLineJoin(PdfLineJoin.round)
+          ..setLineCap(PdfLineCap.round);
+        trace();
+        canvas.strokePath();
+      }
+      for (final (i, p) in points.indexed) {
+        final last = i == points.length - 1;
+        // Anillo blanco para que el punto se lea sobre la línea; el último resalta.
         canvas
           ..setFillColor(PdfColors.white)
-          ..drawEllipse(p.x, p.y, 3.4, 3.4)
+          ..drawEllipse(p.x, p.y, last ? 4.2 : 2.8, last ? 4.2 : 2.8)
           ..fillPath()
-          ..setFillColor(series.color)
-          ..drawEllipse(p.x, p.y, 2.4, 2.4)
+          ..setFillColor(last ? ChartColors.lime : series.color)
+          ..drawEllipse(p.x, p.y, last ? 3 : 1.8, last ? 3 : 1.8)
           ..fillPath();
       }
     },

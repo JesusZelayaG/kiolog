@@ -103,7 +103,11 @@ void main() {
   setUpAll(() => initializeDateFormatting('es'));
 
   test('builds a multi-page PDF from a month of records', () async {
-    final bytes = await PdfReportService.build(_month(), now: DateTime(2026, 11, 30));
+    final bytes = await PdfReportService.build(
+      _month(),
+      now: DateTime(2026, 11, 30),
+      logo: File('assets/img/splash_logo.png').readAsBytesSync(),
+    );
 
     expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
     expect(bytes.length, greaterThan(10000));

@@ -28,18 +28,32 @@ Widget _wrap(ModulesState state) {
 }
 
 void main() {
+  // Pantalla de teléfono: la lista construye todos los módulos.
+  setUp(() {
+    final view = TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
+    view.physicalSize = const Size(1080, 2400);
+    view.devicePixelRatio = 2.625;
+  });
+  tearDown(() {
+    final view = TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
+    view.resetPhysicalSize();
+    view.resetDevicePixelRatio();
+  });
+
   setUpAll(() {
     registerFallbackValue(AppModule.nutrition);
   });
 
   group('Settings — Módulos activos', () {
-    testWidgets('shows Módulos activos section header', (tester) async {
+    testWidgets('shows the modules section header', (tester) async {
       await tester.pumpWidget(_wrap(ModulesState(statuses: {
         AppModule.nutrition: true,
         AppModule.water: true,
         AppModule.exercise: true,
       })));
-      expect(find.text('Módulos activos'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.text('MÓDULOS'), findsOneWidget);
+      expect(find.text('3 de 3 encendidos'), findsOneWidget);
     });
 
     testWidgets('shows three module switch tiles', (tester) async {
@@ -48,6 +62,7 @@ void main() {
         AppModule.water: true,
         AppModule.exercise: true,
       })));
+      await tester.pumpAndSettle();
       expect(find.byType(SwitchListTile), findsNWidgets(3));
     });
 
@@ -57,6 +72,7 @@ void main() {
         AppModule.water: true,
         AppModule.exercise: true,
       })));
+      await tester.pumpAndSettle();
       final switches = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
@@ -72,6 +88,7 @@ void main() {
         AppModule.water: true,
         AppModule.exercise: true,
       })));
+      await tester.pumpAndSettle();
       final switches = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
