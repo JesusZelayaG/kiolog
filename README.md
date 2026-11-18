@@ -13,6 +13,7 @@ con el reporte para tu nutricionista listo antes de cada consulta.
 ![Plataforma](https://img.shields.io/badge/plataforma-Android-3FAE6A?style=flat-square&logo=android&logoColor=white)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-1E7A4C?style=flat-square&logo=flutter&logoColor=white)
 ![Offline first](https://img.shields.io/badge/offline-first-8BBF3F?style=flat-square)
+![Licencia](https://img.shields.io/badge/licencia-Apache%202.0-2E8A55?style=flat-square)
 
 <img src="site/img/inicio.webp" alt="Inicio" width="200">&nbsp;
 <img src="site/img/nutricion.webp" alt="Nutrición" width="200">&nbsp;
@@ -54,6 +55,11 @@ Y como son datos de salud, se quedan en el teléfono: sin cuentas, sin servidore
 - 📵 **Sin cuentas ni servidores.** Todo vive en una base SQLite dentro del teléfono.
 - ✈️ **Funciona sin internet.** El registro diario es completamente local.
 - 🤝 **Tú decides qué compartir.** El reporte PDF sale solo cuando tú lo compartes.
+
+## ⚕️ Aviso médico
+
+> [!IMPORTANT]
+> Kiolog es una bitácora personal. **No es un dispositivo médico** y no diagnostica, trata ni previene ninguna condición de salud. La información que registras y los reportes que genera no sustituyen la valoración ni las indicaciones de tu nutricionista, médico u otro profesional de la salud. Consulta siempre a un profesional antes de cambiar tu alimentación, tu actividad física o cualquier tratamiento.
 
 ## 🛠️ Stack
 
@@ -101,6 +107,16 @@ adb install -r build/app/outputs/flutter-apk/app-profile.apk
 > ```bash
 > adb exec-out run-as com.kiolog.kiolog cat app_flutter/kiolog.sqlite > kiolog-backup.sqlite
 > ```
+
+## 📜 Licencia
+
+Kiolog es software libre bajo la [Licencia Apache 2.0](LICENSE). Puedes usarlo, modificarlo y distribuirlo, también con fines comerciales, siempre que conserves el aviso de copyright y el archivo [NOTICE](NOTICE).
+
+El software se entrega **"tal cual"**, sin garantías de ningún tipo, y el autor no responde por daños derivados de su uso (secciones 7 y 8 de la licencia).
+
+**Nombre y logo:** el nombre "Kiolog" y su logo no están cubiertos por la licencia (sección 6). Si haces un fork o una versión derivada, usa otro nombre y otro logo.
+
+Copyright © 2026 Jesús Zelaya.
 
 ---
 
