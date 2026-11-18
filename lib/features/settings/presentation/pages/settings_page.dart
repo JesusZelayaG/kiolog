@@ -535,7 +535,7 @@ class _ToolTile extends StatelessWidget {
 }
 
 /// Versión de la app; se mantiene a mano con la de pubspec.yaml.
-const _appVersion = '1.0.1';
+const _appVersion = '0.7.1';
 
 class _AboutCard extends StatelessWidget {
   const _AboutCard();
