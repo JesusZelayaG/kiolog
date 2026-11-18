@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kiolog/core/domain/day.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import 'package:kiolog/features/nutrition/data/repositories/nutrition_repository_impl.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
@@ -240,17 +241,15 @@ void main() {
       expect(stats.first.offPlanMeals, 1);
 
       // Verificar mealsExpected: días desde inicio del plan activo hasta hoy
-      final nowUtc = DateTime.now().toUtc();
-      final todayMidnightUtc =
-          DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
+      // Los días se cuentan en hora local.
+      final todayMidnightUtc = todayUtcDay();
       final daysToMonday = todayMidnightUtc.weekday - 1;
       final weekStartUtc =
           todayMidnightUtc.subtract(Duration(days: daysToMonday));
 
       // Obtener el plan para leer su periodStart
       final activePlan = await repository.getActivePlan();
-      final ps = activePlan!.periodStart!.toUtc();
-      final planStartDay = DateTime.utc(ps.year, ps.month, ps.day);
+      final planStartDay = utcDayOf(activePlan!.periodStart!.toLocal());
       final effectiveStart = planStartDay.isAfter(weekStartUtc)
           ? planStartDay
           : weekStartUtc;
@@ -280,8 +279,7 @@ void main() {
       expect(stats[1].weekStart.isBefore(stats[2].weekStart), isTrue);
 
       // stats[2] is current week (its weekStart is this week's Monday)
-      final now = DateTime.now().toUtc();
-      final today = DateTime.utc(now.year, now.month, now.day);
+      final today = todayUtcDay();
       final daysToMonday = today.weekday - 1;
       final currentMonday = today.subtract(Duration(days: daysToMonday));
       expect(stats[2].weekStart, currentMonday);

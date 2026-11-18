@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:kiolog/features/nutrition/domain/models/plan_option_draft.dart';
 import 'package:drift/drift.dart';
+import 'package:kiolog/core/domain/day.dart';
 import 'package:kiolog/core/dao/nutrition_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
 import '../../domain/models/nutrition_weekly_stat.dart';
@@ -110,8 +111,8 @@ class NutritionRepositoryImpl implements NutritionRepository {
   Future<List<NutritionWeeklyStat>> getWeeklyAdherence(
       {required int weeksBack}) async {
     assert(weeksBack >= 1, 'weeksBack must be at least 1');
-    final now = DateTime.now().toUtc();
-    final todayMidnight = DateTime.utc(now.year, now.month, now.day);
+    // El día local: en UTC, desde las 18:00 en UTC-6 ya sería mañana.
+    final todayMidnight = todayUtcDay();
     final daysToMonday = todayMidnight.weekday - 1; // Monday=1
     final currentWeekMonday =
         todayMidnight.subtract(Duration(days: daysToMonday));
@@ -143,12 +144,11 @@ class NutritionRepositoryImpl implements NutritionRepository {
           final start = plan.periodStart;
           final end = plan.periodEnd;
           if (start == null) continue;
-          final startUtc = start.toUtc();
-          final startDay = DateTime.utc(startUtc.year, startUtc.month, startUtc.day);
+          // Inicio y fin son instantes: cuentan por el día local en que pasaron.
+          final startDay = utcDayOf(start.toLocal());
           if (startDay.isAfter(day)) continue;
           if (end != null) {
-            final endUtc = end.toUtc();
-            final endDay = DateTime.utc(endUtc.year, endUtc.month, endUtc.day);
+            final endDay = utcDayOf(end.toLocal());
             // On the day of a plan switch, the new plan claims the full day's goal.
             if (!endDay.isAfter(day)) continue;
           }

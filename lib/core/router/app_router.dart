@@ -1,3 +1,4 @@
+import 'package:kiolog/core/domain/day.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/achievements/presentation/pages/achievements_page.dart';
 import '../../features/rewards/presentation/rewards_page.dart';
@@ -68,7 +69,7 @@ GoRouter createRouter({String initialLocation = '/'}) => GoRouter(
                 final d = parts.length == 3 ? int.tryParse(parts[2]) : null;
                 final date = (y != null && m != null && d != null)
                     ? DateTime.utc(y, m, d)
-                    : DateTime.now().toUtc();
+                    : todayUtcDay();
                 return DayDetailPage(date: date);
               },
             ),
