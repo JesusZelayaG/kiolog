@@ -120,3 +120,60 @@ class PillButton extends StatelessWidget {
     );
   }
 }
+
+/// Píldora con opciones: la elegida lleva el degradado del ícono.
+class GradientSegmented<T> extends StatelessWidget {
+  const GradientSegmented({
+    super.key,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+    this.small = false,
+  });
+
+  final T value;
+  final Map<T, String> options;
+  final ValueChanged<T> onChanged;
+  final bool small;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: ShapeDecoration(
+        color: small ? cs.surfaceContainerHigh : cs.surfaceContainerLowest,
+        shape: const StadiumBorder(),
+        shadows: small ? null : [context.kc.shadow],
+      ),
+      child: Row(
+        children: [
+          for (final entry in options.entries)
+            Expanded(
+              child: GestureDetector(
+                onTap: () => onChanged(entry.key),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  padding: EdgeInsets.symmetric(vertical: small ? 9 : 12),
+                  decoration: ShapeDecoration(
+                    gradient: entry.key == value ? context.kc.brandGradient : null,
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Text(
+                    entry.value,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: entry.key == value ? Colors.white : cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}

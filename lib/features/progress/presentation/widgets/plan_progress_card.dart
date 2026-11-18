@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
 import 'package:kiolog/shared/widgets/vitality_card.dart';
 
 import '../../domain/plan_progress.dart';
@@ -35,17 +36,48 @@ class PlanProgressCard extends StatelessWidget {
             plan.isActive ? 'PLAN ACTUAL' : 'PLAN ANTERIOR',
             style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary),
           ),
-          Text(plan.name, style: theme.textTheme.titleMedium),
+          Text(plan.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
           Text('Del $start al $end', style: theme.textTheme.bodySmall),
+          const SizedBox(height: 14),
+          if (percent == null)
+            Text('Comidas cumplidas: aún sin días completos', style: theme.textTheme.bodyMedium)
+          else ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text('$percent %',
+                    style: theme.textTheme.headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.w800, color: theme.colorScheme.primary)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'comidas cumplidas (${progress.mealsLogged} de ${progress.mealsExpected})',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: (percent / 100).clamp(0.0, 1.0)),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutCubic,
+                builder: (context, v, _) => Stack(
+                  children: [
+                    Container(height: 8, color: theme.colorScheme.surfaceContainerHighest),
+                    FractionallySizedBox(
+                      widthFactor: v,
+                      child: Container(height: 8, decoration: BoxDecoration(gradient: context.kc.brandGradient)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
-          Text(
-            percent == null
-                ? 'Comidas cumplidas: aún sin días completos'
-                : 'Comidas cumplidas: $percent % '
-                    '(${progress.mealsLogged} de ${progress.mealsExpected})',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 8),
           if (baseline == null)
             Text(
               'Registra una consulta para medir los cambios de este plan.',

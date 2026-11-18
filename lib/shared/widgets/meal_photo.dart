@@ -180,3 +180,6 @@ Future<void> showMealPhoto(
         ),
       ),
     );
+
+/// Los bytes de una foto de comida, con la misma caché de las miniaturas.
+Future<Uint8List?> loadMealPhoto(int photoId) => _load(photoId);

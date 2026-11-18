@@ -243,4 +243,7 @@ class NutritionRepositoryImpl implements NutritionRepository {
   @override
   Future<void> setLogPhoto(int logId, Uint8List? bytes) async =>
       _nutritionDao.setLogPhoto(logId, bytes == null ? null : await savePhoto(bytes));
+
+  @override
+  Future<List<MealPhotoEntry>> getMealPhotoEntries() => _nutritionDao.getMealPhotoEntries();
 }

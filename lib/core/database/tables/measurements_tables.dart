@@ -25,3 +25,21 @@ class Measurements extends Table {
   RealColumn get leanMassKg => real().nullable()();
   RealColumn get visceralMass => real().nullable()();
 }
+
+/// El álbum de progreso: hasta 3 fotos o videos cortos por día.
+/// Como las fotos de comida, van en la base para que el respaldo siga
+/// siendo un solo archivo, y nunca salen en el reporte.
+class ProgressMedia extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// El día, como medianoche UTC del día local (ver core/domain/day.dart).
+  DateTimeColumn get day => dateTime()();
+
+  /// image | video
+  TextColumn get kind => text()();
+
+  /// La extensión original (jpg, mp4…), para reproducir el video.
+  TextColumn get extension => text()();
+  BlobColumn get bytes => blob()();
+  DateTimeColumn get takenAt => dateTime()();
+}

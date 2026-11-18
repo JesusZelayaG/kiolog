@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:kiolog/core/dao/measurements_dao.dart';
 import 'package:kiolog/core/database/app_database.dart';
 
 abstract class ProgressRepository {
@@ -25,4 +28,24 @@ abstract class ProgressRepository {
     double? leanMassKg,
     double? visceralMass,
   });
+
+  /// El álbum de progreso sin los archivos, del más reciente al más antiguo.
+  Future<List<ProgressMediaInfo>> getProgressMediaInfo();
+  Future<ProgressMediaData?> getProgressMedia(int id);
+
+  /// Agrega una foto o video al día [day] (medianoche UTC del día local).
+  /// Lanza [ProgressAlbumFull] si ese día ya tiene [maxProgressMediaPerDay].
+  Future<int> addProgressMedia({
+    required DateTime day,
+    required bool isVideo,
+    required String extension,
+    required Uint8List bytes,
+  });
+  Future<void> deleteProgressMedia(int id);
+}
+
+const maxProgressMediaPerDay = 3;
+
+class ProgressAlbumFull implements Exception {
+  const ProgressAlbumFull();
 }

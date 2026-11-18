@@ -95,4 +95,33 @@ class ProgressRepositoryImpl implements ProgressRepository {
           visceralMass: Value(visceralMass),
         ),
       );
+
+  @override
+  Future<List<ProgressMediaInfo>> getProgressMediaInfo() => _measurementsDao.getProgressMediaInfo();
+
+  @override
+  Future<ProgressMediaData?> getProgressMedia(int id) => _measurementsDao.getProgressMedia(id);
+
+  @override
+  Future<int> addProgressMedia({
+    required DateTime day,
+    required bool isVideo,
+    required String extension,
+    required Uint8List bytes,
+  }) =>
+      _measurementsDao.transaction(() async {
+        if (await _measurementsDao.countProgressMedia(day) >= maxProgressMediaPerDay) {
+          throw const ProgressAlbumFull();
+        }
+        return _measurementsDao.insertProgressMedia(ProgressMediaCompanion.insert(
+          day: day,
+          kind: isVideo ? 'video' : 'image',
+          extension: extension,
+          bytes: bytes,
+          takenAt: DateTime.now().toUtc(),
+        ));
+      });
+
+  @override
+  Future<void> deleteProgressMedia(int id) => _measurementsDao.deleteProgressMedia(id);
 }

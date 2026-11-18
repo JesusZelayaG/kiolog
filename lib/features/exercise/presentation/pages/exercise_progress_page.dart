@@ -1,19 +1,26 @@
-import 'package:kiolog/core/domain/day.dart';
-import 'dart:math' show sqrt;
-
-import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:kiolog/shared/widgets/stat_chip.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:intl/intl.dart';
+import 'package:kiolog/core/domain/day.dart';
+import 'package:kiolog/core/theme/app_theme.dart';
+import 'package:kiolog/shared/widgets/entrance.dart';
+import 'package:kiolog/shared/widgets/kiolog_glyphs.dart';
+import 'package:kiolog/shared/widgets/progress_ring.dart';
+import 'package:kiolog/shared/widgets/themed_page.dart';
 
-import '../../domain/models/plan_compliance_stat.dart';
+import '../../domain/models/weekly_stat.dart';
 import '../bloc/exercise_bloc.dart';
-import '../bloc/exercise_event.dart';
 import '../bloc/exercise_state.dart';
 
-enum _Periodo { semana, mes, historial }
+const _settle = Cubic(.3, .9, .25, 1);
 
-enum _Chart { rutina, cardio }
+enum _Period { week, month }
+
+enum _Chart { routine, cardio }
+
+/// Lo hecho en un periodo: días de rutina y de cardio, y sus metas.
+typedef _Totals = ({int routine, int routineGoal, int cardio, int cardioGoal, int sessions});
 
 class ExerciseProgressPage extends StatefulWidget {
   const ExerciseProgressPage({super.key});
@@ -23,775 +30,408 @@ class ExerciseProgressPage extends StatefulWidget {
 }
 
 class _ExerciseProgressPageState extends State<ExerciseProgressPage> {
-  _Periodo _periodo = _Periodo.semana;
-  _Chart _chart = _Chart.rutina;
-  int _weekOffset = 0; // <= 0 only
-  int _monthOffset = 0; // <= 0 only
+  _Period _period = _Period.week;
+  _Chart _chart = _Chart.routine;
+  int _weekOffset = 0;
+  int _monthOffset = 0;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Progreso')),
-      body: BlocBuilder<ExerciseBloc, ExerciseState>(
+    return ThemedPage(
+      child: BlocBuilder<ExerciseBloc, ExerciseState>(
         builder: (context, state) {
-          if (_periodo == _Periodo.historial) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: _buildPeriodToggle(context),
-                ),
-                Expanded(
-                  child: _HistorialTab(
-                    history: state.planHistory,
-                    onLoadRequest: () {
-                      if (state.planHistory.isEmpty) {
-                        context
-                            .read<ExerciseBloc>()
-                            .add(const ExercisePlanHistoryLoaded());
-                      }
-                    },
-                  ),
-                ),
-              ],
-            );
-          }
-
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildPeriodToggle(context),
-              const SizedBox(height: 16),
-              if (_periodo == _Periodo.semana) ...[
-                _buildWeekNavigator(context, state),
-                const SizedBox(height: 12),
-                _buildSemanaChips(context, state),
-                const SizedBox(height: 16),
-                _buildChartToggle(context),
-                const SizedBox(height: 8),
-                _buildWeekBarChartWidget(state),
-              ] else ...[
-                _buildMonthNavigator(context),
-                const SizedBox(height: 12),
-                _buildMesChips(context, state),
-                const SizedBox(height: 16),
-                _buildChartToggle(context),
-                const SizedBox(height: 8),
-                _buildMonthBarChartWidget(state),
-              ],
-            ],
+          final items = <Widget>[
+            const _Header(),
+            GradientSegmented<_Period>(
+              value: _period,
+              options: const {_Period.week: 'Semana', _Period.month: 'Mes'},
+              onChanged: (p) => setState(() => _period = p),
+            ),
+            _summaryCard(context, state),
+            _chartCard(context, state),
+          ];
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 32),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 14),
+            itemBuilder: (context, i) => Entrance(index: i, child: items[i]),
           );
         },
       ),
     );
   }
 
-  Widget _buildPeriodToggle(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      padding: const EdgeInsets.all(3),
-      child: Row(
-        children: [
-          _pillTab(context, 'Semana', _periodo == _Periodo.semana,
-              () => setState(() => _periodo = _Periodo.semana)),
-          _pillTab(context, 'Mes', _periodo == _Periodo.mes,
-              () => setState(() => _periodo = _Periodo.mes)),
-          _pillTab(context, 'Historial', _periodo == _Periodo.historial, () {
-            setState(() => _periodo = _Periodo.historial);
-          }),
-        ],
-      ),
-    );
-  }
+  // ── Datos ───────────────────────────────────────────────────────────────
 
-  Widget _pillTab(
-      BuildContext context, String label, bool active, VoidCallback onTap) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: active ? theme.colorScheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: active
-                  ? theme.colorScheme.onPrimary
-                  : theme.colorScheme.onSurfaceVariant,
-              fontWeight: active ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _navigator({
-    required BuildContext context,
-    required String label,
-    required String sublabel,
-    required Color sublabelColor,
-    required bool canGoBack,
-    required bool canGoForward,
-    required VoidCallback onBack,
-    required VoidCallback onForward,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: canGoBack ? onBack : null,
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                Text(label,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.bold)),
-                Text(sublabel,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: sublabelColor)),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: canGoForward ? onForward : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeekNavigator(BuildContext context, ExerciseState state) {
-    final theme = Theme.of(context);
-    final thisMonday = _mondayOf(todayUtcDay());
-    final weekMonday = thisMonday.add(Duration(days: 7 * _weekOffset));
-    final weekSunday = weekMonday.add(const Duration(days: 6));
-    final label = weekMonday.month == weekSunday.month
-        ? '${weekMonday.day} – ${weekSunday.day} ${_monthAbbr(weekMonday.month)} ${weekMonday.year}'
-        : '${weekMonday.day} ${_monthAbbr(weekMonday.month)} – ${weekSunday.day} ${_monthAbbr(weekSunday.month)} ${weekSunday.year}';
-    final sublabel =
-        _weekOffset == 0 ? 'semana actual' : 'hace ${-_weekOffset} semana(s)';
-    final canGoBack = state.weeklyStats.isNotEmpty &&
-        _weekOffset > -(state.weeklyStats.length - 1);
-
-    return _navigator(
-      context: context,
-      label: label,
-      sublabel: sublabel,
-      sublabelColor: _weekOffset == 0
-          ? theme.colorScheme.tertiary
-          : theme.colorScheme.onSurfaceVariant,
-      canGoBack: canGoBack,
-      canGoForward: _weekOffset < 0,
-      onBack: () => setState(() => _weekOffset--),
-      onForward: () => setState(() => _weekOffset++),
-    );
-  }
-
-  Widget _buildMonthNavigator(BuildContext context) {
-    final theme = Theme.of(context);
-    final now = DateTime.now();
-    final target = DateTime(now.year, now.month + _monthOffset);
-    final label = '${_monthName(target.month)} ${target.year}';
-    final sublabel =
-        _monthOffset == 0 ? 'mes actual' : 'hace ${-_monthOffset} mes(es)';
-
-    return _navigator(
-      context: context,
-      label: label,
-      sublabel: sublabel,
-      sublabelColor: _monthOffset == 0
-          ? theme.colorScheme.primary
-          : theme.colorScheme.onSurfaceVariant,
-      canGoBack: true,
-      canGoForward: _monthOffset < 0,
-      onBack: () => setState(() => _monthOffset--),
-      onForward: () => setState(() => _monthOffset++),
-    );
-  }
-
-  ({int routineDays, int cardioDays, int sessions}) _semanaStats(
-      ExerciseState state) {
+  _Totals _weekTotals(ExerciseState state) {
     if (_weekOffset == 0) {
-      final routineDays = state.completedRoutineSessionsThisWeek
-          .map((s) => storedDay(s.date))
-          .toSet()
-          .length;
-      final cardioDays = state.weeklyCardioLogs
-          .map((c) => storedDay(c.date))
-          .toSet()
-          .length;
-      final sessions = state.completedRoutineSessionsThisWeek.length +
-          state.weeklyCardioLogs.length +
-          state.weeklyIndependentLogs.length;
+      // La semana en curso, con lo registrado hasta ahora.
       return (
-        routineDays: routineDays,
-        cardioDays: cardioDays,
-        sessions: sessions
+        routine: state.completedRoutineSessionsThisWeek.map((s) => storedDay(s.date)).toSet().length,
+        routineGoal: state.routineDaysGoal,
+        cardio: state.weeklyCardioLogs.map((c) => storedDay(c.date)).toSet().length,
+        cardioGoal: state.cardioDaysGoal,
+        sessions: state.completedRoutineSessionsThisWeek.length +
+            state.weeklyCardioLogs.length +
+            state.weeklyIndependentLogs.length,
       );
     }
-    final statIndex = state.weeklyStats.length - 1 + _weekOffset;
-    if (statIndex < 0 || statIndex >= state.weeklyStats.length) {
-      return (routineDays: 0, cardioDays: 0, sessions: 0);
-    }
-    final s = state.weeklyStats[statIndex];
+    final i = state.weeklyStats.length - 1 + _weekOffset;
+    final s = i >= 0 && i < state.weeklyStats.length ? state.weeklyStats[i] : null;
     return (
-      routineDays: s.routineDaysDone,
-      cardioDays: s.cardioDaysDone,
-      sessions: s.routineDaysDone + s.cardioDaysDone,
+      routine: s?.routineDaysDone ?? 0,
+      routineGoal: state.routineDaysGoal,
+      cardio: s?.cardioDaysDone ?? 0,
+      cardioGoal: state.cardioDaysGoal,
+      sessions: (s?.routineDaysDone ?? 0) + (s?.cardioDaysDone ?? 0),
     );
   }
 
-  Widget _buildSemanaChips(BuildContext context, ExerciseState state) {
-    final theme = Theme.of(context);
-    final s = _semanaStats(state);
-    return Row(
-      children: [
-        Expanded(
-            child: StatChip(
-                value: '${s.routineDays}/${state.routineDaysGoal}',
-                label: 'días rutina',
-                color: theme.colorScheme.primary)),
-        const SizedBox(width: 8),
-        Expanded(
-            child: StatChip(
-                value: '${s.cardioDays}/${state.cardioDaysGoal}',
-                label: 'días cardio',
-                color: theme.colorScheme.tertiary)),
-        const SizedBox(width: 8),
-        Expanded(
-            child: StatChip(
-                value: '${s.sessions}',
-                label: 'sesiones',
-                color: theme.colorScheme.secondary)),
-      ],
-    );
-  }
-
-  Widget _buildMesChips(BuildContext context, ExerciseState state) {
+  DateTime get _month {
     final now = DateTime.now();
-    final target = DateTime(now.year, now.month + _monthOffset);
-    final monthStats = state.weeklyStats
-        .where((s) =>
-            s.weekStart.month == target.month &&
-            s.weekStart.year == target.year)
-        .toList();
+    return DateTime(now.year, now.month + _monthOffset);
+  }
 
-    final weeks = monthStats.isEmpty ? 1 : monthStats.length;
-    final totalRoutine =
-        monthStats.fold(0, (sum, s) => sum + s.routineDaysDone);
-    final totalCardio = monthStats.fold(0, (sum, s) => sum + s.cardioDaysDone);
+  List<WeeklyStat> _monthWeeks(ExerciseState state) => state.weeklyStats
+      .where((s) => s.weekStart.year == _month.year && s.weekStart.month == _month.month)
+      .toList();
 
-    final routinePct = state.routineDaysGoal > 0
-        ? (totalRoutine * 100 / (weeks * state.routineDaysGoal)).round()
-        : 0;
-    final cardioPct = state.cardioDaysGoal > 0
-        ? (totalCardio * 100 / (weeks * state.cardioDaysGoal)).round()
-        : 0;
-    final sessions = totalRoutine + totalCardio;
-
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Expanded(
-            child: StatChip(
-                value: '$routinePct%',
-                label: 'rutina',
-                color: theme.colorScheme.primary)),
-        const SizedBox(width: 8),
-        Expanded(
-            child: StatChip(
-                value: '$cardioPct%',
-                label: 'cardio',
-                color: theme.colorScheme.tertiary)),
-        const SizedBox(width: 8),
-        Expanded(
-            child: StatChip(
-                value: '$sessions',
-                label: 'sesiones',
-                color: theme.colorScheme.secondary)),
-      ],
+  _Totals _monthTotals(ExerciseState state) {
+    final weeks = _monthWeeks(state);
+    final n = weeks.isEmpty ? 1 : weeks.length;
+    final routine = weeks.fold(0, (sum, s) => sum + s.routineDaysDone);
+    final cardio = weeks.fold(0, (sum, s) => sum + s.cardioDaysDone);
+    return (
+      routine: routine,
+      routineGoal: state.routineDaysGoal * n,
+      cardio: cardio,
+      cardioGoal: state.cardioDaysGoal * n,
+      sessions: routine + cardio,
     );
   }
 
-  Widget _buildChartToggle(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      padding: const EdgeInsets.all(3),
-      child: Row(
-        children: [
-          _pillTab(context, '🏋️ Rutina', _chart == _Chart.rutina,
-              () => setState(() => _chart = _Chart.rutina)),
-          _pillTab(context, '🏃 Cardio', _chart == _Chart.cardio,
-              () => setState(() => _chart = _Chart.cardio)),
-        ],
-      ),
-    );
-  }
+  // ── Resumen del periodo ─────────────────────────────────────────────────
 
-  Widget _buildWeekBarChartWidget(ExerciseState state) {
-    final cs = Theme.of(context).colorScheme;
-    final isRutina = _chart == _Chart.rutina;
-    final goal = isRutina ? state.routineDaysGoal : state.cardioDaysGoal;
-    final bars = state.weeklyStats
-        .map((s) => (isRutina ? s.routineDaysDone : s.cardioDaysDone, goal))
-        .toList();
-    return SizedBox(
-      height: 120,
-      child: _WeekBarChart(
-        bars: bars,
-        barColor: isRutina ? cs.primary : cs.tertiary,
-        lastBarIsPartial: true,
-      ),
-    );
-  }
-
-  Widget _buildMonthBarChartWidget(ExerciseState state) {
-    final cs = Theme.of(context).colorScheme;
-    final isRutina = _chart == _Chart.rutina;
-    final goal = isRutina ? state.routineDaysGoal : state.cardioDaysGoal;
-    final now = DateTime.now();
-    final target = DateTime(now.year, now.month + _monthOffset);
-    final monthStats = state.weeklyStats
-        .where((s) =>
-            s.weekStart.month == target.month &&
-            s.weekStart.year == target.year)
-        .toList();
-    final bars = monthStats
-        .map((s) => (isRutina ? s.routineDaysDone : s.cardioDaysDone, goal))
-        .toList();
-    return SizedBox(
-      height: 120,
-      child: _WeekBarChart(
-        bars: bars,
-        barColor: isRutina ? cs.primary : cs.tertiary,
-        lastBarIsPartial: _monthOffset == 0,
-      ),
-    );
-  }
-
-  DateTime _mondayOf(DateTime date) =>
-      date.subtract(Duration(days: date.weekday - 1));
-
-  String _monthAbbr(int month) {
-    const abbrs = [
-      '',
-      'ene',
-      'feb',
-      'mar',
-      'abr',
-      'may',
-      'jun',
-      'jul',
-      'ago',
-      'sep',
-      'oct',
-      'nov',
-      'dic'
-    ];
-    return abbrs[month.clamp(1, 12)];
-  }
-
-  String _monthName(int month) {
-    const names = [
-      '',
-      'enero',
-      'febrero',
-      'marzo',
-      'abril',
-      'mayo',
-      'junio',
-      'julio',
-      'agosto',
-      'septiembre',
-      'octubre',
-      'noviembre',
-      'diciembre'
-    ];
-    return names[month.clamp(1, 12)];
-  }
-} // end _ExerciseProgressPageState
-
-class _WeekBarChart extends StatelessWidget {
-  final List<(int done, int goal)> bars;
-  final Color barColor;
-  final bool lastBarIsPartial;
-
-  const _WeekBarChart({
-    required this.bars,
-    required this.barColor,
-    this.lastBarIsPartial = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.infinite,
-      painter: _BarChartPainter(
-        bars: bars,
-        barColor: barColor,
-        lastBarIsPartial: lastBarIsPartial,
-      ),
-    );
-  }
-}
-
-class _BarChartPainter extends CustomPainter {
-  final List<(int done, int goal)> bars;
-  final Color barColor;
-  final bool lastBarIsPartial;
-
-  const _BarChartPainter({
-    required this.bars,
-    required this.barColor,
-    required this.lastBarIsPartial,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (bars.isEmpty) return;
-
-    const bottomPad = 20.0;
-    final chartH = size.height - bottomPad;
-    final barW = size.width / bars.length;
-    const pad = 4.0;
-
-    final filledPaint = Paint()..color = barColor.withValues(alpha: 0.8);
-    final partialFill = Paint()..color = barColor.withValues(alpha: 0.2);
-    final dashBorder = Paint()
-      ..color = barColor.withValues(alpha: 0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    final goalLine = Paint()
-      ..color = barColor.withValues(alpha: 0.35)
-      ..strokeWidth = 1;
-
-    // Dashed horizontal goal line at y=0 (100%)
-    _dashedHLine(canvas, 0, size.width, 0, goalLine);
-
-    for (int i = 0; i < bars.length; i++) {
-      final (done, goal) = bars[i];
-      if (goal <= 0) continue;
-      final frac = (done / goal).clamp(0.0, 1.0);
-      final h = frac * chartH;
-      final isPartial = lastBarIsPartial && i == bars.length - 1;
-
-      final rect = Rect.fromLTRB(
-        i * barW + pad,
-        chartH - h,
-        (i + 1) * barW - pad,
-        chartH,
-      );
-      final rr = RRect.fromRectAndRadius(rect, const Radius.circular(3));
-
-      if (isPartial) {
-        canvas.drawRRect(rr, partialFill);
-        _dashedRect(canvas, rect, dashBorder);
-      } else {
-        canvas.drawRRect(rr, filledPaint);
-      }
-    }
-  }
-
-  void _dashedHLine(
-      Canvas canvas, double x1, double x2, double y, Paint paint) {
-    const dash = 6.0, gap = 4.0;
-    double x = x1;
-    bool on = true;
-    while (x < x2) {
-      final end = (x + (on ? dash : gap)).clamp(x1, x2);
-      if (on) canvas.drawLine(Offset(x, y), Offset(end, y), paint);
-      x = end;
-      on = !on;
-    }
-  }
-
-  void _dashedRect(Canvas canvas, Rect r, Paint paint) {
-    _dashedSeg(canvas, Offset(r.left, r.top), Offset(r.right, r.top), paint);
-    _dashedSeg(
-        canvas, Offset(r.right, r.top), Offset(r.right, r.bottom), paint);
-    _dashedSeg(
-        canvas, Offset(r.right, r.bottom), Offset(r.left, r.bottom), paint);
-    _dashedSeg(canvas, Offset(r.left, r.bottom), Offset(r.left, r.top), paint);
-  }
-
-  void _dashedSeg(Canvas canvas, Offset a, Offset b, Paint paint) {
-    final dx = b.dx - a.dx;
-    final dy = b.dy - a.dy;
-    final len = sqrt(dx * dx + dy * dy);
-    if (len == 0) return;
-    final ux = dx / len;
-    final uy = dy / len;
-    const dash = 4.0, gap = 3.0;
-    double d = 0;
-    bool on = true;
-    while (d < len) {
-      final step = on ? dash : gap;
-      final end = (d + step).clamp(0.0, len);
-      if (on) {
-        canvas.drawLine(
-          Offset(a.dx + ux * d, a.dy + uy * d),
-          Offset(a.dx + ux * end, a.dy + uy * end),
-          paint,
-        );
-      }
-      d = end;
-      on = !on;
-    }
-  }
-
-  @override
-  bool shouldRepaint(_BarChartPainter old) =>
-      !listEquals(old.bars, bars) ||
-      old.barColor != barColor ||
-      old.lastBarIsPartial != lastBarIsPartial;
-}
-
-// ── Historial tab ─────────────────────────────────────────────────────────────
-
-class _HistorialTab extends StatefulWidget {
-  final List<PlanComplianceStat> history;
-  final VoidCallback onLoadRequest;
-
-  const _HistorialTab({required this.history, required this.onLoadRequest});
-
-  @override
-  State<_HistorialTab> createState() => _HistorialTabState();
-}
-
-class _HistorialTabState extends State<_HistorialTab> {
-  @override
-  void initState() {
-    super.initState();
-    // Fire onLoadRequest only if history is empty (belt-and-suspenders guard
-    // in addition to the parent lambda's own check).
-    if (widget.history.isEmpty) widget.onLoadRequest();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _summaryCard(BuildContext context, ExerciseState state) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final kc = context.kc;
+    final week = _period == _Period.week;
+    final totals = week ? _weekTotals(state) : _monthTotals(state);
 
-    // Show spinner while the async fetch is in flight.
-    final bloc = context.read<ExerciseBloc>();
-    if (widget.history.isEmpty &&
-        bloc.state.status == ExerciseStatus.loading) {
-      return const Center(child: CircularProgressIndicator());
+    late final String label;
+    late final String subtitle;
+    VoidCallback? back;
+    VoidCallback? forward;
+    if (week) {
+      final today = todayUtcDay();
+      final monday = today.subtract(Duration(days: today.weekday - 1 - 7 * _weekOffset));
+      final f = DateFormat('d MMM', 'es');
+      label = '${f.format(monday)} – ${f.format(monday.add(const Duration(days: 6)))}';
+      subtitle = _weekOffset == 0 ? 'Esta semana' : 'Hace ${-_weekOffset} ${_weekOffset == -1 ? 'semana' : 'semanas'}';
+      back = _weekOffset > -(state.weeklyStats.length - 1) ? () => setState(() => _weekOffset--) : null;
+      forward = _weekOffset < 0 ? () => setState(() => _weekOffset++) : null;
+    } else {
+      final m = DateFormat.yMMMM('es').format(_month);
+      label = m[0].toUpperCase() + m.substring(1);
+      subtitle = _monthOffset == 0 ? 'Este mes' : 'Hace ${-_monthOffset} ${_monthOffset == -1 ? 'mes' : 'meses'}';
+      final firstWeek = state.weeklyStats.isEmpty ? null : state.weeklyStats.first.weekStart;
+      back = firstWeek != null && firstWeek.isBefore(DateTime.utc(_month.year, _month.month))
+          ? () => setState(() => _monthOffset--)
+          : null;
+      forward = _monthOffset < 0 ? () => setState(() => _monthOffset++) : null;
     }
+    final share = totals.routineGoal == 0 ? 0.0 : (totals.routine / totals.routineGoal).clamp(0.0, 1.0);
 
-    if (widget.history.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.history, size: 48, color: cs.onSurfaceVariant),
-            const SizedBox(height: 12),
-            Text(
-              'Sin historial de planes',
-              style: theme.textTheme.bodyLarge?.copyWith(color: cs.onSurface),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: widget.history.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final stat = widget.history[index];
-        final isActive = stat.periodEnd == null;
-        return _PlanHistoryCard(stat: stat, isActive: isActive);
-      },
-    );
-  }
-}
-
-class _PlanHistoryCard extends StatelessWidget {
-  final PlanComplianceStat stat;
-  final bool isActive;
-
-  const _PlanHistoryCard({required this.stat, required this.isActive});
-
-  String _monthAbbr(int m) => const [
-        '',
-        'ene',
-        'feb',
-        'mar',
-        'abr',
-        'may',
-        'jun',
-        'jul',
-        'ago',
-        'sep',
-        'oct',
-        'nov',
-        'dic'
-      ][m];
-
-  String _fmtDate(DateTime d) => '${d.day} ${_monthAbbr(d.month)} ${d.year}';
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    final subtitle = isActive
-        ? 'Desde ${_fmtDate(stat.periodStart)} · En curso'
-        : '${_fmtDate(stat.periodStart)} — ${_fmtDate(stat.periodEnd!)} · ${stat.weeksActive} semanas';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isActive ? cs.primary : cs.outline.withValues(alpha: 0.4),
-          width: isActive ? 1.5 : 1,
-        ),
-      ),
-      padding: const EdgeInsets.all(16),
+    return _Card(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
+              _Round(icon: IconsaxPlusLinear.arrow_right_3, flip: true, tooltip: 'Anterior', onTap: back),
               Expanded(
-                child: Text(
-                  stat.planName,
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(color: cs.onSurface),
+                child: Column(
+                  children: [
+                    Text(label, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                    Text(subtitle, style: theme.textTheme.bodySmall),
+                  ],
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? cs.tertiaryContainer
-                      : cs.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  isActive ? 'Activo' : 'Finalizado',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: isActive
-                        ? cs.onTertiaryContainer
-                        : cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+              _Round(icon: IconsaxPlusLinear.arrow_right_3, tooltip: 'Siguiente', onTap: forward),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              SizedBox(
+                width: 116,
+                height: 116,
+                child: TweenAnimationBuilder<double>(
+                  key: ValueKey('$_period$_weekOffset$_monthOffset'),
+                  tween: Tween(begin: 0, end: share),
+                  duration: const Duration(milliseconds: 1000),
+                  curve: _settle,
+                  builder: (context, v, _) => CustomPaint(
+                    painter: GradientRing(progress: v, gradient: kc.brandGradient, track: context.hc.ringTrack, width: 12),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('${(v * 100).round()}%', style: theme.textTheme.displayMedium?.copyWith(fontSize: 26)),
+                          Text('de rutina', style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  children: [
+                    _StatTile(
+                      icon: KiologGlyph(KiologGlyphKind.dumbbell, size: 20, color: cs.primary),
+                      color: cs.primary,
+                      value: '${totals.routine}/${totals.routineGoal}',
+                      label: 'días de rutina',
+                    ),
+                    const SizedBox(height: 8),
+                    _StatTile(
+                      icon: Icon(IconsaxPlusLinear.activity, size: 20, color: kc.waterInk),
+                      color: kc.waterInk,
+                      value: '${totals.cardio}/${totals.cardioGoal}',
+                      label: 'días de cardio',
+                    ),
+                    const SizedBox(height: 8),
+                    _StatTile(
+                      icon: Icon(IconsaxPlusBold.flash, size: 20, color: kc.foodInk),
+                      color: kc.foodInk,
+                      value: '${totals.sessions}',
+                      label: totals.sessions == 1 ? 'sesión' : 'sesiones',
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  // ── Gráfica ─────────────────────────────────────────────────────────────
+
+  Widget _chartCard(BuildContext context, ExerciseState state) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final kc = context.kc;
+    final routine = _chart == _Chart.routine;
+    final weeks = _period == _Period.week ? state.weeklyStats : _monthWeeks(state);
+    final goal = routine ? state.routineDaysGoal : state.cardioDaysGoal;
+    final selected = _period == _Period.week ? state.weeklyStats.length - 1 + _weekOffset : null;
+    final f = DateFormat('d MMM', 'es');
+
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           Text(
-            subtitle,
-            style:
-                theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _StatBox(
-                value: '${stat.compliancePercent}%',
-                label: 'Cumplimiento',
-                valueColor: isActive ? cs.primary : cs.secondary,
-                theme: theme,
-              ),
-              const SizedBox(width: 8),
-              _StatBox(
-                value: '${stat.totalSessions}',
-                label: 'Sesiones',
-                theme: theme,
-              ),
-              const SizedBox(width: 8),
-              _StatBox(
-                value: '${stat.weeksActive}',
-                label: 'Semanas',
-                theme: theme,
-              ),
-            ],
+            _period == _Period.week ? 'ÚLTIMAS ${weeks.length} SEMANAS' : 'SEMANAS DEL MES',
+            style: theme.textTheme.labelSmall?.copyWith(fontSize: 11),
           ),
           const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: (stat.compliancePercent / 100).clamp(0.0, 1.0),
-              minHeight: 6,
-              backgroundColor: cs.surfaceContainerHighest,
-              color: isActive ? cs.primary : cs.secondary,
-            ),
+          GradientSegmented<_Chart>(
+            value: _chart,
+            options: const {_Chart.routine: 'Rutina', _Chart.cardio: 'Cardio'},
+            onChanged: (c) => setState(() => _chart = c),
+            small: true,
           ),
+          const SizedBox(height: 16),
+          if (weeks.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text('Todavía no hay semanas registradas.', textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+            )
+          else ...[
+            SizedBox(
+              height: 140,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (var i = 0; i < weeks.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    Expanded(
+                      child: Builder(builder: (context) {
+                        final done = routine ? weeks[i].routineDaysDone : weeks[i].cardioDaysDone;
+                        final share = goal == 0 ? 0.0 : (done / goal).clamp(0.0, 1.0);
+                        final current = _period == _Period.week && i == weeks.length - 1;
+                        final isSelected = selected == i;
+                        final colors = routine ? kc.brandGradient.colors : [kc.waterInk, kc.waterInk];
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              '$done',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontSize: 11,
+                                color: isSelected ? cs.primary : cs.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0, end: share),
+                              duration: Duration(milliseconds: 700 + i * 70),
+                              curve: _settle,
+                              builder: (context, v, _) => Container(
+                                height: 6 + 100 * v,
+                                decoration: BoxDecoration(
+                                  gradient: done == 0
+                                      ? null
+                                      : LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                          colors: [for (final c in colors) current ? c.withValues(alpha: 0.55) : c],
+                                        ),
+                                  color: done == 0 ? context.hc.ringTrack : null,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: isSelected ? Border.all(color: cs.onSurface, width: 1.5) : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(f.format(weeks.first.weekStart.toUtc()), style: theme.textTheme.bodySmall),
+                const Spacer(),
+                Text('Meta: $goal días por semana', style: theme.textTheme.bodySmall?.copyWith(color: cs.primary)),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _StatBox extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color? valueColor;
-  final ThemeData theme;
-
-  const _StatBox({
-    required this.value,
-    required this.label,
-    required this.theme,
-    this.valueColor,
-  });
+class _Header extends StatelessWidget {
+  const _Header();
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+    return Row(
+      children: [
+        Material(
+          color: cs.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => Navigator.of(context).maybePop(),
+            child: Tooltip(
+              message: 'Volver',
+              child: SizedBox(width: 44, height: 44, child: Icon(IconsaxPlusLinear.arrow_left, color: cs.onSurface)),
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('PROGRESO', style: theme.textTheme.labelSmall?.copyWith(fontSize: 11, color: cs.primary)),
+              Text('Ejercicio', style: theme.textTheme.displayMedium?.copyWith(fontSize: 26)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(10),
+          color: Theme.of(context).colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [context.kc.shadow],
         ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: valueColor ?? cs.onSurface,
-              ),
+        child: child,
+      );
+}
+
+class _Round extends StatelessWidget {
+  const _Round({required this.icon, required this.tooltip, required this.onTap, this.flip = false});
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onTap;
+
+  /// Voltea el ícono: la flecha izquierda de Iconsax no hace juego con la derecha.
+  final bool flip;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.surfaceContainerHigh,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Tooltip(
+          message: tooltip,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Transform.flip(
+              flipX: flip,
+              child: Icon(icon, size: 18, color: onTap == null ? cs.outline : cs.onSurface),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
-            ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({required this.icon, required this.color, required this.value, required this.label});
+
+  final Widget icon;
+  final Color color;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
+      child: Row(
+        children: [
+          icon,
+          const SizedBox(width: 8),
+          Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(width: 6),
+          Expanded(child: Text(label, style: theme.textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis)),
+        ],
       ),
     );
   }

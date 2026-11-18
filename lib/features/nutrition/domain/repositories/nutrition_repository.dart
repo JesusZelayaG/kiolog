@@ -1,3 +1,4 @@
+import 'package:kiolog/core/dao/nutrition_dao.dart';
 import 'dart:typed_data';
 
 import '../models/plan_option_draft.dart';
@@ -63,6 +64,9 @@ abstract class NutritionRepository {
 
   /// La foto de lo que se comió en un registro; null la quita.
   Future<void> setLogPhoto(int logId, Uint8List? bytes);
+
+  /// El álbum de comidas: los registros con foto, del más reciente al más antiguo.
+  Future<List<MealPhotoEntry>> getMealPhotoEntries();
 
   /// El ícono de un tiempo de comida del plan.
   Future<void> setMealIcon(int planId, String mealType, String icon);

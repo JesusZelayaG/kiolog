@@ -115,7 +115,7 @@ class ExerciseBloc extends Bloc<ExerciseEvent, ExerciseState> {
 
   Future<void> _onPlanHistoryLoaded(
       ExercisePlanHistoryLoaded event, Emitter<ExerciseState> emit) async {
-    emit(state.copyWith(status: ExerciseStatus.loading));
+    // Sin estado de carga: la hoja de planes se abre sobre la pantalla.
     try {
       final history = await _repository.getPlanHistory();
       emit(state.copyWith(status: ExerciseStatus.success, planHistory: history));

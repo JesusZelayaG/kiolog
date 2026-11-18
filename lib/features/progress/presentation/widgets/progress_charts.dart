@@ -19,8 +19,8 @@ List<Color> _seriesColors(BuildContext context) =>
 const _chartHeight = 150.0;
 const _labelHeight = 20.0;
 const _barGap = 2.0;
-const _maxBarWidth = 24.0;
-const _barRadius = Radius.circular(4);
+const _maxBarWidth = 26.0;
+const _barRadius = Radius.circular(8);
 const _dimmedAlpha = 0.45;
 const _sleepGoalHours = 8.0;
 const _nutritionGoalPercent = 100.0;
@@ -123,7 +123,7 @@ class _ChartSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(padding: const EdgeInsets.only(bottom: 16), child: child);
+    return Padding(padding: const EdgeInsets.only(bottom: 14), child: child);
   }
 }
 
@@ -178,7 +178,7 @@ class _BarChartCardState extends State<BarChartCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(widget.title, style: theme.textTheme.titleMedium),
+          Text(widget.title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
           Text(widget.caption, style: theme.textTheme.bodySmall),
           if (widget.seriesNames.length > 1) ...[
             const SizedBox(height: 8),
@@ -210,24 +210,35 @@ class _BarChartCardState extends State<BarChartCard> {
               builder: (context, constraints) => GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTapUp: (details) => _select(details.localPosition, constraints.maxWidth),
-                child: CustomPaint(
-                  size: Size(constraints.maxWidth, _chartHeight + _labelHeight),
-                  painter: _BarChartPainter(
-                    bars: bars,
-                    goal: widget.goal,
-                    goalLabel: widget.goalLabel,
-                    selected: selected,
-                    axis: cs.surfaceContainerHigh,
-                    ink: cs.onSurfaceVariant,
-                    accent: cs.onSurface,
-                    series: _seriesColors(context),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, t, _) => CustomPaint(
+                    size: Size(constraints.maxWidth, _chartHeight + _labelHeight),
+                    painter: _BarChartPainter(
+                      bars: bars,
+                      goal: widget.goal,
+                      goalLabel: widget.goalLabel,
+                      selected: selected,
+                      axis: cs.surfaceContainerHigh,
+                      ink: cs.onSurfaceVariant,
+                      accent: cs.onSurface,
+                      series: _seriesColors(context),
+                      progress: t,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 8),
-          Text(status, style: theme.textTheme.labelMedium),
+          Text(
+            status,
+            style: selected != null
+                ? theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800, color: cs.primary)
+                : theme.textTheme.bodySmall,
+          ),
         ],
       ),
     );
@@ -244,8 +255,11 @@ class _BarChartPainter extends CustomPainter {
     required this.ink,
     required this.accent,
     required this.series,
+    this.progress = 1,
   });
 
+  /// 0 a 1: las barras crecen al aparecer.
+  final double progress;
   final List<ChartBar> bars;
   final double? goal;
   final String? goalLabel;
@@ -308,7 +322,7 @@ class _BarChartPainter extends CustomPainter {
       final values = bars[i].values;
       final topIndex = values.lastIndexWhere((v) => v > 0);
       for (var s = 0; s < values.length; s++) {
-        final height = values[s] * scale;
+        final height = values[s] * scale * progress;
         if (height <= 0) continue;
         final rect = Rect.fromLTWH(left, bottom - height, barWidth, height);
         final color = series[s % series.length];
@@ -318,7 +332,15 @@ class _BarChartPainter extends CustomPainter {
             topLeft: s == topIndex ? _barRadius : Radius.zero,
             topRight: s == topIndex ? _barRadius : Radius.zero,
           ),
-          Paint()..color = dimmed ? color.withValues(alpha: _dimmedAlpha) : color,
+          Paint()
+            ..shader = LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              colors: [
+                (dimmed ? color.withValues(alpha: _dimmedAlpha) : color).withValues(alpha: dimmed ? 0.3 : 0.7),
+                dimmed ? color.withValues(alpha: _dimmedAlpha) : color,
+              ],
+            ).createShader(rect),
         );
         bottom -= height + _barGap;
       }
@@ -334,5 +356,9 @@ class _BarChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BarChartPainter old) =>
-      old.bars != bars || old.selected != selected || old.goal != goal || old.series != series;
+      old.bars != bars ||
+      old.selected != selected ||
+      old.goal != goal ||
+      old.series != series ||
+      old.progress != progress;
 }

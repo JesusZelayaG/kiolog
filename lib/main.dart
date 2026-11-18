@@ -14,6 +14,7 @@ import 'core/notifications/notification_service.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_cubit.dart';
+import 'shared/widgets/launch_splash.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -89,6 +90,7 @@ class _KiologAppState extends State<KiologApp> {
           theme: AppTheme.of(themeId),
           routerConfig: _router,
           debugShowCheckedModeBanner: false,
+          builder: (context, child) => LaunchSplash(child: child ?? const SizedBox()),
         ),
       ),
     );

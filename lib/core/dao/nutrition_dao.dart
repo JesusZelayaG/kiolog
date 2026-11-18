@@ -189,6 +189,35 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
     await deleteUnusedPhotos();
   }
 
+  /// Los registros con foto de lo que se comió, del más reciente al más
+  /// antiguo, con el plato del plan si lo hubo.
+  Future<List<MealPhotoEntry>> getMealPhotoEntries() async {
+    final q = select(dailyMealLogs).join([
+      leftOuterJoin(mealPlanOptions, mealPlanOptions.id.equalsExp(dailyMealLogs.planOptionId)),
+    ])
+      ..where(dailyMealLogs.photoId.isNotNull())
+      ..orderBy([OrderingTerm.desc(dailyMealLogs.date), OrderingTerm.desc(dailyMealLogs.id)]);
+    return [
+      for (final row in await q.get())
+        () {
+          final log = row.readTable(dailyMealLogs);
+          final option = row.readTableOrNull(mealPlanOptions);
+          return (
+            logId: log.id,
+            day: log.date,
+            mealType: log.mealType,
+            photoId: log.photoId!,
+            status: log.planOptionId != null
+                ? MealPhotoStatus.plan
+                : log.freeDescription != null
+                    ? MealPhotoStatus.offPlan
+                    : MealPhotoStatus.skipped,
+            description: option?.description ?? log.freeDescription,
+          );
+        }(),
+    ];
+  }
+
   /// Pone, cambia o quita (null) la foto de lo que se comió.
   Future<void> setLogPhoto(int logId, int? photoId) async {
     await (update(dailyMealLogs)..where((t) => t.id.equals(logId)))
@@ -298,3 +327,15 @@ class NutritionDao extends DatabaseAccessor<AppDatabase>
     return (select(mealPlanOptions)..where((t) => t.id.isIn(ids))).get();
   }
 }
+
+enum MealPhotoStatus { plan, offPlan, skipped }
+
+/// Una foto del álbum de comidas.
+typedef MealPhotoEntry = ({
+  int logId,
+  DateTime day,
+  String mealType,
+  int photoId,
+  MealPhotoStatus status,
+  String? description,
+});

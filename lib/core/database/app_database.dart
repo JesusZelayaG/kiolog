@@ -50,6 +50,7 @@ part 'app_database.g.dart';
     // Measurements
     WeightLogs,
     Measurements,
+    ProgressMedia,
     Achievements,
     // Config
     WaterConfig,
@@ -81,7 +82,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration {
@@ -171,6 +172,9 @@ class AppDatabase extends _$AppDatabase {
         if (from < 18) {
           await m.createTable(exerciseMedia);
           await m.addColumn(exerciseRoutineItems, exerciseRoutineItems.mediaId);
+        }
+        if (from < 19) {
+          await m.createTable(progressMedia);
         }
       },
     );

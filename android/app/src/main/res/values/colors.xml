@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- El azul marino y los verdes del logo de Kiolog. -->
+    <color name="splash_navy">#0B1123</color>
+    <color name="splash_deep_green">#0E3B26</color>
+</resources>
